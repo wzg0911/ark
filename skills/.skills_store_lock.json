@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "pptx": {
+      "name": "pptx",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=pptx",
+      "source": "skillhub",
+      "version": "1.0.0"
+    },
+    "presentation": {
+      "name": "Presentation",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=presentation",
+      "source": "skillhub",
+      "version": "1.0.1"
+    },
+    "video-production": {
+      "name": "Video Production",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=video-production",
+      "source": "skillhub",
+      "version": "1.0.0"
+    },
+    "video-editing": {
+      "name": "Video",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=video-editing",
+      "source": "skillhub",
+      "version": "0.1.0"
+    },
+    "ai-video": {
+      "name": "AI Video",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=ai-video",
+      "source": "skillhub",
+      "version": "1.0.3"
+    },
+    "video-generator": {
+      "name": "Video Generator",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=video-generator",
+      "source": "skillhub",
+      "version": "1.0.4"
+    }
+  }
+}

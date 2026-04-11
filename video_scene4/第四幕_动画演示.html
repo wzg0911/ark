@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>第四幕·普通人的一天</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif}
+.screen{position:relative;width:960px;height:409px;border:1px solid #333;overflow:hidden;background:#0a0a0f}
+.split{position:absolute;top:0;bottom:0;left:0;width:50%;background:linear-gradient(180deg,#1a2638 0%,#0d1520 100%)}
+.split-r{position:absolute;top:0;bottom:0;right:0;width:50%;background:linear-gradient(180deg,#1a1505 0%,#08060a 100%)}
+.divider{position:absolute;top:0;bottom:0;left:50%;width:3px;background:linear-gradient(180deg,#d4af37,#8b6914);z-index:10}
+.center-v{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;background:#0a0a0f;border-radius:50%;z-index:11;display:flex;align-items:center;justify-content:center}
+.center-v span{color:#d4af37;font-size:24px}
+.glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(212,175,55,0.6) 0%,transparent 70%);width:80px;height:80px;z-index:5}
+.glow-l{left:calc(50% - 120px);top:50%;transform:translateY(-50%)}
+.glow-r{right:calc(50% - 120px);top:50%;transform:translateY(-50%)}
+.info{position:absolute;bottom:20px;left:0;right:0;text-align:center;z-index:20}
+.info span{background:rgba(0,0,0,0.7);color:#d4af37;padding:6px 20px;font-size:13px;border-radius:4px}
+.progress{width:960px;height:4px;background:#222;margin-top:10px;border-radius:2px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#2196F3,#d4af37);width:0%;transition:width 0.1s}
+.controls{display:flex;gap:10px;margin-top:15px;align-items:center}
+.btn{background:#1a2535;border:1px solid #d4af37;color:#d4af37;padding:8px 24px;cursor:pointer;font-size:13px;border-radius:4px}
+.btn:hover{background:#d4af37;color:#000}
+.time{color:#94a3b8;font-size:13px;min-width:80px;text-align:center}
+</style>
+</head>
+<body>
+<div class="screen" id="screen">
+  <div class="split" id="splitL"></div>
+  <div class="split-r" id="splitR"></div>
+  <div class="divider"></div>
+  <div class="glow glow-l" id="glowL"></div>
+  <div class="glow glow-r" id="glowR"></div>
+  <div class="center-v"><span>⇆</span></div>
+  <div class="info" id="info"><span id="infoText">每一天，你都有两种活法</span></div>
+</div>
+<div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+<div class="controls">
+  <button class="btn" onclick="togglePlay()">▶ 播放</button>
+  <button class="btn" onclick="resetAnim()">⟲ 重播</button>
+  <span class="time" id="timeDisplay">0s / 90s</span>
+</div>
+<script>
+const screen = document.getElementById('screen');
+const infoText = document.getElementById('infoText');
+const progressBar = document.getElementById('progressBar');
+const timeDisplay = document.getElementById('timeDisplay');
+let playing = false, startTime = 0, pausedAt = 0;
+const TOTAL = 90;
+
+const phases = [
+  {t:3,s:"左：没有元神的一天  右：有元神的一天",bgL:"#0d1520",bgR:"#08060a",glow:true},
+  {t:8,s:"闹钟狂响，继续沉睡 vs 晨光自然醒",bgL:"#1a1a25",bgR:"#1a1205",glow:true},
+  {t:13,s:"被动接收 vs 主动理解",bgL:"#0d1520",bgR:"#0a1505",glow:true},
+  {t:20,s:"被干扰 vs 被守护",bgL:"#1a0d15",bgR:"#0a1505",glow:true},
+  {t:27,s:"准备不足 vs 心中有数",bgL:"#1a1a25",bgR:"#100a05",glow:true},
+  {t:35,s:"错过热爱 vs 找回热爱",bgL:"#0d1015",bgR:"#151005",glow:true},
+  {t:43,s:"消耗 vs 滋养",bgL:"#050510",bgR:"#080603",glow:true},
+  {t:51,s:"焦虑失眠 vs 安心入眠",bgL:"#030310",bgR:"#080604",glow:true},
+  {t:60,s:"每一天，你都有两种活法",bgL:"#0a0a15",bgR:"#0a0805",glow:true},
+  {t:75,s:"热爱生活的日常",bgL:"#080603",bgR:"#080603",glow:false},
+  {t:85,s:"把生活交给AI，把人生还给热爱",bgL:"#030305",bgR:"#030305",glow:false},
+  {t:90,s:"元神AI · META SOUL",bgL:"#030305",bgR:"#030305",glow:false},
+];
+
+let animId;
+function animate(ts){
+  if(!playing) return;
+  let elapsed = pausedAt + (ts - startTime)/1000;
+  if(elapsed > TOTAL){ playing=false; document.querySelector('.btn').textContent="▶ 播放"; return; }
+  progressBar.style.width = (elapsed/TOTAL*100)+"%";
+  const s = Math.floor(elapsed);
+  timeDisplay.textContent = s+"s / "+TOTAL+"s";
+  let phase = phases[0];
+  let cumT = 0;
+  for(let p of phases){ cumT += p.t; if(elapsed < cumT){ phase = p; break; } }
+  document.getElementById('splitL').style.background = `linear-gradient(180deg,${phase.bgL} 0%,#0a0a10 100%)`;
+  document.getElementById('splitR').style.background = `linear-gradient(180deg,${phase.bgR} 0%,#08060a 100%)`;
+  const gL = document.getElementById('glowL');
+  const gR = document.getElementById('glowR');
+  if(phase.glow){ gL.style.opacity=0.8; gR.style.opacity=0.8; } else { gL.style.opacity=0; gR.style.opacity=0; }
+  infoText.textContent = phase.s;
+  animId = requestAnimationFrame(animate);
+}
+function togglePlay(){
+  if(playing){
+    playing=false; pausedAt += (performance.now()-startTime)/1000;
+    document.querySelector('.btn').textContent="▶ 播放";
+  } else {
+    playing=true; startTime=performance.now();
+    document.querySelector('.btn').textContent="⏸ 暂停";
+    animId=requestAnimationFrame(animate);
+  }
+}
+function resetAnim(){ playing=false; pausedAt=0; progressBar.style.width="0%"; timeDisplay.textContent="0s / 90s";
+  document.getElementById('infoText').textContent="每一天，你都有两种活法";
+  document.getElementById('splitL').style.background="";
+  document.getElementById('splitR').style.background="";
+  document.querySelector('.btn').textContent="▶ 播放";
+}
+</script>
+</body>
+</html>
