@@ -1,0 +1,17 @@
+[project]
+name = "ark-trust"
+version = "0.1.0"
+description = "ARK - Agent Reliability Kit. Trust infrastructure for AI agents."
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic>=2.0",
+    "httpx>=0.28",
+    "structlog>=23.0",
+]
+[project.optional-dependencies]
+langchain = ["langchain-core>=0.3"]
+dev = ["pytest", "pytest-asyncio", "ruff"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
