@@ -19,6 +19,16 @@ class Span:
     status: str = "running"
     error: Optional[str] = None
     children: List["Span"] = field(default_factory=list)
+    _trace: Optional["Trace"] = field(default=None, repr=False)
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._trace is not None:
+            error = str(exc_val) if exc_val else None
+            self._trace.end_span(error=error)
+        return False
 
 class Trace:
     """链路追踪：看见Agent的完整执行路径"""
@@ -40,6 +50,7 @@ class Trace:
         parent.children.append(span)
         self._stack.append(span)
         self.total_spans += 1
+        span._trace = self
         return span
     
     def end_span(self, error: str = None, **attrs):
