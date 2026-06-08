@@ -20,9 +20,12 @@ from .trace import Trace
 from .score import ReliabilityScore
 from .schema_registry import SchemaRegistry
 from .auto import auto_init, detect_frameworks
+from .dashboard import Dashboard, get_dashboard, Event
+from .achievements import Achievements, Achievement, Tier
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = [
     "IdempotencyGuard", "CircuitBreaker", "OutputValidator", "Trace",
-    "ReliabilityScore", "SchemaRegistry", "auto_init", "detect_frameworks"
+    "ReliabilityScore", "SchemaRegistry", "auto_init", "detect_frameworks",
+    "Dashboard", "get_dashboard", "Event", "Achievements", "Achievement", "Tier"
 ]
