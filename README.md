@@ -101,11 +101,14 @@ Your Tools & APIs
 
 ## 🚀 Roadmap
 
-- [x] MVP — 4 core pillars
-- [ ] LangChain integration
-- [ ] CrewAI integration  
-- [ ] Dashboard UI
-- [ ] Achievement system (reliability score)
+- [x] MVP — 4 core pillars (v0.1.0)
+- [x] LangChain integration — `ARKCallbackHandler` (v0.1.0)
+- [x] CrewAI integration — `ARKCrewCallback` (v0.1.1)
+- [x] Auto-detect frameworks (v0.2.0)
+- [x] Reliability Score + Schema Registry — 13 schemas (v0.2.0)
+- [ ] Dashboard UI — real-time trust monitoring (v0.3.0)
+- [ ] Achievement system — gamified reliability badges (v0.3.0)
+- [ ] PyPI publish automation (v0.3.0)
 
 ## 📜 License
 
