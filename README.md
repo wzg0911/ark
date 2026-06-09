@@ -4,7 +4,7 @@
 > Stripe-level idempotency × Sentinel circuit breakers × OpenTelemetry tracing × IDE-style validation.
 > For AI agents.
 
-[![Tests](https://img.shields.io/badge/tests-9/9-green)](https://github.com/wzg0911/ark)
+[![Tests](https://img.shields.io/badge/tests-28/28-green)](https://github.com/wzg0911/ark)
 [![Python](https://img.shields.io/badge/python-3.9+-blue)](https://pypi.org)
 [![License](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
 
@@ -106,9 +106,9 @@ Your Tools & APIs
 - [x] CrewAI integration — `ARKCrewCallback` (v0.1.1)
 - [x] Auto-detect frameworks (v0.2.0)
 - [x] Reliability Score + Schema Registry — 13 schemas (v0.2.0)
-- [ ] Dashboard UI — real-time trust monitoring (v0.3.0)
-- [ ] Achievement system — gamified reliability badges (v0.3.0)
-- [ ] PyPI publish automation (v0.3.0)
+- [x] Dashboard UI — real-time trust monitoring (v0.3.0)
+- [x] Achievement system — gamified reliability badges (v0.3.0)
+- [x] PyPI publish automation (v0.3.0)
 
 ## 📜 License
 
