@@ -10,7 +10,7 @@ Trust infrastructure for AI agents.
   🎮 Gaming → 可靠性评分 (Reliability Score)
   📦 Community → Schema注册表 (Schema Registry)
 
-v0.2.0 - Indispensable Mode
+v0.3.0 - Dashboard & Gamification
 """
 
 from .guard import IdempotencyGuard
