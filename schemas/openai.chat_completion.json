@@ -1,0 +1,30 @@
+{
+  "name": "openai.chat_completion",
+  "version": "1.0.0",
+  "author": "community",
+  "category": "ai",
+  "tags": ["openai", "chat", "completion", "llm"],
+  "description": "OpenAI Chat Completions API request schema",
+  "fields": {
+    "model": {
+      "type": "str",
+      "required": true,
+      "description": "Model name (e.g. gpt-4o)"
+    },
+    "messages": {
+      "type": "list[dict]",
+      "required": true,
+      "description": "List of chat messages with role and content"
+    },
+    "temperature": {
+      "type": "float",
+      "required": false,
+      "description": "Sampling temperature 0-2"
+    },
+    "max_tokens": {
+      "type": "int",
+      "required": false,
+      "description": "Maximum tokens to generate"
+    }
+  }
+}

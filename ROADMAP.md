@@ -37,7 +37,7 @@
 - [x] 版本号自动递增
 
 ## v0.4.0 — Community & Ecosystem (target: 2026-06-30)
-- [ ] Community Schema Hub (用户贡献Schema)
+- [x] Community Schema Hub (社区贡献Schema) ✅ 2026-06-09 — 13内置+3示例+动态导入+搜索
 - [x] ARK Benchmarks (性能基准测试) ✅ 2026-06-09 — 7项基准，全面覆盖核心组件
 - [ ] Multi-language SDK (TypeScript/Go)
 - [ ] Cloud Dashboard (hosted version)

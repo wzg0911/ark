@@ -19,6 +19,7 @@ from .validator import OutputValidator
 from .trace import Trace
 from .score import ReliabilityScore
 from .schema_registry import SchemaRegistry
+from .schema_hub import SchemaHub, get_schema_hub
 from .auto import auto_init, detect_frameworks
 from .dashboard import Dashboard, get_dashboard, Event
 from .achievements import Achievements, Achievement, Tier
@@ -29,5 +30,6 @@ __all__ = [
     "IdempotencyGuard", "CircuitBreaker", "OutputValidator", "Trace",
     "ReliabilityScore", "SchemaRegistry", "auto_init", "detect_frameworks",
     "Dashboard", "get_dashboard", "Event", "Achievements", "Achievement", "Tier",
-    "Benchmarks", "BenchmarkResult"
+    "Benchmarks", "BenchmarkResult",
+    "SchemaHub", "get_schema_hub"
 ]

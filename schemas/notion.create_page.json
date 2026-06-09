@@ -1,0 +1,30 @@
+{
+  "name": "notion.create_page",
+  "version": "1.0.0",
+  "author": "community",
+  "category": "general",
+  "tags": ["notion", "page", "note"],
+  "description": "Notion create page schema",
+  "fields": {
+    "parent_id": {
+      "type": "str",
+      "required": true,
+      "description": "Parent page or database ID"
+    },
+    "title": {
+      "type": "str",
+      "required": true,
+      "description": "Page title"
+    },
+    "content": {
+      "type": "str",
+      "required": false,
+      "description": "Page content in markdown"
+    },
+    "icon": {
+      "type": "str",
+      "required": false,
+      "description": "Page icon emoji"
+    }
+  }
+}
