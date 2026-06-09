@@ -22,10 +22,12 @@ from .schema_registry import SchemaRegistry
 from .auto import auto_init, detect_frameworks
 from .dashboard import Dashboard, get_dashboard, Event
 from .achievements import Achievements, Achievement, Tier
+from .benchmarks import Benchmarks, BenchmarkResult
 
-__version__ = "0.3.0"
+__version__ = "0.4.0.dev0"
 __all__ = [
     "IdempotencyGuard", "CircuitBreaker", "OutputValidator", "Trace",
     "ReliabilityScore", "SchemaRegistry", "auto_init", "detect_frameworks",
-    "Dashboard", "get_dashboard", "Event", "Achievements", "Achievement", "Tier"
+    "Dashboard", "get_dashboard", "Event", "Achievements", "Achievement", "Tier",
+    "Benchmarks", "BenchmarkResult"
 ]

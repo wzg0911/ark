@@ -38,7 +38,7 @@
 
 ## v0.4.0 — Community & Ecosystem (target: 2026-06-30)
 - [ ] Community Schema Hub (用户贡献Schema)
-- [ ] ARK Benchmarks (性能基准测试)
+- [x] ARK Benchmarks (性能基准测试) ✅ 2026-06-09 — 7项基准，全面覆盖核心组件
 - [ ] Multi-language SDK (TypeScript/Go)
 - [ ] Cloud Dashboard (hosted version)
 
