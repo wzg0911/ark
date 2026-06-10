@@ -33,7 +33,13 @@ class OutputValidator:
                 pass
         
         try:
-            validated = schema(**output) if isinstance(output, dict) else schema(output)
+            # 对于额外字段，仅提取Schema中定义的字段，忽略未定义的
+            if isinstance(output, dict):
+                schema_fields = set(schema.model_fields.keys())
+                filtered = {k: v for k, v in output.items() if k in schema_fields}
+                validated = schema(**filtered)
+            else:
+                validated = schema(output)
             self.passed += 1
             return ValidationResult(valid=True, data=validated.model_dump())
         except ValidationError as e:

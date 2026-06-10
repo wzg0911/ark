@@ -45,7 +45,8 @@ class CircuitBreaker:
         # 半开 → 谨慎尝试
         if self._state == "half_open":
             self._half_open_tries += 1
-            if self._half_open_tries > self.half_open_max:
+            # half_open_max=0 表示不限制半开尝试（边界条件容错）
+            if self.half_open_max > 0 and self._half_open_tries > self.half_open_max:
                 self._state = "open"
                 if fallback:
                     return fallback(*args, **kwargs)

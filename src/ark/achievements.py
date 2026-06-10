@@ -185,6 +185,7 @@ class Achievements:
                 "next_target": ach.next_tier_target,
                 "progress_pct": ach.progress_pct(),
                 "tier": f"{ach.current_tier.emoji} {ach.current_tier.name}" if ach.unlocked_at else "🔒 Locked",
+                "unlocked_at": ach.unlocked_at.copy() if ach.unlocked_at else [],
                 "maxed": ach.is_maxed,
             }
             for ach in self.achievements.values()
