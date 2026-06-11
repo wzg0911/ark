@@ -179,6 +179,7 @@ class TestConcurrency_Breaker:
         """⚡7: 并发状态转换"""
         cb = CircuitBreaker("state-race", failure_threshold=1, recovery_timeout=0.1)
         states = []
+        barrier = threading.Barrier(5)
         
         def fail():
             raise ValueError("boom")
@@ -187,12 +188,13 @@ class TestConcurrency_Breaker:
             return "ok"
         
         def race_worker():
-            for _ in range(10):
+            barrier.wait()  # 同时启动
+            for _ in range(20):
                 try:
                     cb.call(fail, fallback=succeed)
                 except:
                     pass
-                time.sleep(0.01)
+                time.sleep(0.005)
                 try:
                     cb.call(succeed)
                 except:
@@ -203,9 +205,9 @@ class TestConcurrency_Breaker:
         for t in threads: t.start()
         for t in threads: t.join()
         
-        # 应该有多种状态转换
+        # 应该有多种状态转换（100个样本，统计可靠）
         unique_states = set(states)
-        assert len(unique_states) >= 2  # 至少出现2种不同状态
+        assert len(unique_states) >= 2, f"只看到 {len(unique_states)} 种状态: {unique_states} (共{len(states)}个样本)"
 
     def test_8_breaker_half_open_recovery(self):
         """⚡8: 半开状态恢复并发"""
