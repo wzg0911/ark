@@ -164,7 +164,8 @@ class TestSchemaHubCategories:
 class TestSchemaHubImportExport:
     """导入导出测试"""
 
-    SCHEMAS_DIR = "/Users/w/.hermes/projects/ark/schemas"
+    # 用相对路径，兼容本地和CI环境
+    SCHEMAS_DIR = os.path.join(os.path.dirname(__file__), "..", "schemas")
 
     def test_import_dir(self):
         hub = SchemaHub()
@@ -224,7 +225,7 @@ class TestSchemaHubImportExport:
 class TestSchemaHubValidation:
     """验证测试"""
 
-    SCHEMAS_DIR = "/Users/w/.hermes/projects/ark/schemas"
+    SCHEMAS_DIR = os.path.join(os.path.dirname(__file__), "..", "schemas")
 
     def test_validate_valid_data(self):
         hub = SchemaHub()
@@ -253,7 +254,7 @@ class TestSchemaHubValidation:
 class TestSchemaHubStats:
     """统计测试"""
 
-    SCHEMAS_DIR = "/Users/w/.hermes/projects/ark/schemas"
+    SCHEMAS_DIR = os.path.join(os.path.dirname(__file__), "..", "schemas")
 
     def test_stats(self):
         hub = SchemaHub()
