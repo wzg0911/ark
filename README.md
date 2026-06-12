@@ -135,6 +135,18 @@ export ARK_OTEL_ENDPOINT="http://otel-collector:4318/v1/events"
 
 Compatible with **Langfuse, Jaeger, Tempo, Honeycomb** — any OTLP receiver.
 
+### ⚡ 5-Minute Live Demo
+
+See ARK events flow into Langfuse with one command:
+
+```bash
+cd examples/langfuse-demo
+docker compose up -d
+pip install -e ../..
+python app.py
+# Open http://localhost:3000 → watch ARK reliability events stream in
+```
+
 ## 📜 License
 
 MIT — Free forever. ARK is open infrastructure.

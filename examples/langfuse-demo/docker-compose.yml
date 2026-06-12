@@ -1,0 +1,73 @@
+version: "3.8"
+
+# ARK × Langfuse 端到端可观测演示
+#
+# 一键启动:
+#   docker compose up -d
+#   python app.py
+#   打开 http://localhost:3000  → 看到 ARK 可靠性事件流入 Langfuse
+#
+# 架构:
+#   app.py (ARK agent) → OTLP/HTTP → otel-collector → Langfuse
+
+services:
+  # OpenTelemetry Collector — 接收 ARK OTLP/JSON 推送，转发到 Langfuse
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: ark-otel-collector
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./otel-collector.yaml:/etc/otel/config.yaml:ro
+    ports:
+      - "4318:4318"   # OTLP HTTP
+    depends_on:
+      langfuse-server:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ark-net
+
+  # Langfuse v3 单体镜像（自带 ClickHouse + Postgres + Redis + MinIO）
+  langfuse-server:
+    image: langfuse/langfuse:3
+    container_name: ark-langfuse
+    environment:
+      - DATABASE_URL=postgresql://langfuse:langfuse@langfuse-db:5432/langfuse
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=ark-demo-secret-change-me-in-production-please
+      - SALT=ark-demo-salt-change-me-please
+      - TELEMETRY_ENABLED=false
+      - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=true
+    ports:
+      - "3000:3000"   # Langfuse Web UI
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ark-net
+
+  langfuse-db:
+    image: postgres:16-alpine
+    container_name: ark-langfuse-db
+    environment:
+      - POSTGRES_USER=langfuse
+      - POSTGRES_PASSWORD=langfuse
+      - POSTGRES_DB=langfuse
+    volumes:
+      - langfuse-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - ark-net
+
+volumes:
+  langfuse-pg-data:
+
+networks:
+  ark-net:
+    driver: bridge

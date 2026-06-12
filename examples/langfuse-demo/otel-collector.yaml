@@ -1,0 +1,43 @@
+# OpenTelemetry Collector 配置
+# 接收 ARK 推送的 OTLP/JSON 可靠性事件
+# 转发到 Langfuse 内部的 trace ingest 端点
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        # ARK 推送的是 application/json 格式的 ResourceSpans
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+  # 给所有事件打上 service.name=ark 标签，便于 Langfuse 分组
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: ark-demo
+        action: insert
+
+exporters:
+  # Langfuse 支持 OTLP，otel-collector 转发到 Langfuse web service
+  # 注意：Langfuse v3 OTLP 端点为 /api/public/otel/v1/traces
+  otlphttp/langfuse:
+    endpoint: http://langfuse-server:3000/api/public/otel/v1/traces
+    tls:
+      insecure: true
+  # 同时打印到 stdout 用于调试
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [otlphttp/langfuse, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
