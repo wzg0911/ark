@@ -42,6 +42,8 @@
 - [x] **零依赖可选** — 纯标准库实现，未配端点自动禁用
 - [x] **批量缓冲** — 100条/批或5秒刷新，降低Collector压力
 - [x] **Langfuse/Jaeger/Tempo兼容** — 标准OTLP协议，直接接入现有观测栈
+- [x] **零侵入埋点** — Guard/Breaker/Validator 内部自动 emit，OTel关闭时 zero overhead（一次if判断），开启时一行环境变量激活
+- [x] **运行时激活** — 函数内读取env，确保 `ARK_OTEL_ENDPOINT` 任何时候设置都生效
 - [ ] Multi-language SDK (TypeScript/Go)
 - [ ] Cloud Dashboard (hosted version)
 - [ ] 原生 `opentelemetry-sdk` 集成（当前为零依赖OTLP/JSON）

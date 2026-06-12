@@ -4,10 +4,26 @@ ARK 幂等守护 — Stripe基因移植
 加锁：线程安全并发幂等
 """
 
-import hashlib, json, time, threading
+import hashlib, json, time, threading, os
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 from functools import wraps
+
+# OTel 集成：函数内读取env，确保"运行时激活"生效
+# 设计：零配置下完全不影响行为（一次if判断）
+
+
+def _emit_otel(event_type: str, tool_name: str, **attrs):
+    """内部 helper：OTel 关闭时 zero overhead（O(1) if 判断）"""
+    if not os.getenv("ARK_OTEL_ENDPOINT", ""):
+        return
+    try:
+        from .otel_exporter import get_otel_exporter, EventType
+        et = EventType(event_type)
+        get_otel_exporter().emit(et, tool_name=tool_name, attributes=attrs)
+    except Exception:
+        # 可靠性组件自身不能成为故障源
+        pass
 
 
 @dataclass
@@ -69,6 +85,13 @@ class IdempotencyGuard:
             cached = self.check(key)
             if cached:
                 self.intercepts += 1
+                _emit_otel(
+                    "ark.guardian.intercept",
+                    tool_name=name,
+                    idempotency_key=key,
+                    saved_ms=cached.duration_ms,
+                    reason="duplicate_call",
+                )
                 if cached.error:
                     raise RuntimeError(f"ARK Cached failure [{name}]: {cached.error}")
                 return cached.result
@@ -95,23 +118,28 @@ class IdempotencyGuard:
             # 真正执行
             start = time.time()
             record = temp_record
+            _emit_otel(
+                "ark.idempotency.miss",
+                tool_name=name,
+                idempotency_key=key,
+            )
             
             try:
                 result = tool_func(*args, **kwargs)
+                duration = (time.time() - start) * 1000
                 record.result = result
-                record.duration_ms = (time.time() - start) * 1000
-                
+                record.duration_ms = duration
                 with self._lock:
                     self._executed[key] = record
                 self.passes += 1
                 return result
             except Exception as e:
+                duration = (time.time() - start) * 1000
                 record.error = str(e)
-                record.duration_ms = (time.time() - start) * 1000
+                record.duration_ms = duration
                 with self._lock:
                     self._executed[key] = record
                 raise
-        
         return wrapper
     
     @property
