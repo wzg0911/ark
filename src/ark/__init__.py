@@ -14,7 +14,7 @@ Trust infrastructure for AI agents.
   🧩 GenericAgent → 模块化能力 (ModuleKit)
   🤝 PraisonAI → 多Agent协议 (MultiAgentProtocol)
 
-v0.5.0.dev0 - OpenTelemetry Exporter（生态接入点）
+v0.5.0 - OpenTelemetry Exporter + Zero-Touch Instrumentation（生态接入点）
 """
 
 from .guard import IdempotencyGuard
@@ -30,13 +30,11 @@ from .achievements import Achievements, Achievement, Tier
 from .benchmarks import Benchmarks, BenchmarkResult
 from .otel_exporter import OTelExporter, ReliabilityEvent, EventType, get_otel_exporter
 
-__version__ = "0.5.0.dev0"
+__version__ = "0.5.0"
 from .proactive import ProactiveGuard, ProactiveBlockError
 from .stateful_breaker import StatefulBreaker, CircuitOpenError
 from .module_kit import ModulePipeline, Module, RateLimitModule, SchemaValidationModule, LoggingModule, ModuleBlockError
 from .multi_agent import MultiAgentProtocol, AgentMessage, AgentHeartbeat, MessageStatus, AgentStatus
-
-__version__ = "0.4.0.dev1"
 __all__ = [
     "IdempotencyGuard", "CircuitBreaker", "OutputValidator", "Trace",
     "ReliabilityScore", "SchemaRegistry", "auto_init", "detect_frameworks",

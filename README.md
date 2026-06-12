@@ -4,8 +4,9 @@
 > Stripe-level idempotency × Sentinel circuit breakers × OpenTelemetry tracing × IDE-style validation.
 > For AI agents.
 
-[![Tests](https://img.shields.io/badge/tests-169/169-green)](https://github.com/wzg0911/ark)
+[![Tests](https://img.shields.io/badge/tests-196/196-green)](https://github.com/wzg0911/ark)
 [![Python](https://img.shields.io/badge/python-3.9+-blue)](https://pypi.org)
+[![Version](https://img.shields.io/badge/version-0.5.0-blueviolet)](https://pypi.org/project/ark-trust/)
 [![License](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
 
 ---
@@ -109,6 +110,30 @@ Your Tools & APIs
 - [x] Dashboard UI — real-time trust monitoring (v0.3.0)
 - [x] Achievement system — gamified reliability badges (v0.3.0)
 - [x] PyPI publish automation (v0.3.0)
+- [x] Community Schema Hub (v0.4.0)
+- [x] Benchmarks — 7 performance baselines (v0.4.0)
+- [x] **OpenTelemetry Exporter — 8 reliability event types (v0.5.0)**
+- [x] **Zero-touch instrumentation — one env var to activate (v0.5.0)**
+
+## 🔭 OpenTelemetry Integration (v0.5.0)
+
+ARK reliability events are emitted to your observability stack via standard OTLP/JSON. **Zero code changes** to existing agents — set one env var:
+
+```bash
+export ARK_OTEL_ENDPOINT="http://otel-collector:4318/v1/events"
+```
+
+| Event Type | Trigger |
+|------------|---------|
+| `ark.idempotency.miss` | Tool first called |
+| `ark.guardian.intercept` | Duplicate call blocked (saves real ms) |
+| `ark.circuit.open` | Breaker tripped |
+| `ark.circuit.half_open` | Recovery probe |
+| `ark.circuit.close` | Service recovered |
+| `ark.validation.pass` | Output schema valid |
+| `ark.validation.fail` | Output schema invalid |
+
+Compatible with **Langfuse, Jaeger, Tempo, Honeycomb** — any OTLP receiver.
 
 ## 📜 License
 
