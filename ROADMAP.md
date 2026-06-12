@@ -36,11 +36,15 @@
 - [x] GitHub Actions 自动发布到 PyPI
 - [x] 版本号自动递增
 
-## v0.4.0 — Community & Ecosystem (target: 2026-06-30)
-- [x] Community Schema Hub (社区贡献Schema) ✅ 2026-06-09 — 13内置+3示例+动态导入+搜索
-- [x] ARK Benchmarks (性能基准测试) ✅ 2026-06-09 — 7项基准，全面覆盖核心组件
+## v0.5.0 — OpenTelemetry Bridge (生态接入点) ✅ 2026-06-12
+- [x] **OTelExporter** — 可靠性事件→OTLP/JSON标准格式
+- [x] **8种事件类型** — `ark.idempotency.hit/miss`、`ark.circuit.open/close/half_open`、`ark.validation.fail/pass`、`ark.guardian.intercept`
+- [x] **零依赖可选** — 纯标准库实现，未配端点自动禁用
+- [x] **批量缓冲** — 100条/批或5秒刷新，降低Collector压力
+- [x] **Langfuse/Jaeger/Tempo兼容** — 标准OTLP协议，直接接入现有观测栈
 - [ ] Multi-language SDK (TypeScript/Go)
 - [ ] Cloud Dashboard (hosted version)
+- [ ] 原生 `opentelemetry-sdk` 集成（当前为零依赖OTLP/JSON）
 
 ## Long-term Vision
 - **ARK Cloud**: 托管信任基础设施，Agent接入即获信任
