@@ -4,9 +4,9 @@
 > Stripe-level idempotency × Sentinel circuit breakers × OpenTelemetry tracing × IDE-style validation.
 > For AI agents.
 
-[![Tests](https://img.shields.io/badge/tests-196/196-green)](https://github.com/wzg0911/ark)
+[![Tests](https://img.shields.io/badge/tests-232/235-green)](https://github.com/wzg0911/ark)
 [![Python](https://img.shields.io/badge/python-3.9+-blue)](https://pypi.org)
-[![Version](https://img.shields.io/badge/version-0.5.0-blueviolet)](https://pypi.org/project/ark-trust/)
+[![Version](https://img.shields.io/badge/version-0.5.1-blueviolet)](https://pypi.org/project/ark-trust/)
 [![License](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
 
 ---
@@ -145,6 +145,52 @@ docker compose up -d
 pip install -e ../..
 python app.py
 # Open http://localhost:3000 → watch ARK reliability events stream in
+```
+
+## 🩹 Self-Healing Errors (v0.5.1) — 12-Factor Agents Factor 9
+
+Your agent hits a flaky API. **What does it do?**
+- ❌ Without F9: stack trace explodes the LLM's context window → token waste + confused LLM
+- ✅ With ARK F9: error compressed to 500 chars + last 3 stack lines + md5 hash → LLM knows exactly what to fix
+
+```python
+from ark.errors import with_retry, should_retry, truncate_error, error_to_llm_context
+
+# 🩹 1. Auto-retry with exponential backoff (1s → 2s → 4s)
+@with_retry(tool_name="send_email", max_attempts=3)
+def send_email(to, subject):
+    return smtp.send(to, subject)
+
+# 🎯 2. Smart retry decisions (8 NON_RETRYABLE_TYPES skipped immediately)
+try:
+    charge_card(amount)
+except AuthError as e:
+    if not should_retry(e, attempt=1, max_attempts=3)[0]:
+        return redirect_to_human_review()  # Skip retry, save 30s
+
+# 🧠 3. Feed structured error to LLM (self-healing)
+try:
+    call_external_api()
+except Exception as e:
+    prompt = error_to_llm_context(e)  # 500-char message + stack tail + retry hint
+    response = llm.invoke(prompt)     # LLM decides: different tool? different args?
+```
+
+| F9 Capability | What It Solves |
+|----------------|----------------|
+| `truncate_error()` | 5KB stack → 500 chars + last 3 lines + md5 hash |
+| `should_retry()` | Auth/Validation errors skip retry immediately (save 30s) |
+| `retry_delay()` | Exponential backoff 1s → 2s → 4s → 8s → 16s, capped 30s |
+| `with_retry()` | One-line decorator: retry + truncate + fallback + escalate |
+| `error_to_llm_context()` | Structured prompt for LLM self-healing |
+| `ErrorContext` | Thread-safe accumulator, serializable for F5 state unification |
+
+### ⚡ 1-Minute F9 Demo (no Docker)
+
+```bash
+cd examples/f9-self-healing
+python app.py
+# See: 5KB stack compressed to ~500 chars, 8 NON_RETRYABLE_TYPES identified, 3-round retry simulation
 ```
 
 ## 📜 License
