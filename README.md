@@ -193,6 +193,38 @@ python app.py
 # See: 5KB stack compressed to ~500 chars, 8 NON_RETRYABLE_TYPES identified, 3-round retry simulation
 ```
 
+## 🌉 Native OTel SDK Bridge (v0.5.3) — Zero-friction observability
+
+**One-line upgrade for OTel users.** If your stack already runs the OpenTelemetry SDK, ARK now **dual-emits** reliability events to your existing tracer — no code change, no OTLP collector required.
+
+```python
+# Before v0.5.3: OTLP/JSON only (need collector)
+export ARK_OTEL_ENDPOINT=http://collector:4318
+
+# After v0.5.3: dual-emit, automatic if opentelemetry-api installed
+pip install opentelemetry-api   # that's it
+export ARK_OTEL_ENDPOINT=http://collector:4318  # collector still works
+# Native spans flow into your existing tracer (Jaeger/Tempo/Honeycomb) automatically
+```
+
+**Why this matters:**
+- 🔌 **Plug into existing observability** — If you already pay for Datadog/Honeycomb/Tempo, ARK events appear next to your app spans
+- 🛡 **100% backward compatible** — `use_native_sdk=False` (default) keeps the old OTLP/JSON path; opt in with one flag
+- 🪫 **Zero overhead when off** — `if not use_native_sdk: return` is the first line; no imports, no allocations
+- 🚨 **Failure-isolated** — `try/except` around native span emit: a broken SDK init never breaks your OTLP export
+- 🟥 **Auto-set ERROR status** on `VALIDATION_FAIL` — your alerting tools see it immediately
+
+**Test coverage:** 16 new tests in `test_v0_5_3_otel_sdk_bridge.py` covering type coercion, SDK availability probing, opt-out path, span emission, attribute propagation, ERROR status on validation failure, failure isolation, stats() reporting, and backward-compat signatures.
+
+## 📦 What's New in v0.5.3
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Native OTel SDK bridge | ✅ | Auto-detect `opentelemetry-api`; dual-emit to existing tracer |
+| ROADMAP v0.5.0 close-out | ✅ | Last unchecked item shipped (`原生 opentelemetry-sdk 集成`) |
+| Backward compat | ✅ | All 235 v0.5.2 tests still pass; +16 new tests = 251 total |
+| Pre-built wheels | ✅ | `dist/ark_trust-0.5.3-py3-none-any.whl` (51.6 KB) ready for PyPI |
+
 ## 📜 License
 
 MIT — Free forever. ARK is open infrastructure.
