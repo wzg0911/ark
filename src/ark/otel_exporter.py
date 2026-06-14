@@ -20,11 +20,23 @@ import time
 import uuid
 import logging
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from dataclasses import dataclass, field
 from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+
+# v0.5.3: 原生 OTel SDK 可用性探测（设计原则 #2 的兑现）
+# - 未安装 opentelemetry-api：回退到零依赖 OTLP/JSON 路径（不变）
+# - 已安装：把事件同时写入原生 tracer，让用户已有的 OTel pipeline
+#   （auto-instrumentation / SpanExporter / BatchSpanProcessor）自动接管
+try:
+    from opentelemetry import trace as _otel_trace  # type: ignore
+    _HAS_OTEL_SDK = True
+except ImportError:  # pragma: no cover - 环境差异
+    _otel_trace = None  # type: ignore
+    _HAS_OTEL_SDK = False
 
 
 class EventType(str, Enum):
@@ -102,6 +114,21 @@ def _to_otlp_value(v: Any) -> Dict:
     return {"stringValue": str(v)}
 
 
+def _coerce_attr(v: Any) -> Union[bool, int, float, str, List[Any]]:
+    """v0.5.3: 把任意 Python 值安全转成 OTel attribute 支持的类型
+    OTel 仅接受 bool/int/float/str/这些类型的序列，其他类型 str() 化。
+    """
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, (int, float)):
+        return v
+    if isinstance(v, str):
+        return v
+    if isinstance(v, (list, tuple)):
+        return [_coerce_attr(x) for x in v]
+    return str(v)
+
+
 class OTelExporter:
     """
     ARK OpenTelemetry 导出器
@@ -122,19 +149,32 @@ class OTelExporter:
         batch_size: int = 100,
         flush_interval: float = 5.0,
         enabled: bool = True,
+        use_native_sdk: bool = True,
     ):
         self.endpoint = endpoint or os.getenv("ARK_OTEL_ENDPOINT", "")
         self.service_name = service_name
         self.batch_size = batch_size
         self.flush_interval = flush_interval
         self.enabled = enabled and bool(self.endpoint)
-        
+
+        # v0.5.3: 原生 OTel SDK 桥接开关
+        # 仅在 (a) 用户显式开启 (b) opentelemetry-api 可用 时激活
+        self.use_native_sdk = use_native_sdk and _HAS_OTEL_SDK
+        self._otel_tracer = None
+        if self.use_native_sdk and _otel_trace is not None:
+            try:
+                self._otel_tracer = _otel_trace.get_tracer("ark.reliability", "0.5.3")
+            except Exception:  # pragma: no cover - 防御性
+                self.use_native_sdk = False
+                logger.debug("ARK OTelExporter: native tracer init failed, fallback to OTLP/JSON")
+
         self._buffer: List[ReliabilityEvent] = []
         self._lock = threading.Lock()
         self._total_emitted = 0
         self._total_dropped = 0
+        self._last_native_spans = 0  # v0.5.3 计数
         self._last_flush = time.time()
-        
+
         if not self.enabled:
             if not self.endpoint:
                 logger.debug("ARK OTelExporter disabled: set ARK_OTEL_ENDPOINT to enable")
@@ -155,7 +195,7 @@ class OTelExporter:
         if not self.enabled:
             self._total_dropped += 1
             return None
-        
+
         event = ReliabilityEvent(
             event_type=event_type,
             timestamp_ns=time.time_ns(),
@@ -166,17 +206,35 @@ class OTelExporter:
             duration_ms=duration_ms,
             error=error,
         )
-        
+
+        # v0.5.3: 原生 SDK 桥接 — 与 OTLP/JSON 并行（非替换）
+        if self.use_native_sdk and self._otel_tracer is not None:
+            try:
+                with self._otel_tracer.start_as_current_span(
+                    event_type.value,
+                    attributes={
+                        "ark.tool_name": tool_name,
+                        "ark.event_type": event_type.value,
+                        **{f"ark.{k}": _coerce_attr(v) for k, v in (attributes or {}).items()},
+                    },
+                ) as span:
+                    if error or event_type == EventType.VALIDATION_FAIL:
+                        from opentelemetry.trace import Status, StatusCode  # type: ignore
+                        span.set_status(Status(StatusCode.ERROR, error or event_type.value))
+                    self._last_native_spans += 1
+            except Exception as e:  # pragma: no cover - 防御性
+                logger.debug(f"ARK native OTel span emit failed: {e}")
+
         with self._lock:
             self._buffer.append(event)
             should_flush = (
                 len(self._buffer) >= self.batch_size
                 or (time.time() - self._last_flush) >= self.flush_interval
             )
-        
+
         if should_flush:
             self.flush()
-        
+
         self._total_emitted += 1
         return event
     
@@ -230,6 +288,12 @@ class OTelExporter:
             "total_emitted": self._total_emitted,
             "total_dropped": self._total_dropped,
             "service_name": self.service_name,
+            # v0.5.3 增量
+            "native_sdk_bridge": {
+                "available": _HAS_OTEL_SDK,
+                "active": self.use_native_sdk,
+                "native_spans_emitted": self._last_native_spans,
+            },
         }
     
     def __repr__(self) -> str:

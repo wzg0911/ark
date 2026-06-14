@@ -1,6 +1,6 @@
 [project]
 name = "ark-trust"
-version = "0.5.2"
+version = "0.5.3"
 description = "ARK - Agent Reliability Kit. Trust infrastructure for AI agents."
 readme = "README.md"
 license = {text = "MIT"}

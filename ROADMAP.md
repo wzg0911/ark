@@ -47,7 +47,7 @@
 - [x] **Langfuse 端到端演示** — `examples/langfuse-demo/` (docker compose + 9 测试守护)
 - [ ] Multi-language SDK (TypeScript/Go)
 - [ ] Cloud Dashboard (hosted version)
-- [ ] 原生 `opentelemetry-sdk` 集成（当前为零依赖OTLP/JSON）
+- [x] **原生 OTel SDK 桥接（v0.5.3）** — 检测到 `opentelemetry-api` 时并行双发（OTLP/JSON + 原生 Span），未安装时零依赖路径不变，100% 向后兼容
 
 ## Long-term Vision
 - **ARK Cloud**: 托管信任基础设施，Agent接入即获信任
