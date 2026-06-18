@@ -14,3 +14,7 @@ ark-cruise_*.md
 cruise_summary_*.md
 # Memory logs
 memory/
+
+# Node.js
+node_modules/
+*.tsbuildinfo

@@ -4,7 +4,9 @@
   "description": "🛡 ARK — Agent Reliability Kit. Trust infrastructure for AI agents.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist/"],
+  "files": [
+    "dist/"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
@@ -31,8 +33,9 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@types/uuid": "^10.0.0",
     "typescript": "^5.4.0",
-    "vitest": "^1.6.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "vitest": "^1.6.0"
   }
 }

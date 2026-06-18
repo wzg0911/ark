@@ -61,7 +61,7 @@ export class CircuitBreaker {
   }
 
   private executeFallback<T>(fallback?: () => Promise<T> | T): T {
-    if (this.state === 'open') {
+    if (this.state === 'open' && !fallback) {
       throw new Error(`CircuitBreaker '${this.name}' is OPEN. All calls blocked.`);
     }
     if (!fallback) {
