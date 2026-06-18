@@ -1,0 +1,38 @@
+{
+  "name": "ark-trust",
+  "version": "0.6.0-alpha.1",
+  "description": "🛡 ARK — Agent Reliability Kit. Trust infrastructure for AI agents.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist/"],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ai-agents",
+    "reliability",
+    "idempotency",
+    "circuit-breaker",
+    "opentelemetry",
+    "trust",
+    "validation",
+    "agent-framework"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wzg0911/ark.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "uuid": "^9.0.0"
+  }
+}

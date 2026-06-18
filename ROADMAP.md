@@ -49,6 +49,17 @@
 - [ ] Cloud Dashboard (hosted version)
 - [x] **原生 OTel SDK 桥接（v0.5.3）** — 检测到 `opentelemetry-api` 时并行双发（OTLP/JSON + 原生 Span），未安装时零依赖路径不变，100% 向后兼容
 
+## v0.6.0 — TypeScript SDK 🚧 2026-06-18
+- [x] Core types (`types.ts`) — ArkEvent, CircuitState, ValidationResult
+- [x] `IdempotencyGuard` — 幂等守护，duplicate key intercept + cache TTL
+- [x] `CircuitBreaker` — 三态机（closed/open/half_open），timeout自动恢复
+- [x] `OutputValidator` — IDE风格schema校验（类型/边界/正则）
+- [x] 3组单元测试（vitest）— 18个测试用例
+- [x] Example demo — `examples/basic-usage.ts`
+- [ ] `npm test` 全部通过（待国内npm registry可访问后验证）
+- [ ] TypeScript OTel Bridge — 事件 emit 对接 OpenTelemetry JS SDK
+- [ ] PyPI同步发布 · npm发布自动化
+
 ## Long-term Vision
 - **ARK Cloud**: 托管信任基础设施，Agent接入即获信任
 - **Trust-as-a-Service**: 按Agent数量/API调用量定价
