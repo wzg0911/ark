@@ -11,5 +11,6 @@ env/
 *.bin
 # Cruise reports (contain security audit trails, not for public repo)
 ark-cruise_*.md
+cruise_summary_*.md
 # Memory logs
 memory/
