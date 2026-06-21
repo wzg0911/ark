@@ -56,8 +56,8 @@
 - [x] `OutputValidator` — IDE风格schema校验（类型/边界/正则）
 - [x] 3组单元测试（vitest）— 18个测试用例
 - [x] Example demo — `examples/basic-usage.ts`
-- [ ] `npm test` 全部通过（待国内npm registry可访问后验证）
-- [ ] TypeScript OTel Bridge — 事件 emit 对接 OpenTelemetry JS SDK
+- [x] `npm test` 全部通过（34/34：20 原有 + 14 OTel）
+- [x] **TypeScript OTel Bridge (v0.6.0)** — 零依赖 OTLP/JSON 导出器，8种事件类型，批量缓冲+失败回写（2026-06-21）
 - [ ] PyPI同步发布 · npm发布自动化
 
 ## Long-term Vision
