@@ -177,7 +177,9 @@ class TestConcurrency_Breaker:
 
     def test_7_breaker_state_transitions_simultaneous(self):
         """⚡7: 并发状态转换"""
-        cb = CircuitBreaker("state-race", failure_threshold=1, recovery_timeout=0.1)
+        # recovery_timeout 调大到 0.3s + sleep 调大到 0.015s，确保半开/关闭状态在采样窗口内可被观察到
+        # 之前 0.1s/0.005s 在高负载下只看到 open 状态，会偶发失败
+        cb = CircuitBreaker("state-race", failure_threshold=1, recovery_timeout=0.3)
         states = []
         barrier = threading.Barrier(5)
         
@@ -194,7 +196,7 @@ class TestConcurrency_Breaker:
                     cb.call(fail, fallback=succeed)
                 except:
                     pass
-                time.sleep(0.005)
+                time.sleep(0.015)
                 try:
                     cb.call(succeed)
                 except:
