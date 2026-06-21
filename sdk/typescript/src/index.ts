@@ -10,6 +10,11 @@
 export { IdempotencyGuard } from './idempotency-guard';
 export { CircuitBreaker } from './circuit-breaker';
 export { OutputValidator } from './output-validator';
+export { OTelExporter } from './otel-exporter';
+export type {
+  ReliabilityEvent,
+  OTelExporterOptions,
+} from './otel-exporter';
 export type {
   ArkEvent,
   ArkEventType,
