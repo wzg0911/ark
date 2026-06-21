@@ -11,6 +11,13 @@
 
 ---
 
+README.md
+
+> 💝 **赞助 ARK**: [GitHub Sponsors](https://github.com/sponsors/wzg0911) · [爱发电](https://afdian.com/a/wzg911) · 微信: 84911541@qq.com
+> 
+> ARK 是 MIT 协议开源的。你的赞助让它活下去。详见 [SPONSOR.md](./SPONSOR.md)。
+> 
+
 ## 🤔 Why ARK?
 
 Your AI agent says it sent an email. **Did it really?**
