@@ -4,7 +4,7 @@
 > Stripe-level idempotency × Sentinel circuit breakers × OpenTelemetry tracing × IDE-style validation.
 > For AI agents.
 
-[![Tests](https://img.shields.io/badge/tests-303/303-green)](https://github.com/wzg0911/ark)
+[![Tests](https://img.shields.io/badge/tests-250/250-green)](https://github.com/wzg0911/ark)
 [![Python](https://img.shields.io/badge/python-3.9+-blue)](https://pypi.org)
 [![Version](https://img.shields.io/badge/version-0.6.0-blueviolet)](https://pypi.org/project/ark-trust/)
 [![License](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
