@@ -1,11 +1,11 @@
 [project]
 name = "ark-trust"
-version = "0.6.0"
-description = "ARK - Agent Reliability Kit. Trust infrastructure for AI agents."
+version = "0.6.1"
+description = "ARK - Agent Reliability Kit: Idempotency Guard, Circuit Breaker, Output Validator, and OpenTelemetry Tracing for AI Agents. Trust infrastructure for LLM agents."
+keywords = ["ai", "agent", "llm", "trust", "reliability", "idempotency", "circuit-breaker", "opentelemetry", "langchain", "crewai", "validation", "tracing"]
 readme = "README.md"
 license = {text = "MIT"}
 authors = [{name = "ARK Contributors"}]
-keywords = ["ai", "agent", "reliability", "trust", "guard", "circuit-breaker", "validation"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
