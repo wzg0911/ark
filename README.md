@@ -8,7 +8,7 @@
 [![Python](https://img.shields.io/badge/python-3.9+-blue)](https://pypi.org)
 [![Version](https://img.shields.io/badge/version-0.6.0-blueviolet)](https://pypi.org/project/ark-trust/)
 [![License](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
-[![ARK Trusted](https://wzg0911.github.io/ark/badges/ark-trust-badge.svg)](https://github.com/wzg0911/ark)
+[![ARK Trusted](https://cdn.jsdelivr.net/gh/wzg0911/ark@main/badges/ark-trust-badge.svg)](https://github.com/wzg0911/ark)
 
 ---
 
