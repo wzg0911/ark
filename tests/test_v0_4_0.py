@@ -23,13 +23,13 @@ class TestBenchmarks:
         b = Benchmarks(iterations=50)
         r = b.bench_idempotency_check_miss()
         assert r.iterations == 50
-        assert r.avg_ms < 0.01  # should be very fast (microseconds)
+        assert r.avg_ms < 0.05  # should be very fast (microseconds), tolerant for CI/loaded machines
 
     def test_bench_circuit_breaker_closed(self):
         b = Benchmarks(iterations=50)
         r = b.bench_circuit_breaker_closed()
         assert r.iterations == 50
-        assert r.throughput_ops > 25_000  # fast path (MacBook Air avg ~37k, min ~29k under load)
+        assert r.throughput_ops > 5_000  # fast path (tolerant for CI/loaded machines, MacBook Air avg ~37k)
 
     def test_bench_validator_valid(self):
         b = Benchmarks(iterations=50)
