@@ -44,5 +44,5 @@ jobs:
       uses: golangci/golangci-lint-action@v6
       with:
         working-directory: sdk/go
-        version: v1.64
+        version: latest
         args: --timeout=3m
