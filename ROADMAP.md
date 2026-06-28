@@ -70,7 +70,7 @@
 - [x] **Go OTelExporter（2026-06-28）** — 8种事件类型→OTLP/JSON，ring buffer 批量缓冲，21 tests
 - [x] **SchemaHub Go 移植（2026-06-28）** — 13个预置业务Schema，search/import/export，25 tests
 - [x] **Go SDK CI（2026-06-28）** — GitHub Actions: go test + go vet + golangci-lint on 1.21/1.22/1.23
-- [ ] Error F9 Go 移植 — 错误截断 + LLM 上下文 + 指数退避重试
+- [x] Error F9 Go 移植 — 错误截断 + LLM 上下文 + 指数退避重试 (32 tests)
 - [ ] Go SDK PyPI/npm 级发布自动化
 - [ ] npm 包发布（ark-go）
 
