@@ -61,6 +61,19 @@
 - [x] PyPI同步发布 · npm发布自动化（CI: GitHub Actions tag-triggered）
 - [x] TS SDK version aligned to `0.6.0` (dropped alpha suffix)
 
+## v0.7.0 — Go SDK (进行中) 🚧
+- [x] Core types (`types.go`) — ArkEvent, CircuitState, ValidationResult
+- [x] `IdempotencyGuard` — 幂等守护，10 tests
+- [x] `CircuitBreaker` — 三态机（closed/open/half_open），14 tests
+- [x] `OutputValidator` — 字段级类型校验+嵌套对象，12 tests
+- [x] Internal packages — `buffer` (4 tests) + `clock` (2 tests)
+- [x] **Go OTelExporter（2026-06-28）** — 8种事件类型→OTLP/JSON，ring buffer 批量缓冲，21 tests
+- [x] **SchemaHub Go 移植（2026-06-28）** — 13个预置业务Schema，search/import/export，25 tests
+- [x] **Go SDK CI（2026-06-28）** — GitHub Actions: go test + go vet + golangci-lint on 1.21/1.22/1.23
+- [ ] Error F9 Go 移植 — 错误截断 + LLM 上下文 + 指数退避重试
+- [ ] Go SDK PyPI/npm 级发布自动化
+- [ ] npm 包发布（ark-go）
+
 ## Long-term Vision
 - **ARK Cloud**: 托管信任基础设施，Agent接入即获信任
 - **Trust-as-a-Service**: 按Agent数量/API调用量定价
