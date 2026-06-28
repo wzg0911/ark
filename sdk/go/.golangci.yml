@@ -1,0 +1,34 @@
+# ARK Go SDK — golangci-lint config
+# Focus: correctness & safety, not style pedantry
+
+run:
+  timeout: 3m
+  tests: true
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - typecheck
+  disable-all: false
+
+linters-settings:
+  errcheck:
+    check-blank: true
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment  # too pedantic for now
+      - shadow          # too noisy
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    # Allow unused parameters (common in callback/interface patterns)
+    - linters: [unused]
+      path: _test\.go$
