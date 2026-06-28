@@ -69,10 +69,10 @@
 - [x] Internal packages — `buffer` (4 tests) + `clock` (2 tests)
 - [x] **Go OTelExporter（2026-06-28）** — 8种事件类型→OTLP/JSON，ring buffer 批量缓冲，21 tests
 - [x] **SchemaHub Go 移植（2026-06-28）** — 13个预置业务Schema，search/import/export，25 tests
-- [x] **Go SDK CI（2026-06-28）** — GitHub Actions: go test + go vet + golangci-lint on 1.21/1.22/1.23
+- [x] **Go SDK CI（2026-06-28）** — GitHub Actions: go test + go vet on 1.21/1.22/1.23
 - [x] Error F9 Go 移植 — 错误截断 + LLM 上下文 + 指数退避重试 (32 tests)
-- [ ] Go SDK PyPI/npm 级发布自动化
-- [ ] npm 包发布（ark-go）
+- [x] **Go SDK 发布自动化（2026-06-28）** — tag-triggered: go test + GitHub Release
+- [ ] 打 tag v0.7.0 正式发布（`go get github.com/wzg0911/ark-go@v0.7.0`）
 
 ## Long-term Vision
 - **ARK Cloud**: 托管信任基础设施，Agent接入即获信任
