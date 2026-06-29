@@ -6,7 +6,7 @@
   <a href="https://pypi.org/project/ark-trust/"><img src="https://img.shields.io/pypi/v/ark-trust?style=flat-square&color=blue" alt="PyPI version"></a>
   <a href="https://pypi.org/project/ark-trust/"><img src="https://img.shields.io/pypi/dm/ark-trust?style=flat-square&color=green" alt="Downloads"></a>
   <a href="https://github.com/wzg0911/ark"><img src="https://img.shields.io/github/stars/wzg0911/ark?style=flat-square" alt="GitHub stars"></a>
-  <a href="https://github.com/wzg0911/ark/actions"><img src="https://img.shields.io/badge/tests-251%2F251-brightgreen?style=flat-square" alt="Tests"></a>
+  <a href="https://github.com/wzg0911/ark/actions"><img src="https://img.shields.io/badge/tests-250%2B1_skip-brightgreen?style=flat-square" alt="Tests"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.9+-blue?style=flat-square" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple?style=flat-square" alt="License"></a>
   <a href="https://github.com/wzg0911/ark/issues"><img src="https://img.shields.io/badge/help-wanted-orange?style=flat-square" alt="Help Wanted"></a>
@@ -223,7 +223,8 @@ Your AI Agent (LangChain / CrewAI / Custom)
 - [x] **v0.4** — Community Schema Hub + Benchmarks (7 baselines)
 - [x] **v0.5** — OpenTelemetry export (8 event types) + Self-healing errors (F9)
 - [x] **v0.5.3** — Native OTel SDK bridge (dual-emit to existing tracer)
-- [ ] **v0.6** — Multi-agent trust mesh + Policy-as-code guard rules
+- [x] **v0.6** — TypeScript SDK (full parity with Python SDK)
+- [x] **v0.7** — Go SDK (full parity + Error F9 + SchemaHub)
 - [ ] **v1.0** — Production SLA guarantees + Enterprise dashboard
 
 ---
