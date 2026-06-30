@@ -45,7 +45,7 @@
 - [x] **零侵入埋点** — Guard/Breaker/Validator 内部自动 emit，OTel关闭时 zero overhead（一次if判断），开启时一行环境变量激活
 - [x] **运行时激活** — 函数内读取env，确保 `ARK_OTEL_ENDPOINT` 任何时候设置都生效
 - [x] **Langfuse 端到端演示** — `examples/langfuse-demo/` (docker compose + 9 测试守护)
-- [ ] Multi-language SDK (TypeScript/Go)
+- [x] Multi-language SDK (TypeScript v0.6.0 + Go v0.7.0) ✅
 - [ ] Cloud Dashboard (hosted version)
 - [x] **原生 OTel SDK 桥接（v0.5.3）** — 检测到 `opentelemetry-api` 时并行双发（OTLP/JSON + 原生 Span），未安装时零依赖路径不变，100% 向后兼容
 
