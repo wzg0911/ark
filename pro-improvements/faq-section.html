@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARK Pro — FAQ Section</title>
+<style>
+/* ===== FAQ Section — ARK Pro ===== */
+.ark-faq {
+  max-width: 800px;
+  margin: 64px auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #f1f5f9;
+}
+
+.ark-faq-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.ark-faq-header h2 {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a5b4fc, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 8px 0;
+}
+.ark-faq-header p {
+  color: #94a3b8;
+  font-size: 15px;
+  margin: 0;
+}
+
+.ark-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ark-faq-item {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.ark-faq-item:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.06);
+}
+
+/* Pure CSS accordion via checkbox hack */
+.ark-faq-toggle { display: none; }
+
+.ark-faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: #e2e8f0;
+  transition: color 0.2s;
+}
+.ark-faq-question:hover { color: #a5b4fc; }
+
+.ark-faq-chevron {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-left: 16px;
+  transition: transform 0.3s ease;
+  color: #64748b;
+}
+.ark-faq-toggle:checked + .ark-faq-question .ark-faq-chevron {
+  transform: rotate(180deg);
+  color: #818cf8;
+}
+
+.ark-faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+}
+.ark-faq-toggle:checked + .ark-faq-question + .ark-faq-answer {
+  max-height: 320px;
+}
+
+.ark-faq-answer-inner {
+  padding: 0 28px 22px 28px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: #94a3b8;
+}
+.ark-faq-answer-inner a {
+  color: #818cf8;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(129, 140, 248, 0.3);
+  transition: border-color 0.2s;
+}
+.ark-faq-answer-inner a:hover { border-color: #818cf8; }
+
+.ark-faq-guarantee {
+  margin-top: 28px;
+  padding: 16px 22px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #86efac;
+}
+.ark-faq-guarantee svg { width: 22px; height: 22px; flex-shrink: 0; color: #22c55e; }
+</style>
+</head>
+<body>
+
+<section class="ark-faq">
+  <div class="ark-faq-header">
+    <h2>Frequently Asked Questions</h2>
+    <p>Everything you need to know about ARK Pro</p>
+  </div>
+
+  <div class="ark-faq-list">
+
+    <!-- Q1 -->
+    <div class="ark-faq-item">
+      <input type="checkbox" id="faq1" class="ark-faq-toggle">
+      <label for="faq1" class="ark-faq-question">
+        What's the difference between free and Pro?
+        <svg class="ark-faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </label>
+      <div class="ark-faq-answer">
+        <div class="ark-faq-answer-inner">
+          ARK Free covers the essentials: unified LLM routing, basic cost tracking, and up to 10,000 requests/month. ARK Pro unlocks the full platform — advanced routing with circuit breakers, priority rate limits, detailed per-model analytics, multi-key failover pools, webhook alerts, and no request cap. If you're shipping to production or running multi-Agent systems, Pro is built for you.
+        </div>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="ark-faq-item">
+      <input type="checkbox" id="faq2" class="ark-faq-toggle">
+      <label for="faq2" class="ark-faq-question">
+        How soon do I get my Pro key after payment?
+        <svg class="ark-faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </label>
+      <div class="ark-faq-answer">
+        <div class="ark-faq-answer-inner">
+          Your Pro license key is delivered instantly by email upon successful payment — check your inbox (and spam folder) within 60 seconds. If you don't see it, reach out to <a href="mailto:support@ark-pro.dev">support@ark-pro.dev</a> and we'll reissue it within 2 hours, guaranteed.
+        </div>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="ark-faq-item">
+      <input type="checkbox" id="faq3" class="ark-faq-toggle">
+      <label for="faq3" class="ark-faq-question">
+        Do you offer refunds?
+        <svg class="ark-faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </label>
+      <div class="ark-faq-answer">
+        <div class="ark-faq-answer-inner">
+          Yes — we offer a no-questions-asked <strong>7-day refund policy</strong>. If ARK Pro doesn't work for your stack, email us within 7 days of purchase and we'll refund every cent. No forms, no hoops, no fine print.
+        </div>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="ark-faq-item">
+      <input type="checkbox" id="faq4" class="ark-faq-toggle">
+      <label for="faq4" class="ark-faq-question">
+        Which frameworks does ARK support?
+        <svg class="ark-faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </label>
+      <div class="ark-faq-answer">
+        <div class="ark-faq-answer-inner">
+          ARK is framework-agnostic by design. You get first-class integration wrappers for <strong>LangChain</strong>, <strong>CrewAI</strong>, <strong>AutoGen</strong>, and <strong>DSPy</strong>. Prefer to roll your own? ARK's core is pure Python — drop it into any codebase with zero dependency lock-in. See the <a href="/docs">docs</a> for quickstart guides.
+        </div>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="ark-faq-item">
+      <input type="checkbox" id="faq5" class="ark-faq-toggle">
+      <label for="faq5" class="ark-faq-question">
+        Can my team share a Pro key?
+        <svg class="ark-faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </label>
+      <div class="ark-faq-answer">
+        <div class="ark-faq-answer-inner">
+          Pro keys are licensed per-seat for individuals. For teams, we offer a <strong>Team Plan</strong> with centralized billing, shared dashboards, and pooled rate limits — same pricing per seat, plus a free admin dashboard. Reach out at <a href="mailto:sales@ark-pro.dev">sales@ark-pro.dev</a> and we'll set you up in under 10 minutes.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 👇 信任补丁：退款保证条 -->
+  <div class="ark-faq-guarantee">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2L3 7v6c0 5.2 3.8 10 9 12 5.2-2 9-6.8 9-12V7l-9-5z"/>
+    </svg>
+    <span>Every ARK Pro license is backed by a <strong>7-day no-questions-asked refund</strong>. Try it risk-free.</span>
+  </div>
+
+</section>
+
+</body>
+</html>

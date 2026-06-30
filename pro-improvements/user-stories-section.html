@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARK Pro — User Stories Section</title>
+<style>
+/* ===== User Stories — ARK Pro ===== */
+.ark-stories {
+  max-width: 1080px;
+  margin: 64px auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #f1f5f9;
+}
+
+.ark-stories-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.ark-stories-header h2 {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 10px 0;
+}
+.ark-stories-header p {
+  color: #94a3b8;
+  font-size: 15px;
+  margin: 0;
+}
+
+.ark-stories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.ark-story-card {
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 18px;
+  padding: 32px 28px 28px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+.ark-story-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 40px rgba(99, 102, 241, 0.1);
+  transform: translateY(-2px);
+}
+
+/* accent gradient line at top */
+.ark-story-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+.ark-story-card.card-hacker::before {
+  background: linear-gradient(90deg, #f59e0b, #f97316);
+}
+.ark-story-card.card-startup::before {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+.ark-story-card.card-enterprise::before {
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+}
+
+.ark-story-role {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  border-radius: 99px;
+  margin-bottom: 16px;
+}
+.card-hacker    .ark-story-role { background: rgba(245, 158, 11, 0.15);  color: #fbbf24; }
+.card-startup   .ark-story-role { background: rgba(59, 130, 246, 0.15);  color: #60a5fa; }
+.card-enterprise .ark-story-role { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+
+.ark-story-pain {
+  font-size: 12.5px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+
+.ark-story-quote {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.65;
+  color: #e2e8f0;
+  position: relative;
+  padding-left: 16px;
+  border-left: 2px solid rgba(99, 102, 241, 0.4);
+  margin: 16px 0;
+}
+
+.ark-story-result {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(99, 102, 241, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+.ark-story-result .check { color: #22c55e; font-weight: 700; margin-right: 2px; }
+
+.ark-story-metric {
+  display: flex;
+  gap: 18px;
+  margin-top: 14px;
+  font-size: 12.5px;
+}
+.ark-story-metric strong {
+  color: #e2e8f0;
+  font-size: 16px;
+  display: block;
+  line-height: 1.2;
+}
+.ark-story-metric span { color: #64748b; }
+</style>
+</head>
+<body>
+
+<section class="ark-stories">
+  <div class="ark-stories-header">
+    <h2>Why Developers Choose ARK Pro</h2>
+    <p>Same problems. One solution. Three stories.</p>
+  </div>
+
+  <div class="ark-stories-grid">
+
+    <!-- Card 1: Solo Hacker -->
+    <div class="ark-story-card card-hacker">
+      <span class="ark-story-role">🛠 Solo Hacker</span>
+      <div class="ark-story-pain">
+        I was juggling 3 LLM APIs — OpenAI, Anthropic, and Groq. Every month the billing was a mess. Subscriptions overlapping, overages piling up, and I had no idea which model was eating my budget.
+      </div>
+      <div class="ark-story-quote">
+        "I wired 3 LLM APIs into my side project. Billing went sideways. ARK fixed it in 3 lines of code."
+      </div>
+      <div class="ark-story-result">
+        <span class="check">✓</span> Single endpoint, unified bill, cost-per-model breakdown
+      </div>
+      <div class="ark-story-metric">
+        <div><strong>3→1</strong><span>API keys to manage</span></div>
+        <div><strong>−62%</strong><span>monthly LLM spend</span></div>
+      </div>
+    </div>
+
+    <!-- Card 2: Startup CTO -->
+    <div class="ark-story-card card-startup">
+      <span class="ark-story-role">🚀 Startup CTO</span>
+      <div class="ark-story-pain">
+        Our billing pipeline was charging customers twice on some runs and missing charges on others. Support tickets piled up. Investors were asking about revenue leakage. I needed a safety net — fast.
+      </div>
+      <div class="ark-story-quote">
+        "Customers were reporting double charges. We dropped ARK into our pipeline — haven't seen a duplicate since."
+      </div>
+      <div class="ark-story-result">
+        <span class="check">✓</span> Idempotent billing middleware, zero financial duplication
+      </div>
+      <div class="ark-story-metric">
+        <div><strong>0</strong><span>double-charge tickets since</span></div>
+        <div><strong>100%</strong><span>audit trail coverage</span></div>
+      </div>
+    </div>
+
+    <!-- Card 3: Enterprise Engineer -->
+    <div class="ark-story-card card-enterprise">
+      <span class="ark-story-role">🏢 Enterprise Engineer</span>
+      <div class="ark-story-pain">
+        We run 500+ Agents across 3 regions. When an upstream provider goes down, cascade failures take out entire pipelines. Manual failover took minutes we couldn't afford. We needed autonomous resilience.
+      </div>
+      <div class="ark-story-quote">
+        "500+ Agent cluster, 3 regions. ARK's circuit breaker caught 3 cascading failures before they hit production."
+      </div>
+      <div class="ark-story-result">
+        <span class="check">✓</span> Autonomous circuit breakers, region-aware routing, instant failover
+      </div>
+      <div class="ark-story-metric">
+        <div><strong>3</strong><span>outages prevented</span></div>
+        <div><strong>&lt;50ms</strong><span>failover latency</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</body>
+</html>
