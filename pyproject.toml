@@ -1,6 +1,6 @@
 [project]
 name = "ark-trust"
-version = "0.6.1"
+version = "0.7.0"
 description = "ARK - Agent Reliability Kit: Idempotency Guard, Circuit Breaker, Output Validator, and OpenTelemetry Tracing for AI Agents. Trust infrastructure for LLM agents."
 keywords = ["ai", "agent", "llm", "trust", "reliability", "idempotency", "circuit-breaker", "opentelemetry", "langchain", "crewai", "validation", "tracing"]
 readme = "README.md"
