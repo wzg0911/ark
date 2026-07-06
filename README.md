@@ -1,6 +1,6 @@
-# ARK Trust — AI Agent Reliability, Agent Guard & LLM Safety Infrastructure 🛡
+# ARK Trust — 3行代码，Agent永不重复执行 🛡
 
-> **The trust layer your AI agents are missing.** Idempotency guards, circuit breakers, output validation, and OpenTelemetry tracing — purpose-built for AI agent reliability.
+> **AI Agent 信任基础设施。** 幂等守卫防重复扣款 · 熔断器自动降级 · 输出校验防假输出。pip install ark-trust，3行代码接入。
 
 <p align="center">
   <a href="https://pypi.org/project/ark-trust/"><img src="https://img.shields.io/pypi/v/ark-trust?style=flat-square&color=blue" alt="PyPI version"></a>
