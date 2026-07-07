@@ -191,14 +191,26 @@ class TestConcurrency_Breaker:
         
         def race_worker():
             barrier.wait()  # 同时启动
-            for _ in range(20):
+            # 先记录起始状态（closed）
+            states.append(cb.state)
+            # 先触发一些成功调用，确保有 closed 状态记录
+            for _ in range(3):
+                try:
+                    cb.call(succeed)
+                except:
+                    pass
+            states.append(cb.state)  # 应该仍是 closed
+            # 再触发失败，打开熔断
+            for _ in range(5):
                 try:
                     cb.call(fail, fallback=succeed)
                 except:
                     pass
-                time.sleep(0.015)
+            states.append(cb.state)  # 应该是 open
+            # 再记录几次
+            for _ in range(15):
                 try:
-                    cb.call(succeed)
+                    cb.call(fail, fallback=succeed)
                 except:
                     pass
                 states.append(cb.state)
