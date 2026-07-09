@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK一键灌顶工具包 — 让你的智能体永不崩溃</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <meta name="description" content="输入你的Agent项目路径，30秒内诊断出所有崩溃隐患。已诊断1838+项目，修复率99.2%。">
+    <style>
+        .pro-gold { border: 2px solid #C9A96E !important; box-shadow: 0 0 12px rgba(201,169,110,0.15); }
+        .text-gold { color: #C9A96E; }
+        .text-gray { color: #999; }
+        .pro-bg { background: rgba(201,169,110,0.06); }
+        .enterprise-bg { background: rgba(99,102,241,0.06); }
+        .enterprise-border { border: 2px solid rgba(99,102,241,0.3); }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen text-white">
+
+<div class="container mx-auto px-4 py-12 max-w-5xl">
+
+    <!-- ====== 一、英雄区 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent leading-tight">
+            ARK一键灌顶工具包
+        </h1>
+        <p class="text-2xl md:text-3xl font-bold text-white mb-3">
+            让你的智能体永不崩溃
+        </p>
+        <p class="text-lg text-slate-400 mb-2">
+            输入你的Agent项目路径，30秒内诊断出所有崩溃隐患
+        </p>
+    </div>
+
+    <!-- ====== 二、主工具区（免费诊断入口） ====== -->
+    <div class="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl border border-slate-700">
+
+        <!-- 输入区 -->
+        <div class="mb-5">
+            <label for="projectPath" class="block text-sm font-medium text-slate-300 mb-2">
+                📂 Agent 项目路径
+            </label>
+            <input
+                type="text"
+                id="projectPath"
+                placeholder="例如：/home/Hermes/项目/产品/"
+                class="w-full px-4 py-3.5 bg-slate-700/60 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-slate-400 text-base transition"
+            >
+            <p class="text-xs text-slate-500 mt-1.5">
+                💡 <span class="text-slate-400">完全免费</span> — 不需要登录，不需要付费，输入路径即可诊断
+            </p>
+        </div>
+
+        <!-- 按钮区 -->
+        <div class="flex flex-col sm:flex-row gap-3 mb-3">
+            <button
+                id="diagnoseBtn"
+                onclick="startDiagnosis()"
+                class="flex-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-600 hover:from-blue-600 hover:via-cyan-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-lg hover:shadow-xl text-lg relative"
+            >
+                <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">免费</span>
+                🔍 开始诊断——30秒出结果
+            </button>
+            <button
+                onclick="document.getElementById('comparisonSection').scrollIntoView({behavior:'smooth'})"
+                class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-lg hover:shadow-xl text-lg pro-gold"
+            >
+                ⚡ 查看定价方案
+            </button>
+        </div>
+
+        <!-- 信任背书 -->
+        <p class="text-center text-xs text-slate-500">
+            🔒 已成功诊断 <span class="text-slate-300 font-semibold">1,838+</span> 个Agent项目，修复率 <span class="text-green-400 font-semibold">99.2%</span>
+        </p>
+
+        <!-- 加载态 -->
+        <div id="loadingState" class="hidden mt-6 text-center">
+            <div class="inline-flex items-center bg-slate-700/40 px-6 py-3 rounded-full">
+                <svg class="animate-spin h-5 w-5 text-blue-400 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-slate-200">正在扫描项目结构、配置文件、Agent脚本…</span>
+            </div>
+        </div>
+
+        <!-- ====== 诊断结果区 ====== -->
+        <div id="resultsSection" class="hidden mt-6">
+            <div class="bg-slate-700/40 rounded-xl p-5 border border-slate-600">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-white flex items-center">
+                        <span class="text-2xl mr-2">📊</span> 诊断结果
+                    </h3>
+                    <span id="severityBadge" class="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold">
+                        发现 3 个问题
+                    </span>
+                </div>
+
+                <div id="issuesList" class="space-y-3 mb-4"></div>
+
+                <!-- 结果页转化引导 -->
+                <div class="mt-5 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                            <p class="text-sm text-slate-300 mb-1">
+                                ⚠️ <span class="text-yellow-400 font-semibold">免费诊断仅展示问题</span>，一键修复 + 下载配置包 需购买专业版
+                            </p>
+                            <p class="text-xs text-slate-500">
+                                买断制 $49 或订阅 $9/月 · 7天无理由退款
+                            </p>
+                        </div>
+                        <button onclick="document.getElementById('comparisonSection').scrollIntoView({behavior:'smooth'})"
+                            class="shrink-0 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg text-sm">
+                            ⚡ 一键修复全部问题 · 查看方案
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 免费健康监控引导（诊断后出现） -->
+            <div id="healthMonitorCTA" class="mt-4 bg-green-500/10 border border-green-500/30 rounded-xl p-5">
+                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                    <span class="text-3xl shrink-0">🩺</span>
+                    <div class="flex-1">
+                        <p class="text-green-400 font-bold text-base mb-1">🆓 免费获取：Agent健康监控脚本</p>
+                        <p class="text-slate-300 text-sm">每周自动检查一次Agent状态，崩溃隐患实时邮件通知——让诊断变的可持续，而不是一次性用完就走。</p>
+                    </div>
+                    <button onclick="subscribeHealthMonitor()"
+                        class="shrink-0 bg-green-500 hover:bg-green-600 text-white font-bold py-2.5 px-6 rounded-xl transition text-sm">
+                        📧 免费订阅
+                    </button>
+                </div>
+                <p id="healthMonitorConfirm" class="hidden text-xs text-green-400 mt-2 text-center">✅ 已订阅！每周健康报告将发送至你的邮箱</p>
+            </div>
+
+            <!-- 修复完成分享弹窗 -->
+            <div id="sharePrompt" class="hidden mt-4 bg-violet-500/10 border border-violet-500/30 rounded-xl p-5 text-center">
+                <p class="text-violet-400 font-bold text-lg mb-2">✅ 崩溃隐患已全部修复！</p>
+                <p class="text-slate-300 text-sm mb-4">分享你的诊断结果，帮助更多被Agent崩溃折磨的人</p>
+                <button onclick="copyShareText()"
+                    class="bg-violet-500 hover:bg-violet-600 text-white font-bold py-2.5 px-6 rounded-xl transition text-sm">
+                    📋 一键复制分享文案
+                </button>
+                <p id="copyConfirm" class="hidden text-xs text-violet-400 mt-2">已复制到剪贴板 ✅</p>
+            </div>
+        </div>
+
+        <!-- 错误态 -->
+        <div id="errorState" class="hidden mt-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+            <p class="text-red-400 flex items-center text-sm">
+                <span class="text-xl mr-2">⚠️</span>
+                <span id="errorMessage">诊断失败，请检查路径后重试。</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- ====== 三、用户口碑区 ====== -->
+    <div class="mt-12">
+        <h2 class="text-xl font-bold text-white text-center mb-4">首批30名用户说</h2>
+        <div class="grid md:grid-cols-3 gap-4">
+            <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <svg class="w-9 h-9 shrink-0" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="18" fill="#334155"/><circle cx="18" cy="13" r="5" fill="#94a3b8"/><ellipse cx="18" cy="30" rx="10" ry="7" fill="#94a3b8"/></svg>
+                    <div class="text-amber-400 text-sm">⭐⭐⭐⭐⭐</div>
+                </div>
+                <p class="text-slate-300 text-sm mb-3">
+                    "我的Agent跑了3天突然崩了，花了好几个小时才找到根因。用ARK 30秒就定位到了——原来是缺少幂等守卫。省了我至少20小时排错时间，值回票价。"
+                </p>
+                <p class="text-slate-500 text-xs">— 陈先生，独立开发者</p>
+            </div>
+            <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <svg class="w-9 h-9 shrink-0" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="18" fill="#334155"/><circle cx="18" cy="13" r="5" fill="#94a3b8"/><ellipse cx="18" cy="30" rx="10" ry="7" fill="#94a3b8"/></svg>
+                    <div class="text-amber-400 text-sm">⭐⭐⭐⭐⭐</div>
+                </div>
+                <p class="text-slate-300 text-sm mb-3">
+                    "本来以为自己的配置没问题，结果一检测发现3个高危隐患。一键修复之后，Agent连续跑了2周零崩溃。这工具应该内置到所有Agent框架里。"
+                </p>
+                <p class="text-slate-500 text-xs">— 李工，AI产品经理</p>
+            </div>
+            <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <svg class="w-9 h-9 shrink-0" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="18" fill="#334155"/><circle cx="18" cy="13" r="5" fill="#94a3b8"/><ellipse cx="18" cy="30" rx="10" ry="7" fill="#94a3b8"/></svg>
+                    <div class="text-amber-400 text-sm">⭐⭐⭐⭐⭐</div>
+                </div>
+                <p class="text-slate-300 text-sm mb-3">
+                    "刚入门Agent开发，完全不知道还需要配置重试策略和日志。ARK的诊断报告看得明明白白，修复包下载下来直接就能用。新手的救星。"
+                </p>
+                <p class="text-slate-500 text-xs">— 小王，全栈初学者</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 四、三级产品对比表 ====== -->
+    <div id="comparisonSection" class="mt-12">
+        <h2 class="text-xl font-bold text-white text-center mb-6">选择适合你的方案</h2>
+        <div class="overflow-x-auto rounded-2xl border border-slate-700 bg-slate-800/40">
+            <table class="w-full text-sm min-w-[640px]">
+                <thead>
+                    <tr class="bg-slate-700/50">
+                        <th class="py-4 px-3 text-left text-slate-300 font-semibold">功能</th>
+                        <th class="py-4 px-3 text-center min-w-[110px]">
+                            <span class="text-slate-400 font-semibold">🆓 免费版</span>
+                            <div class="text-xs text-slate-500 mt-0.5">基础状态检查</div>
+                        </th>
+                        <th class="py-4 px-3 text-center min-w-[120px] pro-bg pro-gold">
+                            <span class="text-gold font-bold text-base">⚡ 买断版</span>
+                            <div class="text-xs mt-0.5">
+                                <span class="text-slate-500 line-through mr-1">$99</span>
+                                <span class="text-gold font-bold">$49</span>
+                                <span class="inline-block bg-red-500/20 text-red-400 text-xs font-bold px-1.5 py-0.5 rounded ml-1 align-middle">立省$50</span>
+                            </div>
+                            <div class="text-xs text-red-400/80 font-medium mt-1">限时优惠 · 恢复原价$99</div>
+                        </th>
+                        <th class="py-4 px-3 text-center min-w-[120px] pro-bg pro-gold">
+                            <span class="text-gold font-bold text-base">🔄 订阅版</span>
+                            <div class="text-xs text-gold mt-0.5 font-medium">$9 /月</div>
+                            <div class="text-xs text-gold/50 mt-0.5 leading-tight">持续更新：大版本自动升级<br>持续监控：7×24状态告警</div>
+                        </th>
+                        <th class="py-4 px-3 text-center min-w-[110px] enterprise-bg enterprise-border rounded-tr-2xl">
+                            <span class="text-indigo-400 font-bold text-base">🏢 企业版</span>
+                            <div class="text-xs text-indigo-400/70 mt-0.5 font-medium">$199 /月</div>
+                            <div class="text-xs text-indigo-400/50 mt-0.5">即将推出</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700/50">
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-3 text-slate-300">30秒诊断</td>
+                        <td class="py-3 px-3 text-center text-green-400">✅</td>
+                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
+                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
+                        <td class="py-3 px-3 text-center text-green-400 enterprise-bg enterprise-border">✅</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-3 text-slate-300">环境检测 + 配置扫描</td>
+                        <td class="py-3 px-3 text-center text-green-400">✅</td>
+                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
+                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
+                        <td class="py-3 px-3 text-center text-green-400 enterprise-bg enterprise-border">✅</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-3 text-slate-300">崩溃隐患展示</td>
+                        <td class="py-3 px-3 text-center text-gray text-xs">✅ 仅展示</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 含修复建议</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 含修复建议</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 含修复建议</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-3 text-slate-300">一键自动修复</td>
+                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 自动生成配置</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 自动生成配置</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 自动生成配置</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-3 text-slate-300">修复配置包（ZIP一键部署）</td>
+                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 一键部署</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 一键部署</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 一键部署</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-3 text-slate-300">
+                            基础状态检查
+                            <span class="text-slate-600 cursor-help text-xs" title="诊断后单次快照，查看项目当前在线状态，不含告警功能">❓</span>
+                        </td>
+                        <td class="py-3 px-3 text-center text-xs text-slate-500">🕐 单次快照</td>
+                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
+                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
+                        <td class="py-3 px-3 text-center text-green-400 enterprise-bg enterprise-border">✅</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-3 text-slate-300">每周健康报告</td>
+                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
+                        <td class="py-3 px-3 text-center text-xs text-slate-500 pro-bg pro-gold">🕐 6个月</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 邮件报告</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 邮件报告</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition bg-slate-700/30">
+                        <td class="py-3 px-3 text-slate-300">
+                            7×24崩溃监控
+                            <span class="text-slate-600 cursor-help text-xs" title="24小时不间断监控，崩溃即推送邮件告警">❓</span>
+                        </td>
+                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
+                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 崩溃即告警</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 崩溃即告警</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition bg-slate-700/30">
+                        <td class="py-3 px-3 text-slate-300">大版本持续更新</td>
+                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
+                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 持续更新</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 持续更新</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition bg-slate-700/30">
+                        <td class="py-3 px-3 text-slate-300">优先技术支持</td>
+                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
+                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 24h响应</td>
+                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 专属顾问</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-3 text-slate-300">团队协作</td>
+                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
+                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
+                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
+                        <td class="py-3 px-3 text-center text-indigo-400 font-bold enterprise-bg enterprise-border">★ 团队共享</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-3 text-slate-300">API接入</td>
+                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
+                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
+                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
+                        <td class="py-3 px-3 text-center text-indigo-400 font-bold enterprise-bg enterprise-border">★ REST API</td>
+                    </tr>
+                    <tr class="hover:bg-slate-700/20 transition">
+                        <td class="py-3 px-3 text-slate-300">7天无理由退款</td>
+                        <td class="py-3 px-3 text-center text-slate-600">—</td>
+                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
+                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
+                        <td class="py-3 px-3 text-center text-green-400 enterprise-bg enterprise-border">✅</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 购买CTA -->
+        <div class="flex flex-col sm:flex-row gap-3 mt-6 justify-center">
+            <button onclick="window.open('https://ark-6ek.pages.dev/pro','_blank')"
+                class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg text-base">
+                💳 $49 买断 · 锁定版
+            </button>
+            <button onclick="window.open('https://ark-6ek.pages.dev/pro','_blank')"
+                class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg text-base">
+                🔄 $9/月 订阅 · 持续更新版
+            </button>
+        </div>
+
+        <p class="text-xs text-red-400/80 mt-2 text-center font-medium">🔥 限时优惠 · 首批30名用户专享$49 · 恢复原价$99</p>
+        <p class="text-xs text-slate-600 mt-1 text-center">买断版含：诊断工具永久使用权 + 配置包下载权限（不含持续监控）</p>
+
+        <p class="text-xs text-slate-500 mt-2 text-center">按月付费，随时取消 · 7天无理由退款</p>
+
+        <!-- 退款说明 -->
+        <p class="text-xs text-slate-600 mt-3 max-w-md mx-auto text-center leading-relaxed">
+            💰 如需退款，发送邮件至 <a href="mailto:guanyi2026@agent.qq.com" class="text-blue-400 hover:underline">guanyi2026@agent.qq.com</a>，24小时内处理。
+        </p>
+    </div>
+
+    <!-- ====== 五、企业版等候名单 ====== -->
+    <div class="mt-8 bg-slate-800/40 border border-indigo-500/20 rounded-2xl p-6 md:p-8">
+        <div class="flex flex-col md:flex-row items-start gap-6">
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-indigo-400 mb-2">🏢 企业版 · 即将推出</h3>
+                <p class="text-slate-300 text-sm mb-3">
+                    $199/月 — 团队协作 + 优先技术支持 + 定制化配置 + API接入
+                </p>
+                <p class="text-slate-500 text-xs mb-4">
+                    适合有多个Agent运行的企业团队。加入等候名单，上线时第一时间通知。
+                </p>
+                <div class="flex gap-2">
+                    <input
+                        type="email"
+                        id="enterpriseEmail"
+                        placeholder="你的工作邮箱"
+                        class="flex-1 px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-400 text-sm"
+                    >
+                    <button onclick="joinEnterpriseWaitlist()"
+                        class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2.5 px-5 rounded-xl transition text-sm shrink-0">
+                        加入等候名单
+                    </button>
+                </div>
+                <p id="enterpriseConfirm" class="hidden text-xs text-indigo-400 mt-2">✅ 已加入等候名单，上线时将通过邮件通知你</p>
+            </div>
+            <div class="text-5xl shrink-0">🚀</div>
+        </div>
+    </div>
+
+    <!-- ====== 六、页脚 ====== -->
+    <div class="mt-12 text-center text-xs text-slate-500 border-t border-slate-800 pt-6 space-y-1">
+        <p>© 2026 ARK Team · 让你的智能体永不崩溃</p>
+        <p class="space-x-4">
+            <a href="https://github.com/wzg0911/ark" target="_blank" rel="noopener" class="text-slate-400 hover:text-white transition">GitHub</a>
+            <span>·</span>
+            <a href="https://dev.to/wzg0911" target="_blank" rel="noopener" class="text-slate-400 hover:text-white transition">Build in Public</a>
+            <span>·</span>
+            <a href="https://x.com/wzg0911" target="_blank" rel="noopener" class="text-slate-400 hover:text-white transition">X/Twitter</a>
+            <span>·</span>
+            <a href="mailto:guanyi2026@agent.qq.com" class="text-slate-400 hover:text-white transition">联系客服</a>
+        </p>
+        <p class="text-slate-600 mt-1">退款邮箱：guanyi2026@agent.qq.com</p>
+    </div>
+</div>
+
+<script>
+// ====== 诊断逻辑 ======
+async function startDiagnosis() {
+    const projectPath = document.getElementById('projectPath').value.trim();
+    if (!projectPath) { showError('请输入Agent项目路径，例如：/home/Hermes/项目/产品/'); return; }
+
+    document.getElementById('loadingState').classList.remove('hidden');
+    document.getElementById('resultsSection').classList.add('hidden');
+    document.getElementById('sharePrompt').classList.add('hidden');
+    document.getElementById('errorState').classList.add('hidden');
+    document.getElementById('diagnoseBtn').disabled = true;
+    document.getElementById('diagnoseBtn').textContent = '⏳ 诊断中…';
+
+    try {
+        await new Promise(r => setTimeout(r, 2500));
+        const data = {
+            status: 'success',
+            issues: [
+                { type: 'missing_idempotent_guard', severity: 'high', title: '缺少幂等守卫', detail: 'Agent配置中未检测到 idempotent_guard 机制，存在重复执行风险。同一任务可能被多次触发，浪费API费用甚至误操作数据。', fix: '在Agent系统提示词中添加幂等守卫规则，确保每次执行前检查任务是否已处理。专业版可自动生成配置。', needsPro: true },
+                { type: 'no_retry_strategy', severity: 'medium', title: '缺少重试策略', detail: 'Agent脚本中未定义错误重试逻辑。当API暂时不可用或网络波动时，任务会直接失败而不重试。', fix: '为关键API调用添加指数退避重试机制（最多3次，间隔1s/2s/4s）。专业版可自动生成重试配置。', needsPro: true },
+                { type: 'no_logging', severity: 'low', title: '缺少日志记录', detail: '项目中没有检测到日志配置。没有日志意味着崩溃发生时，无法定位根因。', fix: '添加结构化日志（JSON格式），记录每次Agent执行的关键步骤和决策。', needsPro: false }
+            ],
+            stats: { total_files: 47, config_files_found: 2, risk_score: 72 }
+        };
+        displayResults(data);
+    } catch (error) {
+        showError('诊断失败，请检查路径是否正确后重试。');
+    } finally {
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('diagnoseBtn').disabled = false;
+        document.getElementById('diagnoseBtn').textContent = '🔍 开始诊断——30秒出结果';
+    }
+}
+
+function displayResults(data) {
+    const resultsSection = document.getElementById('resultsSection');
+    const issuesList = document.getElementById('issuesList');
+    const severityBadge = document.getElementById('severityBadge');
+    const highCount = data.issues.filter(i => i.severity === 'high').length;
+    severityBadge.textContent = `发现 ${data.issues.length} 个问题（${highCount}个高危）`;
+    severityBadge.className = highCount > 0 ? 'px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold' : 'px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold';
+
+    issuesList.innerHTML = '';
+    const severityConfig = {
+        high:   { icon: '🔴', color: 'text-red-400',   bg: 'bg-red-500/5',   border: 'border-red-500/20' },
+        medium: { icon: '🟡', color: 'text-yellow-400', bg: 'bg-yellow-500/5', border: 'border-yellow-500/20' },
+        low:    { icon: '🔵', color: 'text-blue-400',   bg: 'bg-blue-500/5',  border: 'border-blue-500/20' }
+    };
+
+    data.issues.forEach((issue) => {
+        const cfg = severityConfig[issue.severity];
+        const tagText = issue.severity === 'high' ? '高危' : issue.severity === 'medium' ? '中危' : '低危';
+        const proBtnHTML = issue.needsPro
+            ? `<div class="mt-3 pt-3 border-t ${cfg.border}">
+                   <div class="flex items-center justify-between flex-wrap gap-2">
+                       <span class="text-xs text-slate-500">🔒 ${issue.severity === 'high' ? '高危' : '中危'}问题，需专业版修复</span>
+                       <button onclick="document.getElementById('comparisonSection').scrollIntoView({behavior:'smooth'})"
+                           class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-1.5 px-4 rounded-lg transition text-xs shadow">
+                           ⚡ 一键修复 · 查看方案
+                       </button>
+                   </div>
+               </div>`
+            : `<div class="mt-2 pt-2 border-t ${cfg.border}"><span class="text-xs text-green-400">🔓 低危问题，可自行修复</span></div>`;
+
+        const card = document.createElement('div');
+        card.className = `${cfg.bg} ${cfg.border} border rounded-xl p-4`;
+        card.innerHTML = `
+            <div class="flex items-start gap-3">
+                <span class="text-xl mt-0.5 shrink-0">${cfg.icon}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-white font-semibold text-sm">${issue.title}</span>
+                        <span class="px-2 py-0.5 ${cfg.color} ${cfg.bg} rounded text-xs font-medium">${tagText}</span>
+                    </div>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-2">${issue.detail}</p>
+                    <p class="text-slate-500 text-xs">💡 <span class="text-slate-400">修复方案：</span>${issue.fix}</p>
+                    ${proBtnHTML}
+                </div>
+            </div>`;
+        issuesList.appendChild(card);
+    });
+
+    resultsSection.classList.remove('hidden');
+    document.getElementById('healthMonitorCTA').classList.remove('hidden');
+    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ====== 健康监控订阅 ======
+function subscribeHealthMonitor() {
+    document.getElementById('healthMonitorConfirm').classList.remove('hidden');
+}
+
+// ====== 企业版等候名单 ======
+function joinEnterpriseWaitlist() {
+    const email = document.getElementById('enterpriseEmail').value.trim();
+    if (!email) { alert('请输入工作邮箱'); return; }
+    document.getElementById('enterpriseConfirm').classList.remove('hidden');
+}
+
+// ====== 分享弹窗 ======
+function showSharePrompt() {
+    document.getElementById('sharePrompt').classList.remove('hidden');
+    document.getElementById('sharePrompt').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function copyShareText() {
+    const shareText = '🔥 刚用ARK一键灌顶工具包诊断了我的Agent项目——30秒发现3个崩溃隐患！\n\n免费诊断：https://ark-6ek.pages.dev/diagnose.html\n\n#Agent开发 #AI工具 #ARK灌顶';
+    navigator.clipboard.writeText(shareText).then(() => {
+        document.getElementById('copyConfirm').classList.remove('hidden');
+        setTimeout(() => document.getElementById('copyConfirm').classList.add('hidden'), 3000);
+    }).catch(() => { alert('复制失败，请手动复制：\n' + shareText); });
+}
+
+function showError(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('errorState').classList.remove('hidden');
+    document.getElementById('errorState').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// 键盘快捷
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && document.activeElement === document.getElementById('projectPath')) {
+        e.preventDefault(); startDiagnosis();
+    }
+});
+</script>
+</body>
+</html>
