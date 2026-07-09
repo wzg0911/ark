@@ -8,13 +8,10 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
     <meta name="description" content="输入你的Agent项目路径，30秒内诊断出所有崩溃隐患。已诊断1838+项目，修复率99.2%。">
     <style>
-        /* Pro栏鎏金边框动画 */
-        @keyframes shimmer {
-            0%   { border-color: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,0.15); }
-            50%  { border-color: #fbbf24; box-shadow: 0 0 16px rgba(251,191,36,0.3); }
-            100% { border-color: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,0.15)); }
-        }
-        .pro-gold { animation: shimmer 3s ease-in-out infinite; }
+        .pro-gold { border: 2px solid #C9A96E !important; box-shadow: 0 0 12px rgba(201,169,110,0.2); }
+        .text-gold { color: #C9A96E; }
+        .text-gray { color: #999; }
+        .pro-bg { background: rgba(201,169,110,0.06); }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen text-white">
@@ -58,9 +55,10 @@
             <button
                 id="diagnoseBtn"
                 onclick="startDiagnosis()"
-                class="flex-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-600 hover:from-blue-600 hover:via-cyan-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-lg hover:shadow-xl text-lg"
+                class="flex-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-600 hover:from-blue-600 hover:via-cyan-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-lg hover:shadow-xl text-lg relative"
             >
-                🔍 免费基础诊断 — 30秒出结果
+                <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">免费</span>
+                🔍 开始诊断——30秒出结果
             </button>
             <button
                 onclick="goToPro()"
@@ -146,21 +144,30 @@
         <h2 class="text-xl font-bold text-white text-center mb-4">首批30名用户说</h2>
         <div class="grid md:grid-cols-3 gap-4">
             <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-4">
-                <div class="text-amber-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
+                <div class="flex items-center gap-3 mb-3">
+                    <svg class="w-9 h-9 shrink-0" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="18" fill="#334155"/><circle cx="18" cy="13" r="5" fill="#94a3b8"/><ellipse cx="18" cy="30" rx="10" ry="7" fill="#94a3b8"/></svg>
+                    <div class="text-amber-400 text-sm">⭐⭐⭐⭐⭐</div>
+                </div>
                 <p class="text-slate-300 text-sm mb-3">
                     "我的Agent跑了3天突然崩了，花了好几个小时才找到根因。用ARK 30秒就定位到了——原来是缺少幂等守卫。这¥19.9省了我至少20小时排错时间。"
                 </p>
                 <p class="text-slate-500 text-xs">— 陈先生，独立开发者</p>
             </div>
             <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-4">
-                <div class="text-amber-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
+                <div class="flex items-center gap-3 mb-3">
+                    <svg class="w-9 h-9 shrink-0" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="18" fill="#334155"/><circle cx="18" cy="13" r="5" fill="#94a3b8"/><ellipse cx="18" cy="30" rx="10" ry="7" fill="#94a3b8"/></svg>
+                    <div class="text-amber-400 text-sm">⭐⭐⭐⭐⭐</div>
+                </div>
                 <p class="text-slate-300 text-sm mb-3">
                     "本来以为自己的配置没问题，结果一检测发现3个高危隐患。一键修复之后，Agent连续跑了2周零崩溃。这工具应该内置到所有Agent框架里。"
                 </p>
                 <p class="text-slate-500 text-xs">— 李工，AI产品经理</p>
             </div>
             <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-4">
-                <div class="text-amber-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
+                <div class="flex items-center gap-3 mb-3">
+                    <svg class="w-9 h-9 shrink-0" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="18" fill="#334155"/><circle cx="18" cy="13" r="5" fill="#94a3b8"/><ellipse cx="18" cy="30" rx="10" ry="7" fill="#94a3b8"/></svg>
+                    <div class="text-amber-400 text-sm">⭐⭐⭐⭐⭐</div>
+                </div>
                 <p class="text-slate-300 text-sm mb-3">
                     "刚入门Agent开发，完全不知道还需要配置重试策略和日志。ARK的诊断报告看得明明白白，修复包下载下来直接就能用。新手的救星。"
                 </p>
@@ -181,9 +188,9 @@
                             <span class="text-slate-400 font-semibold">🆓 免费版</span>
                             <div class="text-xs text-slate-500 mt-0.5">基础诊断</div>
                         </th>
-                        <th class="py-4 px-4 text-center bg-amber-500/10 border-l-2 border-r-2 border-amber-500/30 pro-gold">
-                            <span class="text-amber-400 font-bold text-base">⚡ Pro版</span>
-                            <div class="text-xs text-amber-400/70 mt-0.5 font-medium">¥19.9 买断</div>
+                        <th class="py-4 px-4 text-center pro-bg pro-gold rounded-tr-2xl">
+                            <span class="text-gold font-bold text-base">⚡ Pro版</span>
+                            <div class="text-xs text-gold mt-0.5 font-medium" style="opacity:0.7">¥19.9 买断</div>
                         </th>
                     </tr>
                 </thead>
@@ -191,42 +198,42 @@
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 text-slate-300">环境检测</td>
                         <td class="py-3 px-4 text-center text-green-400">✅</td>
-                        <td class="py-3 px-4 text-center text-green-400 bg-amber-500/5 border-l-2 border-r-2 border-amber-500/20">✅</td>
+                        <td class="py-3 px-4 text-center text-green-400 pro-bg pro-gold">✅</td>
                     </tr>
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 text-slate-300">Agent配置扫描</td>
                         <td class="py-3 px-4 text-center text-green-400">✅</td>
-                        <td class="py-3 px-4 text-center text-green-400 bg-amber-500/5 border-l-2 border-r-2 border-amber-500/20">✅</td>
+                        <td class="py-3 px-4 text-center text-green-400 pro-bg pro-gold">✅</td>
                     </tr>
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 text-slate-300">崩溃隐患展示</td>
-                        <td class="py-3 px-4 text-center text-slate-500 text-xs">✅ 仅展示</td>
-                        <td class="py-3 px-4 text-center text-amber-400 font-bold bg-amber-500/5 border-l-2 border-r-2 border-amber-500/20">★ 含修复建议</td>
+                        <td class="py-3 px-4 text-center text-gray text-xs">✅ 仅展示</td>
+                        <td class="py-3 px-4 text-center text-gold font-bold pro-bg pro-gold">★ 含修复建议</td>
                     </tr>
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 text-slate-300">一键自动修复</td>
-                        <td class="py-3 px-4 text-center text-red-400/50">——</td>
-                        <td class="py-3 px-4 text-center text-amber-400 font-bold bg-amber-500/5 border-l-2 border-r-2 border-amber-500/20">★ 自动生成配置</td>
+                        <td class="py-3 px-4 text-center text-red-400/40">——</td>
+                        <td class="py-3 px-4 text-center text-gold font-bold pro-bg pro-gold">★ 自动生成配置</td>
                     </tr>
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 text-slate-300">可下载修复配置包</td>
-                        <td class="py-3 px-4 text-center text-red-400/50">——</td>
-                        <td class="py-3 px-4 text-center text-amber-400 font-bold bg-amber-500/5 border-l-2 border-r-2 border-amber-500/20">★ ZIP一键部署</td>
+                        <td class="py-3 px-4 text-center text-red-400/40">——</td>
+                        <td class="py-3 px-4 text-center text-gold font-bold pro-bg pro-gold">★ ZIP一键部署</td>
                     </tr>
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 text-slate-300">持续崩溃监控</td>
-                        <td class="py-3 px-4 text-center text-red-400/50">——</td>
-                        <td class="py-3 px-4 text-center text-amber-400 font-bold bg-amber-500/5 border-l-2 border-r-2 border-amber-500/20">★ 崩溃即告警</td>
+                        <td class="py-3 px-4 text-center text-red-400/40">——</td>
+                        <td class="py-3 px-4 text-center text-gold font-bold pro-bg pro-gold">★ 崩溃即告警</td>
                     </tr>
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 text-slate-300">技术社区支持</td>
                         <td class="py-3 px-4 text-center text-slate-600">—</td>
-                        <td class="py-3 px-4 text-center text-amber-400 font-bold bg-amber-500/5 border-l-2 border-r-2 border-amber-500/20">★ 专属答疑</td>
+                        <td class="py-3 px-4 text-center text-gold font-bold pro-bg pro-gold">★ 专属答疑</td>
                     </tr>
                     <tr class="hover:bg-slate-700/20 transition">
                         <td class="py-3 px-4 text-slate-300">7天无理由退款</td>
                         <td class="py-3 px-4 text-center text-slate-600">—</td>
-                        <td class="py-3 px-4 text-center text-green-400 bg-amber-500/5 border-l-2 border-r-2 border-amber-500/20">✅ 零风险</td>
+                        <td class="py-3 px-4 text-center text-green-400 pro-bg pro-gold">✅ 零风险</td>
                     </tr>
                 </tbody>
             </table>
@@ -330,7 +337,7 @@ async function startDiagnosis() {
     } finally {
         document.getElementById('loadingState').classList.add('hidden');
         document.getElementById('diagnoseBtn').disabled = false;
-        document.getElementById('diagnoseBtn').textContent = '🔍 免费基础诊断 — 30秒出结果';
+        document.getElementById('diagnoseBtn').textContent = '🔍 开始诊断——30秒出结果';
     }
 }
 
