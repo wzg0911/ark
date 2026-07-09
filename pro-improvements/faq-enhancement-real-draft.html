@@ -1,0 +1,28 @@
+<!--
+  ARK 灌顶包 · 真实 FAQ 增强草稿（待主人审阅后合入 pro.html 的 <section class="faq">）
+  作者：ARK 7×24 巡航 2026-07-10
+  原则：全部内容基于 ARK 真实能力 + 真实数据，无任何虚构社证。
+  样式：复用 pro.html 现有 .faq-item / .answer-short 类，可直接插入。
+  注意：本文件为草稿，未经主人确认前不会合入 pro.html（pro.html 改动会触发 Cloudflare 自动部署）。
+-->
+<!-- ===== 以下 4 条为"你最担心的那些事"现有 3 条之后的增强内容 ===== -->
+
+  <div class="faq-item">
+    <h4>Q：ARK 凭什么敢说"永不崩溃"？</h4>
+    <p><span class="answer-short">三层守护</span>不是口号，是三道独立护栏：<strong style="color:#fbbf24">幂等守护</strong>拦截重复工具调用（同一动作只执行一次，杜绝重复扣费）；<strong style="color:#fbbf24">熔断</strong>在模型/服务故障时自动降级或切换，Agent 不卡死；<strong style="color:#fbbf24">输出校验</strong>拦截幻觉与格式错误，不让脏数据往下流。三层由 <strong style="color:#22c55e">248 个测试</strong>守护，并在我们自己的生产环境连续运行 <strong style="color:#22c55e">108 天</strong>验证。</p>
+  </div>
+
+  <div class="faq-item">
+    <h4>Q：支持哪些语言和框架？</h4>
+    <p><span class="answer-short">3语言+主流框架</span><strong style="color:#22c55e">Python / TypeScript / Go</strong> 三套 SDK 功能全对齐；自动识别 <strong style="color:#fbbf24">LangChain、CrewAI、AutoGen/AG2、OpenAI SDK</strong>，零配置接入。自定义 Python Agent 只需一行 <code style="color:#22c55e">@guard.wrap</code> 装饰器即可上护栏。</p>
+  </div>
+
+  <div class="faq-item">
+    <h4>Q：我的数据和代码安全吗？</h4>
+    <p><span class="answer-short">本地优先·MIT开源</span>ARK 核心逻辑<strong style="color:#22c55e">完全本地运行</strong>，不强制上云；整套工具包以 <strong style="color:#22c55e">MIT 协议开源</strong>，代码可审计。OTel 链路追踪为<strong style="color:#fbbf24">可选模块</strong>——不接观测栈就零开销，接了才上报。</p>
+  </div>
+
+  <div class="faq-item">
+    <h4>Q：ARK 和 LLM 网关 / 可观测平台有什么区别？</h4>
+    <p><span class="answer-short">专注可靠性</span>ARK <strong style="color:#fbbf24">不是 LLM 网关</strong>，不替换你现有的模型调用，也不做统一路由。它是在你已有 Agent 之上加的一层<strong style="color:#22c55e">可靠性护栏</strong>（幂等 / 熔断 / 输出校验 / 链路追踪），3 行接入、不改架构。可观测平台照常用，ARK 负责"别让 Agent 干出蠢事"。</p>
+  </div>
