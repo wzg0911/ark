@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK Diagnose - AI Agent Crash Detection Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                ARK Diagnose
+            </h1>
+            <p class="text-xl text-slate-400">
+                Detect AI Agent crashes before they happen
+            </p>
+            <p class="text-sm text-slate-500 mt-2">
+                One-click diagnosis • Auto-fix configuration • Zero crashes
+            </p>
+        </div>
+
+        <!-- Main Tool -->
+        <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-slate-700">
+            <!-- Input Section -->
+            <div class="mb-6">
+                <label for="projectPath" class="block text-sm font-medium text-slate-300 mb-2">
+                    Project Path or GitHub URL
+                </label>
+                <input
+                    type="text"
+                    id="projectPath"
+                    placeholder="/Users/xxx/my-agent-project or https://github.com/user/repo"
+                    class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-slate-400"
+                >
+                <p class="text-xs text-slate-400 mt-1">
+                    Example: /Users/john/my-ai-agent or https://github.com/john/ai-agent
+                </p>
+            </div>
+
+            <!-- Diagnose Button -->
+            <button
+                id="diagnoseBtn"
+                onclick="startDiagnosis()"
+                class="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl"
+            >
+                🔍 Start Diagnosis
+            </button>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="hidden mt-6 text-center">
+                <div class="inline-flex items-center">
+                    <svg class="animate-spin h-5 w-5 text-blue-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-slate-300">Analyzing your project...</span>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="hidden mt-6">
+                <div class="bg-slate-700/30 rounded-lg p-6 border border-slate-600">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                        <span id="statusIcon" class="text-2xl mr-2">✓</span>
+                        Diagnosis Result
+                    </h3>
+
+                    <!-- Issues Found -->
+                    <div id="issuesList" class="space-y-3 mb-4">
+                        <!-- Dynamic content -->
+                    </div>
+
+                    <!-- Fix Suggestions -->
+                    <div id="fixSuggestions" class="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                        <h4 class="font-semibold text-blue-400 mb-2">💡 Recommendations:</h4>
+                        <ul id="recommendationsList" class="text-sm text-slate-300 space-y-1">
+                            <!-- Dynamic content -->
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-6 flex gap-3">
+                        <button
+                            id="downloadFixBtn"
+                            onclick="downloadFix()"
+                            class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                        >
+                            📥 Download Fix Config
+                        </button>
+                        <button
+                            onclick="viewDetails()"
+                            class="flex-1 bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                        >
+                            📋 View Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="hidden mt-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                <p class="text-red-400 flex items-center">
+                    <span class="text-xl mr-2">⚠️</span>
+                    <span id="errorMessage">An error occurred. Please try again.</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="mt-12 grid md:grid-cols-3 gap-6">
+            <div class="bg-slate-800/30 rounded-lg p-6 border border-slate-700">
+                <div class="text-3xl mb-3">⚡</div>
+                <h3 class="font-semibold text-white mb-2">Instant Analysis</h3>
+                <p class="text-sm text-slate-400">
+                    Detect crashes in seconds, not hours
+                </p>
+            </div>
+            <div class="bg-slate-800/30 rounded-lg p-6 border border-slate-700">
+                <div class="text-3xl mb-3">🔧</div>
+                <h3 class="font-semibold text-white mb-2">Auto-Fix</h3>
+                <p class="text-sm text-slate-400">
+                    Get ready-to-use configuration files
+                </p>
+            </div>
+            <div class="bg-slate-800/30 rounded-lg p-6 border border-slate-700">
+                <div class="text-3xl mb-3">🛡️</div>
+                <h3 class="font-semibold text-white mb-2">Zero Crashes</h3>
+                <p class="text-sm text-slate-400">
+                    Prevent infinite loops & errors proactively
+                </p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-12 text-center text-sm text-slate-500">
+            <p>Built with ❤️ by <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">ARK Team</a></p>
+            <p class="mt-1">
+                <a href="https://ark-6ek.pages.dev" class="text-slate-400 hover:text-white">Pro Version</a> •
+                <a href="https://github.com/wzg0911/ark" class="text-slate-400 hover:text-white">GitHub</a> •
+                <a href="mailto:guanyi2026@agent.qq.com" class="text-slate-400 hover:text-white">Contact</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Mock API call (replace with real backend)
+        async function startDiagnosis() {
+            const projectPath = document.getElementById('projectPath').value.trim();
+
+            if (!projectPath) {
+                showError('Please enter a project path or GitHub URL');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('diagnoseBtn').disabled = true;
+
+            try {
+                // Simulate API call (replace with real backend URL)
+                // const response = await fetch('https://api.ark-diagnose.vercel.app/api/diagnose', {
+                //     method: 'POST',
+                //     headers: {'Content-Type': 'application/json'},
+                //     body: JSON.stringify({project_path: projectPath})
+                // });
+                // const data = await response.json();
+
+                // Mock response for demo
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                const data = {
+                    status: 'success',
+                    issues: [
+                        {
+                            type: 'missing_config',
+                            severity: 'high',
+                            message: 'Agent configuration missing idempotent_guard',
+                            fix: 'Add idempotent guard to prevent duplicate executions'
+                        },
+                        {
+                            type: 'missing_config',
+                            severity: 'medium',
+                            message: 'Error retry strategy not defined',
+                            fix: 'Define error handling and retry logic'
+                        },
+                        {
+                            type: 'warning',
+                            severity: 'low',
+                            message: 'No logging configuration found',
+                            fix: 'Add logging for better debugging'
+                        }
+                    ],
+                    fix_config: 'base64_encoded_config_here',
+                    download_url: '/api/download/fix-' + Date.now() + '.zip'
+                };
+
+                displayResults(data);
+
+            } catch (error) {
+                showError('Failed to analyze project. Please check the path and try again.');
+            } finally {
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('diagnoseBtn').disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            const resultsSection = document.getElementById('resultsSection');
+            const issuesList = document.getElementById('issuesList');
+            const recommendationsList = document.getElementById('recommendationsList');
+
+            // Clear previous results
+            issuesList.innerHTML = '';
+            recommendationsList.innerHTML = '';
+
+            // Display issues
+            data.issues.forEach(issue => {
+                const issueDiv = document.createElement('div');
+                issueDiv.className = 'flex items-start';
+
+                const icon = issue.severity === 'high' ? '❌' : issue.severity === 'medium' ? '⚠️' : 'ℹ️';
+                const color = issue.severity === 'high' ? 'text-red-400' : issue.severity === 'medium' ? 'text-yellow-400' : 'text-blue-400';
+
+                issueDiv.innerHTML = `
+                    <span class="${color} mr-2">${icon}</span>
+                    <div>
+                        <p class="text-white text-sm">${issue.message}</p>
+                        <p class="text-slate-400 text-xs mt-1">${issue.fix}</p>
+                    </div>
+                `;
+
+                issuesList.appendChild(issueDiv);
+
+                // Add to recommendations
+                const recLi = document.createElement('li');
+                recLi.textContent = issue.fix;
+                recommendationsList.appendChild(recLi);
+            });
+
+            // Show results
+            resultsSection.classList.remove('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorState').classList.remove('hidden');
+        }
+
+        function downloadFix() {
+            // In production, this would download the fix config
+            alert('Fix configuration will be downloaded. (Demo mode - backend not yet deployed)');
+        }
+
+        function viewDetails() {
+            // In production, this would show detailed diagnosis report
+            alert('Detailed diagnosis report will be shown. (Demo mode - backend not yet deployed)');
+        }
+    </script>
+</body>
+</html>
