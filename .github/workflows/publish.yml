@@ -6,8 +6,9 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
+  packages: read
 
 jobs:
   publish-pypi:
@@ -19,7 +20,7 @@ jobs:
         python-version: '3.11'
     - run: pip install build twine
     - run: python -m build
-    - run: twine upload dist/* -u __token__ -p ${{ secrets.PYPI_TOKEN }}
+    - run: twine upload dist/* -u __token__ -p "${{ secrets.PYPI_TOKEN }}"
 
   publish-go:
     runs-on: ubuntu-latest
@@ -40,10 +41,13 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         name: ARK ${{ github.ref_name }} (Go SDK)
-        generate_release_notes: true
+        generate_release_notes: false
+        draft: false
         files: |
           README.md
           LICENSE
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
     runs-on: ubuntu-latest
@@ -58,6 +62,6 @@ jobs:
         registry-url: 'https://registry.npmjs.org'
     - run: npm ci
     - run: npm test
-    - run: npm publish --access public
+    - run: npm publish --access public --tag latest
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
