@@ -16,6 +16,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .urgency-banner .close-urgent:hover{background:rgba(255,255,255,0.15);color:#fff}
 body{padding-top:40px}
 
+/* CN Mirror Banner */
+.cn-mirror{background:linear-gradient(135deg,#0c4a6e,#0e7490);color:#e0f2fe;padding:10px 20px;text-align:center;font-size:0.92em;border-bottom:1px solid #0ea5e9;display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap}
+.cn-mirror .icon{font-size:1.1em}
+.cn-mirror a{color:#fbbf24;font-weight:700;text-decoration:none;border-bottom:1px dashed #fbbf24;padding:0 2px}
+.cn-mirror a:hover{color:#fff;border-bottom-style:solid}
+.cn-mirror .close-cn{background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:1em;margin-left:6px;padding:2px 6px;border-radius:4px}
+.cn-mirror .close-cn:hover{background:rgba(255,255,255,0.15);color:#fff}
+
 /* Hero */
 .hero{text-align:center;padding:80px 20px 40px}
 .hero h1{font-size:2.6em;color:#fff;margin-bottom:12px;line-height:1.3}
@@ -139,6 +147,13 @@ body{padding-top:40px}
   <span class="countdown" id="earlyBirdCount">50</span>
   <span>名 ¥19.9 永久持有</span>
   <button class="close-urgent" onclick="dismissUrgency()">✕</button>
+</div>
+
+<div class="cn-mirror" id="cnMirror">
+  <span class="icon">🚀</span>
+  <span>国内访问慢？点此切<strong>高速镜像</strong>：</span>
+  <a href="https://ark-6ek.pages.dev/" target="_blank" rel="noopener">ark-6ek.pages.dev</a>
+  <button class="close-cn" onclick="this.parentElement.remove()" title="关闭">✕</button>
 </div>
 
 <div class="container">
