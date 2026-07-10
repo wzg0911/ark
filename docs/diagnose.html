@@ -15,6 +15,8 @@
         .enterprise-bg { background: rgba(99,102,241,0.06); }
         .enterprise-border { border: 2px solid rgba(99,102,241,0.3); }
     </style>
+    <script src="track.js"></script>
+    <script>document.addEventListener('DOMContentLoaded', () => ARK_TRACK.view());</script>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen text-white">
 
@@ -626,6 +628,7 @@
 <script>
 // ====== 诊断逻辑 ======
 async function startDiagnosis() {
+    ARK_TRACK.diagnose();
     const projectPath = document.getElementById('projectPath').value.trim();
     if (!projectPath) { showError('请输入Agent项目路径，例如：/home/Hermes/项目/产品/'); return; }
 
@@ -751,6 +754,7 @@ document.addEventListener('keydown', function(e) {
 
 // ====== 支付弹窗 ======
 function openPaymentModal(preset) {
+  ARK_TRACK.payModal(preset);
   document.getElementById('paymentModal').classList.remove('hidden');
   document.getElementById('paymentQRPanel').classList.add('hidden');
   document.getElementById('paymentSuccessPanel').classList.add('hidden');
@@ -780,6 +784,8 @@ function handlePayment(type) {
     return;
   }
   localStorage.setItem('ark_user_email', email);
+  ARK_TRACK.payIntent(type);
+  if (type === 'subscribe') ARK_TRACK.subscribeIntent();
   document.getElementById('paymentQRPanel').classList.remove('hidden');
   const amount = type === 'buy-once' ? '¥360' : '¥65/月';
   document.getElementById('paymentAmount').textContent = '应付金额：' + amount;
