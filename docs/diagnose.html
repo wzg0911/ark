@@ -606,6 +606,30 @@
     <!-- comparisonSection -->
     -->
 
+    <!-- ====== 五·五、ARK 诊断统计看板 ====== -->
+    <div id="statsDashboard" class="mt-10 bg-slate-800/60 border border-slate-700 rounded-2xl p-6">
+        <h3 class="text-lg font-bold text-white mb-4">📊 ARK 诊断统计</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-slate-700/40 rounded-xl p-4 text-center">
+                <div id="stat-diagnoses" class="text-2xl font-bold text-cyan-400">--</div>
+                <div class="text-xs text-slate-400 mt-1">累计诊断次数</div>
+            </div>
+            <div class="bg-slate-700/40 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-green-400">550<span class="text-sm font-normal text-slate-500">/月</span></div>
+                <div class="text-xs text-slate-400 mt-1">npm 下载量</div>
+            </div>
+            <div class="bg-slate-700/40 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-yellow-400">588<span class="text-sm font-normal text-slate-500">/月</span></div>
+                <div class="text-xs text-slate-400 mt-1">PyPI 下载量</div>
+            </div>
+            <div class="bg-slate-700/40 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-purple-400" id="stat-mrr">¥0</div>
+                <div class="text-xs text-slate-400 mt-1">本月 MRR</div>
+            </div>
+        </div>
+        <p class="text-xs text-slate-600 text-center mt-4">🔍 诊断数据实时更新 · 每30秒自动刷新 · 来自 <a href="#" onclick="return false;" class="text-slate-500">ark-6ek.pages.dev</a></p>
+    </div>
+
     <!-- ====== 六、页脚 ====== -->
     <div class="mt-12 text-center text-xs text-slate-500 border-t border-slate-800 pt-6 space-y-1">
         <p>© 2026 ARK Team · 让你的智能体永不崩溃</p>
@@ -791,6 +815,19 @@ function handlePayment(type) {
   document.getElementById('paymentAmount').textContent = '应付金额：' + amount;
   document.getElementById('paymentQRPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
+
+// ====== 统计看板自动刷新 ======
+async function refreshStats() {
+  try {
+    const resp = await fetch('/api/stats');
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.diagnoses) document.getElementById('stat-diagnoses').textContent = data.diagnoses;
+      if (data.mrr) document.getElementById('stat-mrr').textContent = data.mrr;
+    }
+  } catch (e) { /* 后端未就绪则保持静态值 */ }
+}
+document.addEventListener('DOMContentLoaded', () => { setInterval(refreshStats, 30000); refreshStats(); });
 </script>
 </body>
 </html>
