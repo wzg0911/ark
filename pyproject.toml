@@ -16,6 +16,14 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 requires-python = ">=3.9"
+
+[project.urls]
+Homepage = "https://github.com/wzg0911/ark"
+Repository = "https://github.com/wzg0911/ark"
+"Issue Tracker" = "https://github.com/wzg0911/ark/issues"
+Documentation = "https://github.com/wzg0911/ark#readme"
+"ARK Pro" = "https://ark-6ek.pages.dev/pro"
+
 dependencies = [
     "pydantic>=2.0",
     "httpx>=0.28",
