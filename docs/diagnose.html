@@ -111,7 +111,7 @@
                                 买断制 $49 或订阅 $9/月 · 7天无理由退款
                             </p>
                         </div>
-                        <button onclick="window.open('https://ark-6ek.pages.dev/pro','_blank')"
+                        <button onclick="openPaymentModal()"
                             class="shrink-0 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg text-sm">
                             ⚡ 一键修复全部问题 · 查看方案
                         </button>
@@ -156,8 +156,139 @@
         </div>
     </div>
 
+    <!-- ====== 支付弹窗模态框 ====== -->
+    <div id="paymentModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this)closePaymentModal()">
+      <div class="bg-[#0a1628] border border-yellow-500/40 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-yellow-500/10">
+        <div class="flex items-center justify-between p-6 border-b border-white/10">
+          <div>
+            <h3 class="text-white font-bold text-xl">⚡ 选择你的方案</h3>
+            <p class="text-slate-400 text-sm mt-1">支付成功后自动发送下载链接到你的邮箱</p>
+          </div>
+          <button onclick="closePaymentModal()" class="text-slate-400 hover:text-white transition text-2xl leading-none">&times;</button>
+        </div>
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-gradient-to-br from-[#1a1a0f] to-[#0f1a0a] border-2 border-yellow-500/60 rounded-xl p-5 relative">
+            <div class="absolute -top-3 left-4 bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full">⭐ 主推</div>
+            <h4 class="text-yellow-400 font-bold text-lg mb-1">🛒 买断版 · $49</h4>
+            <p class="text-slate-400 text-xs mb-3">适合想一次性解决、永久使用的个人开发者</p>
+            <div class="text-green-400 font-bold text-xl mb-4">$49 <span class="text-slate-500 text-sm line-through">$99</span> <span class="text-yellow-400 text-xs">立省$50</span></div>
+            <ul class="text-slate-300 text-xs space-y-1 mb-4">
+              <li>✅ 一键修复全部问题</li>
+              <li>✅ 永久使用（不含持续监控）</li>
+              <li>✅ 下载完整配置包</li>
+              <li>✅ 7天无理由退款</li>
+            </ul>
+            <div class="text-slate-300 text-xs mb-3">
+              <label class="block text-slate-400 mb-1">你的邮箱（支付成功后发送下载链接）</label>
+              <input type="email" id="buyOnceEmail" placeholder="your@email.com" class="w-full bg-[#0a1628] border border-yellow-500/40 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500 placeholder-slate-600">
+            </div>
+            <div class="space-y-2">
+              <button onclick="handlePayment('buy-once')" class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2.5 rounded-xl transition text-sm">💳 微信/支付宝 立即购买</button>
+              <p class="text-slate-500 text-xs text-center">扫码支付 · 秒到账 · 自动发货</p>
+            </div>
+          </div>
+          <div class="bg-gradient-to-br from-[#0f1a28] to-[#1a1a2e] border-2 border-blue-500/60 rounded-xl p-5 relative">
+            <div class="absolute -top-3 left-4 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">📈 推荐长期</div>
+            <h4 class="text-blue-400 font-bold text-lg mb-1">🔄 订阅版 · $9/月</h4>
+            <p class="text-slate-400 text-xs mb-3">适合需要持续保障、频繁使用Agent的团队</p>
+            <div class="text-blue-400 font-bold text-xl mb-4">$9/月</div>
+            <ul class="text-slate-300 text-xs space-y-1 mb-4">
+              <li>✅ 持续更新 + 7×24崩溃监控</li>
+              <li>✅ 每周健康报告发送到邮箱</li>
+              <li>✅ 一键修复全部问题</li>
+              <li>✅ 随时取消 · 按月计费</li>
+            </ul>
+            <div class="text-slate-300 text-xs mb-3">
+              <label class="block text-slate-400 mb-1">你的邮箱（订阅成功后发送确认）</label>
+              <input type="email" id="subscribeEmail" placeholder="your@email.com" class="w-full bg-[#0a1628] border border-blue-500/40 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 placeholder-slate-600">
+            </div>
+            <div class="space-y-2">
+              <button onclick="handlePayment('subscribe')" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-2.5 rounded-xl transition text-sm">💳 微信/支付宝 立即订阅</button>
+              <p class="text-slate-500 text-xs text-center">扫码订阅 · 按月计费 · 随时取消</p>
+            </div>
+          </div>
+        </div>
+        <div id="paymentQRPanel" class="hidden px-6 pb-6">
+          <div class="border-t border-white/10 pt-6">
+            <div class="text-center mb-4">
+              <p class="text-yellow-400 font-bold text-sm mb-1">📱 扫码支付</p>
+              <p id="paymentAmount" class="text-white text-lg font-bold"></p>
+              <p class="text-slate-400 text-xs mt-1">支付成功后，下载链接将自动发送到你的邮箱</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center">
+                <p class="text-green-400 text-sm font-bold mb-2">📱 微信支付</p>
+                <img id="wechatQR" src="wechat-pay-qr.png" alt="微信支付" class="mx-auto w-40 h-40 rounded-lg border border-green-500/30 bg-[#0a1628] p-2">
+                <p class="text-slate-500 text-xs mt-1">打开微信扫一扫</p>
+              </div>
+              <div class="text-center">
+                <p class="text-blue-400 text-sm font-bold mb-2">💳 支付宝</p>
+                <img id="alipayQR" src="alipay-qr.png" alt="支付宝" class="mx-auto w-40 h-40 rounded-lg border border-blue-500/30 bg-[#0a1628] p-2">
+                <p class="text-slate-500 text-xs mt-1">打开支付宝扫一扫</p>
+              </div>
+            </div>
+            <div class="mt-4 bg-[#0a1628] border border-yellow-500/30 rounded-lg p-3 text-center">
+              <p class="text-yellow-400 text-sm">💡 <strong>支付成功后</strong>，系统将在 5 分钟内自动发送灌顶包下载链接到你的邮箱。</p>
+              <p class="text-slate-500 text-xs mt-1">如未收到，请检查垃圾邮件，或联系 guanyi2026@agent.qq.com</p>
+            </div>
+          </div>
+        </div>
+        <div id="paymentSuccessPanel" class="hidden px-6 pb-6">
+          <div class="border-t border-white/10 pt-6 text-center">
+            <div class="text-5xl mb-3">✅</div>
+            <h4 class="text-green-400 font-bold text-xl mb-2">支付成功！</h4>
+            <p class="text-slate-300 text-sm">下载链接已发送到你的邮箱，请查收。</p>
+            <p class="text-slate-500 text-xs mt-1">如未收到，请检查垃圾邮件箱，或联系 guanyi2026@agent.qq.com</p>
+          </div>
+        </div>
+        <div class="px-6 pb-6 text-center">
+          <p class="text-slate-600 text-xs">🔒 安全支付 · 7天无理由退款 · 自动发货 · 24小时客服</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 诊断结果 → 产品卡片区（直接展示在结果下方，不跳转）====== -->
+    <div id="productCards" class="mt-8 bg-gradient-to-br from-[#0a1628] via-[#0d1f35] to-[#0a1628] border border-yellow-500/30 rounded-2xl p-6">
+      <div class="text-center mb-6">
+        <h3 class="text-white font-bold text-xl mb-2">⚡ 你的问题找到了，马上解决</h3>
+        <p class="text-slate-400 text-sm">选择最适合你的方案，支付成功后立即收到灌顶包</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-[#0f1a0a] border-2 border-yellow-500/50 rounded-xl p-5 text-center relative">
+          <div class="absolute top-3 right-3 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded">⭐ 主推</div>
+          <h4 class="text-yellow-400 font-bold text-lg mb-1">🛒 买断版 · $49</h4>
+          <p class="text-slate-400 text-xs mb-3">一次性解决 · 永久使用</p>
+          <div class="text-green-400 font-bold text-2xl mb-3">$49 <span class="text-slate-500 text-sm line-through">$99</span></div>
+          <ul class="text-slate-300 text-xs space-y-1 text-left mb-4">
+            <li>✅ 一键修复全部问题</li>
+            <li>✅ 永久使用（不含持续监控）</li>
+            <li>✅ 7天无理由退款</li>
+          </ul>
+          <button onclick="openPaymentModal('buy-once')" class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2.5 rounded-xl transition text-sm">⚡ 立即购买 · 扫码支付</button>
+        </div>
+        <div class="bg-[#0d1a28] border-2 border-blue-500/50 rounded-xl p-5 text-center relative">
+          <div class="absolute top-3 right-3 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded">📈 推荐长期</div>
+          <h4 class="text-blue-400 font-bold text-lg mb-1">🔄 订阅版 · $9/月</h4>
+          <p class="text-slate-400 text-xs mb-3">持续保障 · 7×24监控</p>
+          <div class="text-blue-400 font-bold text-2xl mb-3">$9/月</div>
+          <ul class="text-slate-300 text-xs space-y-1 text-left mb-4">
+            <li>✅ 持续更新 + 7×24崩溃监控</li>
+            <li>✅ 每周健康报告发邮箱</li>
+            <li>✅ 随时取消 · 按月计费</li>
+          </ul>
+          <button onclick="openPaymentModal('subscribe')" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-2.5 rounded-xl transition text-sm">🔄 立即订阅 · 扫码支付</button>
+        </div>
+      </div>
+      <div class="mt-4 bg-[#1a1a2e] border border-indigo-500/40 rounded-xl p-4 text-center">
+        <h4 class="text-indigo-400 font-bold text-sm mb-1">🏢 企业版 · 即将推出</h4>
+        <p class="text-slate-400 text-xs mb-2">团队协作 + API接入 + 专属顾问</p>
+        <p class="text-indigo-400 font-bold">$199/月 · <span class="text-slate-500 text-xs">等候名单开放中</span></p>
+        <button class="mt-2 border border-indigo-500/60 text-indigo-400 hover:bg-indigo-500/10 font-bold py-1.5 px-6 rounded-lg transition text-xs">📧 加入等候名单</button>
+      </div>
+    </div>
+
     <!-- ====== 三、用户口碑区 ====== -->
-    <div class="mt-12">
+    <div id="socialProof" class="mt-12">
         <h2 class="text-xl font-bold text-white text-center mb-4">首批30名用户说</h2>
         <div class="grid md:grid-cols-3 gap-4">
             <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-4">
@@ -193,6 +324,7 @@
         </div>
     </div>
 
+    <!--
     <!-- ====== 四、三级产品对比表 ====== -->
     <div id="comparisonSection" class="mt-12">
         <h2 class="text-xl font-bold text-white text-center mb-6">选择适合你的方案</h2>
@@ -332,11 +464,11 @@
 
         <!-- 购买CTA -->
         <div class="flex flex-col sm:flex-row gap-3 mt-6 justify-center">
-            <button onclick="window.open('https://ark-6ek.pages.dev/pro','_blank')"
+            <button onclick="openPaymentModal('buy-once')"
                 class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg text-base">
                 💳 $49 买断 · 锁定版
             </button>
-            <button onclick="window.open('https://ark-6ek.pages.dev/pro','_blank')"
+            <button onclick="openPaymentModal('subscribe')"
                 class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg text-base">
                 🔄 $9/月 订阅 · 持续更新版
             </button>
@@ -381,6 +513,8 @@
             <div class="text-5xl shrink-0">🚀</div>
         </div>
     </div>
+    <!-- comparisonSection -->
+    -->
 
     <!-- ====== 六、页脚 ====== -->
     <div class="mt-12 text-center text-xs text-slate-500 border-t border-slate-800 pt-6 space-y-1">
@@ -457,7 +591,7 @@ function displayResults(data) {
             ? `<div class="mt-3 pt-3 border-t ${cfg.border}">
                    <div class="flex items-center justify-between flex-wrap gap-2">
                        <span class="text-xs text-slate-500">🔒 ${issue.severity === 'high' ? '高危' : '中危'}问题，需专业版修复</span>
-                       <button onclick="window.open('https://ark-6ek.pages.dev/pro','_blank')"
+                       <button onclick="openPaymentModal()"
                            class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-1.5 px-4 rounded-lg transition text-xs shadow">
                            ⚡ 一键修复 · 查看方案
                        </button>
@@ -526,6 +660,43 @@ document.addEventListener('keydown', function(e) {
         e.preventDefault(); startDiagnosis();
     }
 });
+
+// ====== 支付弹窗 ======
+function openPaymentModal(preset) {
+  document.getElementById('paymentModal').classList.remove('hidden');
+  document.getElementById('paymentQRPanel').classList.add('hidden');
+  document.getElementById('paymentSuccessPanel').classList.add('hidden');
+  if (preset === 'buy-once') {
+    document.getElementById('paymentAmount').textContent = '应付金额：$49（约 ¥360）';
+  } else if (preset === 'subscribe') {
+    document.getElementById('paymentAmount').textContent = '应付金额：$9/月（约 ¥65/月）';
+  } else {
+    document.getElementById('paymentAmount').textContent = '选择产品后扫码支付';
+  }
+  const storedEmail = localStorage.getItem('ark_user_email') || '';
+  document.getElementById('buyOnceEmail').value = storedEmail;
+  document.getElementById('subscribeEmail').value = storedEmail;
+}
+
+function closePaymentModal() {
+  document.getElementById('paymentModal').classList.add('hidden');
+}
+
+function handlePayment(type) {
+  const email = type === 'buy-once'
+    ? document.getElementById('buyOnceEmail').value
+    : document.getElementById('subscribeEmail').value;
+
+  if (!email || !email.includes('@')) {
+    alert('请输入正确的邮箱地址，支付成功后发送下载链接');
+    return;
+  }
+  localStorage.setItem('ark_user_email', email);
+  document.getElementById('paymentQRPanel').classList.remove('hidden');
+  const amount = type === 'buy-once' ? '$49（约 ¥360）' : '$9/月（约 ¥65/月）';
+  document.getElementById('paymentAmount').textContent = '应付金额：' + amount;
+  document.getElementById('paymentQRPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 </script>
 </body>
 </html>
