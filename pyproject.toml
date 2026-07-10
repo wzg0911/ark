@@ -17,6 +17,12 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 
+dependencies = [
+    "pydantic>=2.0",
+    "httpx>=0.28",
+    "structlog>=23.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/wzg0911/ark"
 Repository = "https://github.com/wzg0911/ark"
@@ -24,11 +30,6 @@ Repository = "https://github.com/wzg0911/ark"
 Documentation = "https://github.com/wzg0911/ark#readme"
 "ARK Pro" = "https://ark-6ek.pages.dev/pro"
 
-dependencies = [
-    "pydantic>=2.0",
-    "httpx>=0.28",
-    "structlog>=23.0",
-]
 [project.optional-dependencies]
 langchain = ["langchain-core>=0.3"]
 dev = ["pytest", "pytest-asyncio", "ruff"]
