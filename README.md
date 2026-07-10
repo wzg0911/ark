@@ -152,6 +152,16 @@ Extracted from **1,838+ real diagnoses**, fully anonymized. These are the exact 
 
 ---
 
+## ⭐ Star History
+
+<p align="center">
+  <a href="https://star-history.com/#wzg0911/ark&Date">
+    <img src="https://api.star-history.com/svg?repos=wzg0911/ark&type=Date" alt="Star History Chart" width="600" />
+  </a>
+</p>
+
+---
+
 ## ❓ Frequently Asked Questions
 
 ### Q: Will ARK slow down my agent?
@@ -199,4 +209,19 @@ pip install ark-trust && python -c "from ark import IdempotencyGuard; print('�
 <p align="center">
   <sub>MIT — Free forever. ARK is open infrastructure for the agent era.  
   Built with 🧬 gene recombination: Stripe × Sentinel × OpenTelemetry × IDE</sub>
+</p>
+
+---
+
+## 🧩 More Open Source from ARK Lab
+
+| Project | Description | Stack |
+|---------|-------------|-------|
+| [🧿 元神AI](https://github.com/wzg0911/yuanshen-ai) | Personal causal-reasoning AI partner — clone, shadow, and transcend yourself | Python · Web · Causal Graph |
+| [🛠 AI Agent Toolkit](https://github.com/wzg0911/ai-agent-toolkit) | Production-ready building blocks for autonomous agents | Python · TypeScript · Go |
+| [📦 ark-trust (PyPI)](https://pypi.org/project/ark-trust/) | Python SDK — idempotency guard, retry, circuit breaker, output validator | Python 3.9+ |
+| [📦 @feilunxitong/arkit (npm)](https://www.npmjs.com/package/@feilunxitong/arkit) | Node.js SDK — same four pillars for TypeScript agents | TypeScript · Node 18+ |
+
+<p align="center">
+  <sub>🔭 Building the agent reliability layer, one pillar at a time.</sub>
 </p>
