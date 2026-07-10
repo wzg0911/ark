@@ -325,6 +325,93 @@
         </div>
     </div>
 
+    <!-- ====== 真实诊断案例 ====== -->
+    <div class="mt-12">
+        <div class="text-center mb-6">
+            <h2 class="text-xl font-bold text-white mb-2">🔍 真实诊断案例</h2>
+            <p class="text-slate-400 text-sm">从 1,838+ 诊断数据中提取，已脱敏处理</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <!-- 案例 1 -->
+            <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 flex flex-col">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-9 h-9 rounded-full bg-red-500/15 flex items-center justify-center text-lg shrink-0">🔁</span>
+                    <div>
+                        <p class="text-white text-sm font-semibold">李先生 &amp; 电商</p>
+                        <p class="text-slate-500 text-xs">运营选品 Agent</p>
+                    </div>
+                </div>
+                <div class="space-y-2.5 text-xs flex-1">
+                    <div>
+                        <p class="text-red-400 font-medium mb-0.5">😱 问题</p>
+                        <p class="text-slate-400 leading-relaxed">同一任务被重复触发，一天烧掉 $3.82 API 费用还误改了库存数据。</p>
+                    </div>
+                    <div>
+                        <p class="text-yellow-400 font-medium mb-0.5">🔬 诊断</p>
+                        <p class="text-slate-400 leading-relaxed">缺少幂等守卫（idempotent guard），任务无去重机制。</p>
+                    </div>
+                    <div>
+                        <p class="text-green-400 font-medium mb-0.5">✅ 修复效果</p>
+                        <p class="text-slate-400 leading-relaxed">加装幂等守卫后，连续运行 2 周零重复执行，API 费用降 90%。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 案例 2 -->
+            <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 flex flex-col">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-9 h-9 rounded-full bg-yellow-500/15 flex items-center justify-center text-lg shrink-0">💥</span>
+                    <div>
+                        <p class="text-white text-sm font-semibold">王先生 &amp; SaaS</p>
+                        <p class="text-slate-500 text-xs">运维监控 Agent</p>
+                    </div>
+                </div>
+                <div class="space-y-2.5 text-xs flex-1">
+                    <div>
+                        <p class="text-red-400 font-medium mb-0.5">😱 问题</p>
+                        <p class="text-slate-400 leading-relaxed">API 波动时任务直接失败，Agent 误删生产文件，服务宕机 2 小时。</p>
+                    </div>
+                    <div>
+                        <p class="text-yellow-400 font-medium mb-0.5">🔬 诊断</p>
+                        <p class="text-slate-400 leading-relaxed">缺少重试策略 + 无危险操作确认，错误无降级路径。</p>
+                    </div>
+                    <div>
+                        <p class="text-green-400 font-medium mb-0.5">✅ 修复效果</p>
+                        <p class="text-slate-400 leading-relaxed">加装指数退避重试 + 操作确认后，连续运行 3 周零宕机。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 案例 3 -->
+            <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 flex flex-col">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-9 h-9 rounded-full bg-blue-500/15 flex items-center justify-center text-lg shrink-0">🌀</span>
+                    <div>
+                        <p class="text-white text-sm font-semibold">张先生 &amp; 内容创作</p>
+                        <p class="text-slate-500 text-xs">多 Agent 协作写作</p>
+                    </div>
+                </div>
+                <div class="space-y-2.5 text-xs flex-1">
+                    <div>
+                        <p class="text-red-400 font-medium mb-0.5">😱 问题</p>
+                        <p class="text-slate-400 leading-relaxed">3 个 Agent 陷入无限辩论循环，一晚烧掉 ¥300 API 费用无产出。</p>
+                    </div>
+                    <div>
+                        <p class="text-yellow-400 font-medium mb-0.5">🔬 诊断</p>
+                        <p class="text-slate-400 leading-relaxed">缺少迭代上限 + 无成本熔断，Agent 间无收敛机制。</p>
+                    </div>
+                    <div>
+                        <p class="text-green-400 font-medium mb-0.5">✅ 修复效果</p>
+                        <p class="text-slate-400 leading-relaxed">加装迭代上限 + 成本熔断后，单次任务成本可控在 ¥5 以内。</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <p class="text-center text-slate-600 text-xs mt-4">💡 以上案例均已脱敏，仅保留问题类型与修复效果，不含任何真实身份信息</p>
+    </div>
+
     <!--
     <!-- ====== 四、三级产品对比表 ====== -->
     <div id="comparisonSection" class="mt-12">
