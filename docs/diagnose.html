@@ -233,6 +233,8 @@
               <p class="text-yellow-400 text-sm font-bold mb-1">⚠️ 付款时请备注你的邮箱</p>
               <p class="text-slate-400 text-xs">在微信/支付宝付款备注栏填写你的邮箱，系统会自动识别并发放下载链接</p>
               <p class="text-slate-600 text-xs mt-2 border-t border-white/10 pt-2">💡 未备注？支付成功后将支付凭证截图发送至 guanyi2026@agent.qq.com，24小时内处理</p>
+              <button onclick="submitPayment()" id="paidBtn" class="mt-3 w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-sm">✅ 我已支付 · 申请自动发货</button>
+              <p id="paidStatus" class="text-slate-400 text-xs mt-2 hidden"></p>
             </div>
           </div>
         </div>
@@ -814,6 +816,23 @@ function handlePayment(type) {
   const amount = type === 'buy-once' ? '¥360' : '¥65/月';
   document.getElementById('paymentAmount').textContent = '应付金额：' + amount;
   document.getElementById('paymentQRPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// 申请发货：唤起邮件到支付邮箱（与 ARK 自动核销 cron 闭环）
+function submitPayment() {
+  const status = document.getElementById('paidStatus');
+  const email = (document.getElementById('paymentAmount').textContent||'').includes('65')
+    ? document.getElementById('subscribeEmail').value
+    : document.getElementById('buyOnceEmail').value;
+  if (!email || !email.includes('@')) { alert('请先填写邮箱，付款凭证将发往该邮箱对应的订单'); return; }
+  const subject = encodeURIComponent('ARK 支付凭证 - ' + email);
+  const body = encodeURIComponent('我已支付 ARK，邮箱：' + email + '\n请查收付款截图/凭证，系统将自动发放下载链接。');
+  // 优先尝试唤起邮件客户端，失败则复制邮箱提示
+  window.location.href = 'mailto:guanyi2026@agent.qq.com?subject=' + subject + '&body=' + body;
+  status.classList.remove('hidden');
+  status.className = 'text-green-400 text-xs mt-2';
+  status.innerHTML = '✅ 已唤起邮件。请发送付款截图到 <b>guanyi2026@agent.qq.com</b>，系统将在30分钟内自动发放下载链接到 ' + email + '。<br>如未唤起邮箱，请手动复制邮箱发送凭证。';
+  document.getElementById('paidBtn').textContent = '✅ 已申请，等待自动发货';
 }
 
 // ====== 统计看板自动刷新 ======
