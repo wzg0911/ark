@@ -848,5 +848,53 @@ async function refreshStats() {
 }
 document.addEventListener('DOMContentLoaded', () => { setInterval(refreshStats, 30000); refreshStats(); });
 </script>
+
+            <!-- 📧 邮箱捕获区 -->
+            <div id="lead-capture" style="margin-top: 60px; padding: 40px 20px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 16px; border: 1px solid #bae6fd;">
+              <h3 style="font-size: 24px; color: #0c4a6e; margin: 0 0 8px 0; text-align: center;">🎯 想要第一时间获得修复方案？</h3>
+              <p style="font-size: 14px; color: #64748b; text-align: center; margin: 0 0 24px 0;">
+                留下邮箱，我们会在您的 Agent 项目有新进展时通知您。<br>
+                同时免费获取《Agent 7 种死法完整防御框架》PDF
+              </p>
+              <div style="max-width: 440px; margin: 0 auto; display: flex; gap: 8px;">
+                <input type="email" id="lead-email" placeholder="your@email.com" 
+                       style="flex: 1; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none;"
+                />
+                <button onclick="captureLead()"
+                        style="padding: 12px 24px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                  订阅 ↗
+                </button>
+              </div>
+              <p id="lead-msg" style="text-align: center; font-size: 13px; margin-top: 12px; color: #16a34a; display: none;">✅ 订阅成功！请查收邮件确认。</p>
+            </div>
+
+            <script>
+            function captureLead() {
+              var email = document.getElementById('lead-email').value.trim();
+              if (!email || !email.includes('@')) {
+                document.getElementById('lead-email').style.borderColor = '#ef4444';
+                return;
+              }
+              // 发邮件到核销邮箱
+              var mailto = 'mailto:guanyi2026@agent.qq.com?subject=LEAD%3A%20' + encodeURIComponent(email) + '%20from%20diagnose&body=' +
+                encodeURIComponent('新线索
+邮箱: ' + email + '
+来源: 诊断页
+时间: ' + new Date().toISOString());
+              window.location.href = mailto;
+              document.getElementById('lead-msg').style.display = 'block';
+              document.getElementById('lead-capture').innerHTML =
+                '<p style="font-size: 18px; color: #16a34a; text-align: center; padding: 20px;">✅ 感谢订阅！请检查邮件确认。</p>';
+            }
+            window.addEventListener('load', function() {
+              // 动态插入 lead capture 到支付弹窗后面
+              var container = document.querySelector('.result-section');
+              if (container) {
+                var leads = document.getElementById('lead-capture');
+                if (leads) container.after(leads);
+              }
+            });
+            </script>
+
 </body>
 </html>
