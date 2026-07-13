@@ -29,7 +29,7 @@ class TestBenchmarks:
         b = Benchmarks(iterations=50)
         r = b.bench_circuit_breaker_closed()
         assert r.iterations == 50
-        assert r.throughput_ops > 5_000  # fast path (tolerant for CI/loaded machines, MacBook Air avg ~37k)
+        assert r.throughput_ops > 2_000  # fast path (tolerant for CI/loaded machines, MacBook Air avg ~37k, CI often ~3k)
 
     def test_bench_validator_valid(self):
         b = Benchmarks(iterations=50)
