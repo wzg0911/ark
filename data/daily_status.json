@@ -1,8 +1,16 @@
 {
-  "timestamp": "2026-07-15T00:58:41.400792+00:00",
-  "new_leads": 0,
-  "new_payments": 0,
-  "lead_emails": [],
-  "payment_subjects": [],
-  "errors": []
+    "timestamp": "2026-07-15T02:56:00.000000+00:00",
+    "cst": "2026-07-15 10:56 CST",
+    "new_leads": 0,
+    "new_payments": 0,
+    "lead_emails": [],
+    "payment_subjects": [],
+    "errors": [],
+    "stars": 0,
+    "open_issues": 1,
+    "open_prs": 0,
+    "tests": {"passed": 248, "skipped": 3, "failed": 0},
+    "version": "0.7.0",
+    "ci_status": "all_green",
+    "notes": "Issue #1 (CrewAI governance) open since Jun 30, unlabeled. No new leads/payments."
 }
