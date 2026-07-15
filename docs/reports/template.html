@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 智能体诊断报告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .score-bar { height: 8px; border-radius: 4px; background: #2a2a3e; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 1s ease-in-out; }
+        .severity-high { border-left: 4px solid #ef4444; }
+        .severity-medium { border-left: 4px solid #eab308; }
+        .severity-low { border-left: 4px solid #22c55e; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 页眉 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">Agent Reliability Kit · 智能体健康感知系统</p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div id="block-summary">
+            <div class="flex items-start gap-2 mb-2">
+                <span id="severity-icon" class="text-xl">🔴</span>
+                <div>
+                    <p id="summary-text" class="text-base text-slate-200">加载中...</p>
+                    <span id="severity-tag" class="badge mt-1 bg-red-500/20 text-red-400">严重</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位</h2>
+        </div>
+        <div id="block-root-cause">
+            <p class="text-sm text-slate-300 leading-relaxed">加载中...</p>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：关键证据 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📊</span>
+            <h2 class="text-lg font-semibold text-white">关键证据</h2>
+        </div>
+        <div id="block-evidence">
+            <div class="space-y-3">
+                <div>
+                    <p class="text-xs text-slate-500 mb-1">📄 日志节选</p>
+                    <div id="log-snippet" class="code-block">
+                        <pre class="text-slate-300">加载中...</pre>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                        <p class="text-xs text-slate-500">Token 消耗</p>
+                        <p id="token-total" class="text-lg font-bold text-cyan-400">—</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                        <p class="text-xs text-slate-500">异常调用占比</p>
+                        <p id="anomaly-rate" class="text-lg font-bold text-red-400">—</p>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                        <p class="text-xs text-slate-500">重复执行次数</p>
+                        <p id="retry-count" class="text-lg font-bold text-yellow-400">—</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块4：修复建议 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔧</span>
+            <h2 class="text-lg font-semibold text-white">修复建议</h2>
+        </div>
+        <div id="block-fix">
+            <div class="space-y-3">
+                <div id="fix-items">
+                    <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                        <p class="text-sm text-slate-300 leading-relaxed">加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：健康得分 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-lg">📈</span>
+            <h2 class="text-lg font-semibold text-white">健康得分</h2>
+        </div>
+        <div id="block-score">
+            <div class="text-center mb-4">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full border-4 border-slate-700">
+                    <span id="health-score" class="text-2xl font-bold text-white">--</span>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div>
+                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                        <span>稳定性</span><span id="stability-score" class="text-slate-300">--</span>
+                    </div>
+                    <div class="score-bar"><div id="stability-bar" class="score-fill bg-blue-500" style="width:0%"></div></div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                        <span>效率</span><span id="efficiency-score" class="text-slate-300">--</span>
+                    </div>
+                    <div class="score-bar"><div id="efficiency-bar" class="score-fill bg-cyan-500" style="width:0%"></div></div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                        <span>安全性</span><span id="safety-score" class="text-slate-300">--</span>
+                    </div>
+                    <div class="score-bar"><div id="safety-bar" class="score-fill bg-purple-500" style="width:0%"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 页脚反馈 ====== -->
+    <div class="text-center pt-4 pb-2">
+        <p class="text-xs text-slate-600">
+            本报告由 <span class="text-cyan-500">ARK</span> 生成 —— 智能体健康感知系统<br>
+            反馈：<a href="mailto:guanyi2026@agent.qq.com" class="text-blue-400 hover:text-blue-300">guanyi2026@agent.qq.com</a>
+        </p>
+    </div>
+
+</div>
+
+<script>
+// 报告模板数据接口 — 使用前替换此数据块
+// 每份报告只需修改 REPORT_DATA 对象
+const REPORT_DATA = {
+    // ====== 区块1：问题摘要 ======
+    severity: "high",            // "high" | "medium" | "low"
+    severityLabel: "严重",
+    summary: "该智能体在一次研究任务中触发了递归子智能体无限生成，导致Token消耗达150万+",
+
+    // ====== 区块2：根因定位 ======
+    rootCause: "根因：子智能体生成逻辑缺少最大深度限制，触发条件为 research_task 类型任务。当智能体遇到信息不完整的查询时，会递归调用子智能体寻求更多信息，但未设置递归终止条件，导致无限生成。",
+
+    // ====== 区块3：关键证据 ======
+    logSnippet: `[2026-07-14 14:23:01] INFO: Spawning sub-agent for research_task: "find competitor pricing"
+[2026-07-14 14:23:05] INFO: Sub-agent #1 requesting more data → spawning sub-agent #2
+[2026-07-14 14:23:12] INFO: Sub-agent #2 requesting more data → spawning sub-agent #3
+...
+[2026-07-14 14:28:47] ERROR: Token limit exceeded (1,523,847 tokens used)`,
+    tokenTotal: "152.3万",
+    anomalyRate: "78%",
+    retryCount: "47次",
+
+    // ====== 区块4：修复建议 ======
+    fixes: [
+        {
+            title: "设置最大递归深度",
+            code: `# 在 sub_agent_config 中添加最大深度限制
+config = SubAgentConfig(
+    max_depth=3,           # 最多递归3层
+    max_total_tokens=50000 # 单任务Token上限
+)`,
+            note: "建议值：max_depth=3，根据任务复杂度可调整为2-5"
+        },
+        {
+            title: "添加循环检测机制",
+            code: `# 检测子智能体是否在重复相同的查询
+if agent.current_query in recent_queries_cache:
+    agent.stop_recursion()
+    return cached_result`,
+            note: "缓存最近5个查询，检测到重复立即终止"
+        }
+    ],
+
+    // ====== 区块5：健康得分 ======
+    healthScore: 32,
+    stability: 28,
+    efficiency: 45,
+    safety: 35
+};
+
+// ========== 渲染函数（不需要修改） ==========
+function renderReport(data) {
+    const isHigh = data.severity === 'high';
+    const isMedium = data.severity === 'medium';
+
+    // 区块1：摘要
+    const icon = isHigh ? '🔴' : isMedium ? '🟡' : '🟢';
+    const tagColor = isHigh ? 'bg-red-500/20 text-red-400' : isMedium ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400';
+    document.getElementById('severity-icon').textContent = icon;
+    document.getElementById('summary-text').textContent = data.summary;
+    const tag = document.getElementById('severity-tag');
+    tag.textContent = data.severityLabel;
+    tag.className = 'badge mt-1 ' + tagColor;
+
+    // 区块2：根因
+    document.querySelector('#block-root-cause p').textContent = data.rootCause;
+
+    // 区块3：证据
+    document.querySelector('#log-snippet pre').textContent = data.logSnippet;
+    document.getElementById('token-total').textContent = data.tokenTotal;
+    document.getElementById('anomaly-rate').textContent = data.anomalyRate;
+    document.getElementById('retry-count').textContent = data.retryCount;
+
+    // 区块4：修复
+    const fixContainer = document.getElementById('fix-items');
+    fixContainer.innerHTML = '';
+    data.fixes.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'bg-green-500/5 border border-green-500/10 rounded-lg p-3';
+        div.innerHTML = `<p class="text-sm font-medium text-green-400 mb-2">✅ ${f.title}</p>
+<div class="code-block"><pre class="text-slate-300">${f.code}</pre></div>
+<p class="text-xs text-slate-500 mt-2">💡 ${f.note}</p>`;
+        fixContainer.appendChild(div);
+    });
+
+    // 区块5：得分
+    const score = Math.max(0, Math.min(100, data.healthScore));
+    document.getElementById('health-score').textContent = score;
+    const borderColor = score >= 70 ? 'border-green-500' : score >= 40 ? 'border-yellow-500' : 'border-red-500';
+    document.querySelector('#block-score .inline-flex').className = `inline-flex items-center justify-center w-20 h-20 rounded-full border-4 ${borderColor}`;
+    document.getElementById('health-score').className = `text-2xl font-bold ${score >= 70 ? 'text-green-400' : score >= 40 ? 'text-yellow-400' : 'text-red-400'}`;
+
+    // 各维度
+    const dims = [
+        { id: 'stability', val: data.stability, color: 'bg-blue-500' },
+        { id: 'efficiency', val: data.efficiency, color: 'bg-cyan-500' },
+        { id: 'safety', val: data.safety, color: 'bg-purple-500' }
+    ];
+    dims.forEach(d => {
+        const v = Math.max(0, Math.min(100, d.val));
+        document.getElementById(`${d.id}-score`).textContent = v;
+        document.getElementById(`${d.id}-bar`).style.width = v + '%';
+        document.getElementById(`${d.id}-bar`).className = `score-fill ${d.color}`;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => renderReport(REPORT_DATA));
+</script>
+
+</body>
+</html>
