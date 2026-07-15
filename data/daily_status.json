@@ -1,13 +1,8 @@
 {
-  "timestamp": "2026-07-14T08:09:21.284237+00:00",
+  "timestamp": "2026-07-15T00:58:41.400792+00:00",
   "new_leads": 0,
   "new_payments": 0,
   "lead_emails": [],
   "payment_subjects": [],
-  "errors": [],
-  "last_cruise": "2026-07-14T09:38:00Z",
-  "tests_passed": 248,
-  "tests_skipped": 3,
-  "issues_open": 1,
-  "stars": 0
+  "errors": []
 }
