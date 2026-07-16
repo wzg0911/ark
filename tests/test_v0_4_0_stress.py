@@ -1323,7 +1323,7 @@ class TestIntegration:
         import ark
         v = ark.__version__
         assert isinstance(v, str)
-        assert v.startswith("0.6"), f"version should be 0.6.x, got {v}"
+        assert v.startswith("0.7"), f"version should be 0.7.x, got {v}"
 
     def test_i21_all_modules_have_stats(self):
         """🔄21: 所有模块有stats属性"""
