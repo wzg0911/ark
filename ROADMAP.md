@@ -78,3 +78,27 @@
 - **ARK Cloud**: 托管信任基础设施，Agent接入即获信任
 - **Trust-as-a-Service**: 按Agent数量/API调用量定价
 - **Open Standard**: 成为AI Agent可靠性的事实标准
+
+
+## v0.8.0 — Public Building Phase 🚀 (2026-07-16 启动)
+> 从匿名工具人到公开构建者：零成本、纯AI驱动、GitHub Issue精准诊断 + DEV.to构建日志
+
+### Week 1: 诊断能力验证 ✅ (2026-07-10 ~ 07-16)
+- [x] 3份完整诊断报告发布（#34974, #38843, #6731）
+- [x] 回复文案就绪（待主人集中回复）
+- [x] 诊断报告部署到 GitHub Pages
+- [x] 反馈追踪 cron 每2小时运行
+
+### Week 2: 破冰行动 (2026-07-17 ~ 07-23)
+- [x] ROADMAP 公开更新
+- [ ] DEV.to 账号创建 + 2篇构建日志发布
+- [ ] 5份新诊断报告（质检100%通过）
+- [ ] GitHub Discussions 分发
+- [ ] 主动追问已触达用户
+- [ ] 诊断周报发布（每周复盘系列）
+
+### Week 3+: Scaling (规划中)
+- [ ] 免费诊断邀请（V2EX/Reddit/DEV.to）
+- [ ] Show HN 发布
+- [ ] 诊断管道自动化（自助上传→自动分析→自动回复）
+- [ ] 付费诊断服务 MVP
