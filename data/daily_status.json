@@ -1,15 +1,8 @@
 {
-  "timestamp": "2026-07-15T13:36:07Z",
-  "cruise_type": "7x24 \u5efa\u9020\u5de1\u822a",
-  "stars": 0,
-  "forks": 0,
-  "open_issues": 1,
-  "open_prs": 0,
-  "tests_total": 248,
-  "tests_passed": 248,
-  "tests_skipped": 3,
-  "tests_failed": 0,
-  "repo_url": "https://github.com/wzg0911/ark",
-  "status": "healthy",
+  "timestamp": "2026-07-16T00:50:12.768087+00:00",
+  "new_leads": 0,
+  "new_payments": 0,
+  "lead_emails": [],
+  "payment_subjects": [],
   "errors": []
 }

@@ -30,7 +30,7 @@ from .achievements import Achievements, Achievement, Tier
 from .benchmarks import Benchmarks, BenchmarkResult
 from .otel_exporter import OTelExporter, ReliabilityEvent, EventType, get_otel_exporter
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 from .proactive import ProactiveGuard, ProactiveBlockError
 from .stateful_breaker import StatefulBreaker, CircuitOpenError
 from .module_kit import ModulePipeline, Module, RateLimitModule, SchemaValidationModule, LoggingModule, ModuleBlockError
