@@ -1,20 +1,8 @@
 {
-  "timestamp": "2026-07-18T20:06:12.357994+00:00",
+  "timestamp": "2026-07-18T22:09:13.187250+00:00",
   "new_leads": 0,
   "new_payments": 0,
   "lead_emails": [],
   "payment_subjects": [],
-  "errors": [],
-  "2026-07-19": {
-    "ts": "2026-07-19T05:28:00+08:00",
-    "stars": 0,
-    "forks": 0,
-    "open_issues": 1,
-    "open_prs": 0,
-    "tests_passed": 248,
-    "tests_skipped": 3,
-    "tests_total": 251,
-    "head_commit": "59f913f",
-    "healthy": true
-  }
+  "errors": []
 }
