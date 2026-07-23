@@ -7,6 +7,7 @@
 | 诊断报告 | 仓库 | 问题类型 | 状态 |
 |---------|------|---------|------|
 | #39039 | langchain-ai/langchain | Responses API 流式静默丢弃 failed/error 终止事件 | ✅ 已发布 (1/5) |
+| #38989 | langchain-ai/langchain | usage_metadata_callback 异常退出后泄漏，token 计量静默污染 | ✅ 已发布 (2/5) |
 
 ---
 
@@ -33,6 +34,33 @@ Responses API 4 种终止事件 → 转换器只处理 completed/incomplete
 - OTel Bridge — `ark.validation.fail` 事件进入 Langfuse/Jaeger，静默失败留痕可审计
 
 **报告链接：** `docs/reports/ark-report-39039-20260724.html`
+
+---
+
+## 案例二：计量数据静默污染（财务级风险）
+
+**问题来源：** langchain-ai/langchain#38989（2026-07-21 提交，bug/core 标签）
+
+**用户痛点：**
+`get_usage_metadata_callback` 的清理逻辑没有 try/finally 保护——with 块内一旦抛异常，
+回调保持全局注册，**块外的所有模型调用继续累加进旧统计**（复现打印 6 而非 3）。
+没有报错、没有日志，只有悄悄错掉的 token 计量。对按 token 计费/配额限流的产品是财务级风险。
+
+**根因分析：**
+```
+contextmanager yield 裸奔（无 try/finally）
+→ 块内 raise 时清理语句被跳过
+→ ContextVar 泄漏，回调永久注册
+→ 后续调用 token 全部污染进旧统计
+→ 同库 tracers.context 的邻居写法正确，属漏改
+```
+
+**ARK Trust 修复方案：**
+- `OutputValidator` — 守住"单次操作 token 用量必须在合理区间"的计量不变式，污染即超界即报错
+- OTel Bridge — ARK 事件流独立于 LangChain ContextVar，天然免疫本 bug，作为第二信源对账
+- 上游 patch（issue 作者已提供）解决泄漏本身，边界校验仍是长期防线
+
+**报告链接：** `docs/reports/ark-report-38989-20260724.html`
 
 ---
 
