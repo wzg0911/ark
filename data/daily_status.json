@@ -1,14 +1,8 @@
 {
-  "timestamp": "2026-07-22T10:10:00.000000+00:00",
+  "timestamp": "2026-07-23T01:04:36.902326+00:00",
   "new_leads": 0,
   "new_payments": 0,
   "lead_emails": [],
   "payment_subjects": [],
-  "errors": [],
-  "tests_passed": true,
-  "test_count": 248,
-  "git_synced": true,
-  "badge_service": "down",
-  "stars": 0,
-  "open_issues": 1
+  "errors": []
 }
