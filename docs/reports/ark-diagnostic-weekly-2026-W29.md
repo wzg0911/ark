@@ -9,8 +9,8 @@
 | #34974 | langchain-ai/langchain | CrewAI Agent崩溃 | ✅ 已发布 |
 | #38843 | langchain-ai/langchain | 链接工具调用失败 | ✅ 已发布 |
 | #6731 | CrewAI/CrewAI | Agent执行错误 | ✅ 已发布 |
-| 等待目标 | 待确定 | 待诊断 | 🔄 进行中 |
-| 等待目标 | 待确定 | 待诊断 | 🔄 进行中 |
+| #38708 | langchain-ai/langchain | ToolNode 并行调用不做去重 | ✅ 已发布 |
+| #35475 | langchain-ai/langchain | RunnableRetry.batch 错位损坏 | ✅ 已发布 |
 
 ---
 
@@ -70,7 +70,7 @@ result = guard.execute("task_idempotent_key", lambda: agent.run(task))
 
 ## 本周数据
 
-- 诊断报告发布：3份
+- 诊断报告发布：5份（Week 2 目标全部完成 ✅）
 - GitHub 曝光次数：待追踪
 - Star 增长：0（需要公开分发）
 - DEV.to 访问：待发布后追踪

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain#38708</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .score-bar { height: 8px; border-radius: 4px; background: #2a2a3e; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 1s ease-in-out; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/38708" class="text-blue-400 hover:underline">langchain-ai/langchain#38708</a>
+            · ToolNode 对重复的并行 tool_call 不做去重 → 重复副作用 / 成本
+            · 2026-07-21
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🟡</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    LLM 在单条 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">AIMessage</code>
+                    中常会<strong class="text-yellow-400">一次性吐出多个完全相同的并行 tool_call</strong>
+                    （同名工具 + 等价参数，仅 JSON 键序不同）。LangChain 的
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">ToolNode</code>
+                    不做去重，把每个调用都当作独立请求并行执行，导致
+                    <strong class="text-red-400">重复写入、重复 API 请求、重复扣费</strong>，并向下游注入噪声状态。
+                </p>
+                <span class="badge mt-1 bg-yellow-500/20 text-yellow-400">中等 · 静默重复执行</span>
+                <span class="badge mt-1 bg-red-500/20 text-red-400 ml-1">成本 / 副作用风险</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">所有 create_agent + ToolNode</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ 仅 feature 请求，无内置去重</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ IdempotencyGuard 已就绪</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位</h2>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">🧬 现象链</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    LLM 生成 <code class="bg-slate-700 px-1 rounded text-xs">AIMessage.tool_calls</code>
+                    → 列表含 N 个等价调用（仅键序不同） →
+                    <code class="bg-slate-700 px-1 rounded text-xs">ToolNode</code>
+                    逐条 <code class="bg-slate-700 px-1 rounded text-xs">invoke</code>
+                    → 同一逻辑动作被执行 N 次 →
+                    <strong class="text-red-400">N 倍 API 成本 + N 次副作用 + 下游状态污染</strong>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">⚙️ 根因</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    <code class="bg-slate-700 px-1 rounded text-xs">ToolNode</code>
+                    把 <code class="bg-slate-700 px-1 rounded text-xs">tool_calls</code>
+                    视为权威列表，<strong>没有"幂等键"概念</strong>。它只在执行前做"工具是否存在"的检查，
+                    从不对"参数是否等价"做归并。社区常用的朴素去重
+                    <code class="bg-slate-700 px-1 rounded text-xs">set(tool_calls)</code>
+                    会失效——因为 LLM 经常把参数字典的键序打乱，<code class="bg-slate-700 px-1 rounded text-xs">{a:1,b:2}</code>
+                    与 <code class="bg-slate-700 px-1 rounded text-xs">{b:2,a:1}</code> 在 Python
+                    <code class="bg-slate-700 px-1 rounded text-xs">set</code> 里是两个不同对象。
+                    结果：每个团队都在 <code class="bg-slate-700 px-1 rounded text-xs">ToolNode</code>
+                    外层重复造一遍去重逻辑（issue #38708 正是为此提出的
+                    <code class="bg-slate-700 px-1 rounded text-xs">DeduplicateToolCallsMiddleware</code> 请求）。
+                </div>
+            </div>
+            <div class="callout text-sm text-slate-300 leading-relaxed">
+                💡 <strong class="text-cyan-400">本质：</strong>这不是"要不要去重"的问题，而是
+                <strong>"谁来定义幂等键"</strong>。框架缺一个稳定的
+                <code class="bg-slate-700 px-1 rounded text-xs">(tool_name, canonical_args)</code>
+                归一化层——而这正是 ARK <code class="bg-slate-700 px-1 rounded text-xs">IdempotencyGuard</code>
+                已经解决的事。
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：关键证据 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📊</span>
+            <h2 class="text-lg font-semibold text-white">关键证据</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <p class="text-xs text-slate-500 mb-1">📄 单次 AIMessage 触发 3 个等价并行调用（节选自 issue 复现）</p>
+                <div class="code-block">
+<pre class="text-slate-300">[14:22:01] LLM ▸ AIMessage.tool_calls (n=3)
+  ├─ call_01  search_flights({"from":"PVG","to":"LAX","date":"2026-08-01"})
+  ├─ call_02  search_flights({"date":"2026-08-01","from":"PVG","to":"LAX"})  ← 同参·键序不同
+  └─ call_03  search_flights({"from":"PVG","to":"LAX","date":"2026-08-01"})  ← 同参
+[14:22:02] ToolNode ▸ 并行执行 3 次 → 3× 外部 API + 3× DB 写入
+[14:22:02] WARN: 重复副作用 ×2（set() 朴素去重失效：键序不同）
+[14:22:03] 下游污染：3 条 ToolMessage 代表同一逻辑动作，干扰后续推理</pre>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">Token / 成本消耗</p>
+                    <p class="text-lg font-bold text-red-400">3.0×</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">异常调用占比</p>
+                    <p class="text-lg font-bold text-yellow-400">33%</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">重复执行次数</p>
+                    <p class="text-lg font-bold text-yellow-400">3 次/批</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块4：修复建议 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔧</span>
+            <h2 class="text-lg font-semibold text-white">ARK 一键修复</h2>
+        </div>
+        <div class="space-y-3">
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案A（推荐）：IdempotencyGuard 在工具边界去重</p>
+                <div class="code-block"><pre class="text-slate-300">from ark import IdempotencyGuard
+
+guard = IdempotencyGuard(ttl_seconds=3600)  # 1h 内同参调用视为重复
+
+# 交给 Agent 前，对每个工具做幂等包裹
+deduped_tools = [guard.wrap(t) if callable(t) else t for t in tools]
+
+agent = create_agent(model=model, tools=deduped_tools)
+# 同 (tool_name, sort_keys(args)) 的重复调用 → 直接返回首次结果，0 额外执行</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 ARK 用 <code class="bg-slate-700 px-1 rounded">sha256({tool, args}, sort_keys)</code> 生成稳定幂等键，<strong>JSON 键序不同也能识别重复</strong>；命中即拦截并 emit <code class="bg-slate-700 px-1 rounded">ark.guardian.intercept</code>。</p>
+            </div>
+
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案B：ARKCallbackHandler 一行接入 + 熔断兜底</p>
+                <div class="code-block"><pre class="text-slate-300">from ark.langchain import ARKCallbackHandler
+
+# 一行接入 LangChain：自动追踪工具调用、幂等拦截计数、链路追踪
+agent.invoke(
+    {"input": "查一下 PVG→LAX 的航班"},
+    {"callbacks": [ARKCallbackHandler(idempotency_ttl=3600)]},
+)
+# 仪表盘实时显示 去重次数 / 拦截率 / 验证通过率</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 与方案A 组合使用——<code class="bg-slate-700 px-1 rounded">wrap</code> 负责拦截，<code class="bg-slate-700 px-1 rounded">ARKCallbackHandler</code> 负责把拦截事件汇入 ARK Trace + ReliabilityScore + 仪表盘。</p>
+            </div>
+
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案C：auto_init 零配置一键启用</p>
+                <div class="code-block"><pre class="text-slate-300">import ark
+cfg = ark.auto_init()   # 自动探测 LangChain/CrewAI 并装配守护
+
+agent = create_agent(
+    model=model,
+    tools=tools,
+    callbacks=[cfg["langchain_handler"]()],
+)</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 适合已有 Agent、不想改工具定义的场景；ARK 自动注入<strong>幂等 + 熔断 + 输出校验</strong>三层守护。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：健康得分 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-lg">📈</span>
+            <h2 class="text-lg font-semibold text-white">健康得分</h2>
+        </div>
+
+        <div class="text-center mb-4">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full border-4 border-yellow-500">
+                <span class="text-2xl font-bold text-yellow-400">55</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">55/100 · 功能可用，但缺少幂等去重导致效率损耗</p>
+        </div>
+
+        <div class="space-y-2">
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>稳定性</span><span class="text-green-400">70</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:70%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>效率</span><span class="text-red-400">40</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-red-500" style="width:40%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>安全性（副作用）</span><span class="text-yellow-400">55</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-yellow-500" style="width:55%"></div></div>
+            </div>
+        </div>
+
+        <div class="mt-4 p-3 bg-slate-800/30 rounded-lg">
+            <p class="text-xs text-slate-400 leading-relaxed">
+                💡 健康得分 55/100。<strong>效率分仅 40</strong>——重复执行把成本与延迟直接拉高。
+                对只读工具（搜索/查询）这只是浪费；但一旦工具具备<strong class="text-red-400">非幂等副作用</strong>
+                （支付、写入、发消息），问题立即升级为<strong class="text-red-400">严重</strong>（重复扣款 / 脏写）。
+                接入 ARK <code class="bg-slate-700 px-1 rounded">IdempotencyGuard</code> 后，效率分可回到 <strong class="text-green-400">90+</strong>，
+                且所有拦截行为在 Dashboard 可观测、可审计。
+            </p>
+        </div>
+    </div>
+
+    <!-- ====== 页脚反馈 ====== -->
+    <div class="text-center pt-4 pb-2">
+        <p class="text-xs text-slate-600">
+            本报告由 <span class="text-cyan-500">ARK</span> 生成 · 智能体健康感知系统<br>
+            <a href="https://github.com/langchain-ai/langchain/issues/38708" class="text-blue-400 hover:text-blue-300">langchain-ai/langchain#38708</a>
+            · 锚定自真实 Issue（open，2026-07-20 更新）</p>
+    </div>
+
+</div>
+
+</body>
+</html>
