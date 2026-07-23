@@ -8,6 +8,7 @@
 |---------|------|---------|------|
 | #39039 | langchain-ai/langchain | Responses API 流式静默丢弃 failed/error 终止事件 | ✅ 已发布 (1/5) |
 | #38989 | langchain-ai/langchain | usage_metadata_callback 异常退出后泄漏，token 计量静默污染 | ✅ 已发布 (2/5) |
+| #38893 | langchain-ai/langchain | ModelRetryMiddleware 吞掉不可重试异常，转成"正常"AIMessage | ✅ 已发布 (3/5) |
 
 ---
 
@@ -61,6 +62,33 @@ contextmanager yield 裸奔（无 try/finally）
 - 上游 patch（issue 作者已提供）解决泄漏本身，边界校验仍是长期防线
 
 **报告链接：** `docs/reports/ark-report-38989-20260724.html`
+
+---
+
+## 案例三：异常契约双侧不一致——错误被伪装成正常回答
+
+**问题来源：** langchain-ai/langchain#38893（2026-07-16 提交，bug/langchain 标签，8 评论）
+
+**用户痛点：**
+用户配置 `retry_on=(ValueError,)` 显式声明"其它异常我自己处理"，但 `ModelRetryMiddleware`
+把不匹配的 TypeError 吞掉，转成一条 `"Model call failed after 1 attempt..."` 的 AIMessage，
+graph 当作模型回答继续跑。**工具侧（#38845 修复后）同样配置会正确抛出**——同一契约双侧行为相反。
+
+**根因分析：**
+```
+#38845 只改了 tool_retry.py（不可重试 → bare raise）
+→ #38884 基于新行为写死文档契约
+→ model_retry.py sync/async 两条路径漏改（旧代码+旧注释原样残留）
+→ 不可重试异常进 _handle_failure → on_failure="continue" 转成 AIMessage
+→ 异常降级为聊天文本，所有基于异常的防御失效
+```
+
+**ARK Trust 修复方案：**
+- `OutputValidator` — 守住"输出必须是真实回答"的不变式，错误文案 AIMessage 立即 ValidationError
+- `CircuitBreaker` — 连续伪回答触发熔断，阻止错误消息洪流污染会话与下游
+- 上游一行修复（对齐 tool_retry.py 的 raise）即可对齐契约
+
+**报告链接：** `docs/reports/ark-report-38893-20260724.html`
 
 ---
 
