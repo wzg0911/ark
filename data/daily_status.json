@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-24T03:29:00.000000+00:00",
+  "timestamp": "2026-07-24T05:29:00.000000+00:00",
   "day": "Friday",
   "week": "W31",
   "stars": 0,
@@ -17,8 +17,8 @@
   "lead_emails": [],
   "payment_subjects": [],
   "diagnostics": {
-    "w30_target": 5,
-    "w30_done": 5,
+    "w31_target": 5,
+    "w31_done": 1,
     "w31_diagnostic_reports": [
       {
         "number": "38892",
