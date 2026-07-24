@@ -1,14 +1,35 @@
 {
-  "timestamp": "2026-07-24T01:29:00.000000+00:00",
+  "timestamp": "2026-07-24T03:29:00.000000+00:00",
+  "day": "Friday",
+  "week": "W31",
+  "stars": 0,
+  "forks": 0,
+  "open_issues": 1,
+  "open_prs": 0,
+  "test_results": {
+    "total": 251,
+    "passed": 248,
+    "skipped": 3,
+    "failed": 0
+  },
   "new_leads": 0,
   "new_payments": 0,
   "lead_emails": [],
   "payment_subjects": [],
-  "errors": [],
-  "tests_passed": true,
-  "test_count": 248,
-  "git_synced": true,
-  "badge_service": "down",
-  "stars": 0,
-  "open_issues": 1
+  "diagnostics": {
+    "w30_target": 5,
+    "w30_done": 5,
+    "w31_diagnostic_reports": [
+      {
+        "number": "38892",
+        "title": "RunnableWithFallbacks empty stream misinterpreted as failure",
+        "file": "docs/reports/ark-report-38892-20260724.html",
+        "key_risk": "9 PRs blocked by automation gate + silent data contamination in regulated workflows",
+        "ark_fit": "idempotency_guard + output_validator + circuit_breaker",
+        "status": "published"
+      }
+    ],
+    "w31_count": 1
+  },
+  "errors": []
 }
