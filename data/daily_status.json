@@ -1,8 +1,37 @@
 {
-  "timestamp": "2026-07-25T08:05:09.455303+00:00",
+  "timestamp": "2026-07-25T12:05:57.321741+00:00",
   "new_leads": 0,
   "new_payments": 0,
   "lead_emails": [],
   "payment_subjects": [],
-  "errors": []
+  "errors": [],
+  "daily": {
+    "2026-07-25": {
+      "cruise_2129": {
+        "time": "21:33",
+        "tests": "248 passed, 3 skipped",
+        "stars": 0,
+        "issues": 1,
+        "prs": 0,
+        "status": "green"
+      }
+    }
+  },
+  "weekly": {
+    "W31": {
+      "diagnostics": {
+        "done": 2,
+        "target": 5,
+        "reports": [
+          "#38892",
+          "#38779"
+        ]
+      },
+      "devto": {
+        "done": 0,
+        "target": 2
+      },
+      "tests": "green"
+    }
+  }
 }
