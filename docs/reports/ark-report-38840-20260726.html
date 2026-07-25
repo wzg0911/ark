@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain#38840</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .score-bar { height: 8px; border-radius: 4px; background: #2a2a3e; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 1s ease-in-out; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/38840" class="text-blue-400 hover:underline">langchain-ai/langchain#38840</a>
+            · ChatPerplexity 在构建 Responses 载荷时原地篡改调用方的 extra_body 字典：单次调用参数泄漏进实例，污染后续所有请求
+            · 2026-07-26
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🟠</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">ChatPerplexity._to_responses_payload</code>
+                    （langchain-perplexity）在构建 Responses API 请求体时，<strong class="text-orange-400">直接写入调用方传入的 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">extra_body</code> 字典</strong>，而非拷贝副本。
+                    后果有二：① 调用方自己持有的 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">extra_body</code> dict 被就地改写；
+                    ② 由于 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">_generate</code> 走
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">{**self._default_params, **kwargs}</code> 浅合并，
+                    <strong class="text-red-400">单次调用的临时参数（如 search_mode）会永久沉淀进实例的 model_kwargs，泄漏到之后每一次请求</strong>。
+                    无异常、无报错——损坏本身就是 bug。
+                </p>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400">中危 · 状态污染 / 参数跨请求泄漏</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：影响分析 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">⚠️</span>
+            <h2 class="text-lg font-semibold text-white">影响分析</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-300">发生频率</span><span class="text-yellow-400">高（任何复用实例的多轮调用）</span>
+                </div>
+                <p class="text-slate-400 text-sm">只要同一个 <code class="bg-slate-700 px-1 py-0.5 rounded">ChatPerplexity</code> 实例被复用、且某次调用传了 per-call 参数，污染即发生——而复用实例正是生产的默认用法。</p>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-300">隐蔽性</span><span class="text-red-400">极高</span>
+                </div>
+                <p class="text-slate-400 text-sm">没有异常、没有堆栈、没有红灯。第 2 次调用<strong>没有传</strong> <code class="bg-slate-700 px-1 py-0.5 rounded">search_mode</code>，载荷里却<strong>带着上一次的</strong> <code class="bg-slate-700 px-1 py-0.5 rounded">search_mode="academic"</code>。行为漂移是唯一症状。</p>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-300">下游风险</span><span class="text-red-400">高</span>
+                </div>
+                <p class="text-slate-400 text-sm">检索模式（academic/web）、地域（country）等参数跨请求串味，会导致<strong>本应普通检索的请求被静默切成学术检索</strong>，或用户 A 的地域设置泄漏到用户 B——在多租户 Agent 网关中即数据/合规越界。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：根因分析 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔬</span>
+            <h2 class="text-lg font-semibold text-white">根因分析</h2>
+        </div>
+        <div class="code-block mb-3 text-slate-300">
+<span class="text-purple-400"># 复现（无需联网，载荷构建器直接写进了调用方的 dict）</span>
+llm = ChatPerplexity(pplx_api_key=<span class="text-yellow-400">"fake"</span>, model=<span class="text-yellow-400">"sonar-pro"</span>, use_responses_api=<span class="text-blue-400">True</span>)
+shared = {<span class="text-yellow-400">"country"</span>: <span class="text-yellow-400">"US"</span>}
+llm._to_responses_payload([], {<span class="text-yellow-400">"extra_body"</span>: shared, <span class="text-yellow-400">"search_mode"</span>: <span class="text-yellow-400">"academic"</span>}, user_set_keys=<span class="text-blue-400">set</span>())
+<span class="text-blue-400">print</span>(shared)
+<span class="text-gray-500"># → {'country': 'US', 'search_mode': 'academic'}   ← 调用方的 dict 被就地改写</span>
+</div>
+        <p class="text-slate-300 text-sm mb-2">根因：载荷构建把 <code class="bg-slate-700 px-1 py-0.5 rounded">extra_body</code> <strong>引用</strong>拿来直接 <code class="bg-slate-700 px-1 py-0.5 rounded">[key] = value</code> 写入，未做防御性拷贝。叠加 <code class="bg-slate-700 px-1 py-0.5 rounded">_generate</code> 的浅合并，per-call 参数被写回实例级 <code class="bg-slate-700 px-1 py-0.5 rounded">model_kwargs</code>。</p>
+        <div class="code-block text-slate-300">
+<span class="text-purple-400"># 修复方向：入口处一次浅拷贝，切断共享引用</span>
+extra_body = <span class="text-blue-400">dict</span>(extra_body) <span class="text-blue-400">if</span> extra_body <span class="text-blue-400">else</span> {}
+<span class="text-gray-500"># 对写入 extra_body 的每个 per-call 键，均在副本上操作，不回写 self.model_kwargs</span>
+        </div>
+        <p class="text-slate-400 text-sm mt-2">这是一个教科书级的<strong class="text-red-400">"共享可变默认/引用未拷贝"</strong>缺陷——与 ARK 已诊断的 #38779（ChatAnthropic.bind_tools 篡改 tool_choice）、#38659（ChatGroq 原地改 token_usage）<strong>同一 bug 族</strong>。</p>
+    </div>
+
+    <!-- ====== 区块4：社区共识 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🏆</span>
+            <h2 class="text-lg font-semibold text-white">社区共识：自包含复现，根因无争议</h2>
+        </div>
+        <div class="callout mb-3">
+            <p class="text-sm text-slate-300 mb-1">报告者提供了<strong class="text-green-400">零依赖、可直接运行</strong>的最小复现（无需 API Key、无需联网），并主动关联了同类 issue <strong class="text-cyan-400">#38779</strong> 与 <strong class="text-cyan-400">#38659</strong>，明确指出这是一个"跨集成反复出现的可变状态篡改模式"。截至诊断时 issue 仍 <strong class="text-orange-400">OPEN</strong>（5 条讨论）。</p>
+            <p class="text-sm text-slate-300">修复本身极简（入口浅拷贝），但价值在于：<strong class="text-orange-400">这是第三次以同样形态出现的 bug</strong>——说明缺的不是某处补丁，而是一道"禁止原地篡改调用方入参"的系统性防线。</p>
+        </div>
+        <p class="text-slate-400 text-sm">当同一缺陷族在 Anthropic / Groq / Perplexity 三个集成里各自复发，逐个打补丁只是治标；真正的解法是把"入参不可变"变成可在运行时被强制校验的契约。</p>
+    </div>
+
+    <!-- ====== 区块5：生产场景深度分析 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">⚖️</span>
+            <h2 class="text-lg font-semibold text-white">生产场景：一次调用污染整条会话</h2>
+        </div>
+        <div class="space-y-3">
+            <div class="callout">
+                <p class="text-sm text-slate-200"><strong class="text-yellow-400">场景：多租户检索网关复用单一 LLM 实例</strong></p>
+                <p class="text-sm text-slate-300 mt-1">网关为省资源全局复用一个 <code class="bg-slate-700 px-1 py-0.5 rounded">ChatPerplexity</code>。用户 A 的请求带 <code class="bg-slate-700 px-1 py-0.5 rounded">search_mode="academic"</code>、<code class="bg-slate-700 px-1 py-0.5 rounded">country="US"</code>——</p>
+                <p class="text-sm text-slate-300 mt-1"><strong class="text-red-400">→ 参数沉淀进实例 model_kwargs</strong></p>
+                <p class="text-sm text-slate-300">→ 用户 B 本该做普通全网检索，却被静默套上 A 的学术模式与美国地域，返回错误的检索结果，且日志里 B 的请求参数看起来完全正常。</p>
+            </div>
+            <div class="callout">
+                <p class="text-sm text-slate-200"><strong class="text-yellow-400">问题本质</strong></p>
+                <p class="text-sm text-slate-300 mt-1">这是"<strong class="text-red-400">静默失败</strong>"的经典形态：函数越权修改了调用方拥有的数据，破坏了"传入的参数在调用后保持不变"这一隐性契约。没有崩溃、没有告警，只有<strong class="text-red-400">随调用次数累积的行为漂移</strong>——最难复现、最难归因的一类生产事故。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块6：ARK Trust 修复方案 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🛡️</span>
+            <h2 class="text-lg font-semibold text-white">ARK Trust 修复方案</h2>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <p class="text-sm font-semibold text-purple-300 mb-1">① InputGuard — 入参不可变契约（运行时冻结/校验）</p>
+                <div class="code-block text-slate-300">
+<span class="text-gray-500"># 调用前对入参快照哈希，调用后校验未被篡改；违约即刻上抛而非静默</span>
+<span class="text-green-400">@immutable_args</span>(<span class="text-yellow-400">"extra_body"</span>, <span class="text-yellow-400">"tool_choice"</span>)   <span class="text-gray-500"># 覆盖 #38840/#38779/#38659 全族</span>
+<span class="text-blue-400">def</span> <span class="text-green-400">call_llm</span>(prompt, **kwargs): ...
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-purple-300 mb-1">② IdempotencyGuard — 隔离 per-call 参数，杜绝跨请求泄漏</p>
+                <div class="code-block text-slate-300">
+<span class="text-gray-500"># 每次调用在独立参数域内执行，per-call kwargs 绝不回写实例状态</span>
+ark.wrap(llm, isolate_call_params=<span class="text-blue-400">True</span>)   <span class="text-gray-500"># search_mode 只在本次生效</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-purple-300 mb-1">③ OTel Bridge — 参数漂移全链路留痕</p>
+                <div class="code-block text-slate-300">
+<span class="text-yellow-400">ark.params.drift</span> { key: <span class="text-yellow-400">"search_mode"</span>, expected: <span class="text-blue-400">null</span>,
+                   actual: <span class="text-yellow-400">"academic"</span>, source: <span class="text-yellow-400">"leaked_from_prev_call"</span> }
+                </div>
+                <p class="text-slate-400 text-sm mt-1">在生产真实流量上捕获"未传却出现"的参数，把最难归因的行为漂移变成一条可检索的告警。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块7：置信度评估 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">✅</span>
+            <h2 class="text-lg font-semibold text-white">置信度评估</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">根因确定性</span><span class="text-green-400">极高（零依赖复现，输出即证据）</span></div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:98%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">修复方案成熟度</span><span class="text-green-400">高（入口浅拷贝，一处可解）</span></div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:92%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">影响广度</span><span class="text-yellow-400">中高（同族已第三次复发，跨集成）</span></div>
+                <div class="score-bar"><div class="score-fill bg-yellow-500" style="width:68%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">静默性风险</span><span class="text-red-400">极高（无异常，行为随调用累积漂移）</span></div>
+                <div class="score-bar"><div class="score-fill bg-red-500" style="width:90%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">ARK契合度</span><span class="text-green-400">极高（入参不可变+参数隔离+漂移留痕）</span></div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:93%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块8：诊断结论 ====== -->
+    <div class="report-card p-4 md:p-6">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🎯</span>
+            <h2 class="text-lg font-semibold text-white">诊断结论</h2>
+        </div>
+        <div class="space-y-2 text-sm text-slate-300">
+            <p><strong class="text-white">#38840 的真正信号不是"又一个原地篡改 bug"，而是这已经是同一缺陷族第三次复发（#38779 / #38659 / #38840）。</strong>逐个打补丁治标不治本——缺的是一道"禁止越权修改调用方入参"的系统性防线。</p>
+            <p>被污染的是检索模式、地域这类会直接改变输出语义的参数；在多租户网关里，一次调用的参数会静默泄漏到后续所有请求，甚至跨用户串味——无异常、无红灯，只有随调用次数累积的行为漂移。</p>
+            <p>修复一处很简单（入口浅拷贝），但可靠性不能靠"记得每个集成都别忘了拷贝"。<strong class="text-cyan-400">防线必须建在自己这一侧，并且可被机器强制执行。</strong></p>
+            <p>ARK 的入参不可变契约 + per-call 参数隔离 + OTel 漂移留痕，把"跨集成反复复发的可变状态篡改"从<strong class="text-green-400">靠人自觉的编码规范，升级为运行时可校验、可观测、可告警的信任基础设施</strong>。</p>
+        </div>
+    </div>
+
+</div>
+
+<div class="text-center text-slate-600 text-xs mt-8 pb-4">
+    🛡️ ARK — Agent Reliability Kit | <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a><br>
+    生成时间：2026-07-26 · ARK Cruise Bot · W31 诊断报告 (5/5)
+</div>
+
+</body>
+</html>
