@@ -1,61 +1,37 @@
-// CF Pages Function: ARK 统计看板数据
-// GET /api/stats → 返回诊断次数、MRR等实时数据
-// 环境变量: FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_BITABLE, FEISHU_TABLE
-
-export async function onRequestGet({ env }) {
-  const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_BITABLE, FEISHU_TABLE } = env;
-  if (!FEISHU_APP_ID || !FEISHU_APP_SECRET) {
-    return new Response(JSON.stringify({ configured: false }), {
-      status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+/**
+ * CF Pages Function: /api/stats
+ * 聚合 CUSTOMERS_KV 中的漏斗事件，供 growth-tracker.py 读取真实增长数据。
+ * 返回：{ page_views, diagnosis_starts, claim_attempts, claim_success, customers }
+ */
+export async function onRequestGet(context) {
+  const { env } = context;
+  const cors = { 'Access-Control-Allow-Origin': '*' };
+  const zero = { page_views: 0, diagnosis_starts: 0, claim_attempts: 0, claim_success: 0, customers: 0 };
+  if (!env.CUSTOMERS_KV) {
+    return new Response(JSON.stringify({ ok: false, ...zero }), {
+      status: 200, headers: { 'Content-Type': 'application/json', ...cors },
     });
   }
-
   try {
-    const token = await getFeishuToken(FEISHU_APP_ID, FEISHU_APP_SECRET);
-
-    // 统计各事件类型数量（pageSize=1仅取总数）
-    const [pageViews, diagnoses, payIntents] = await Promise.all([
-      countEvents(token, FEISHU_BITABLE, FEISHU_TABLE, 'page_view'),
-      countEvents(token, FEISHU_BITABLE, FEISHU_TABLE, 'diagnose_start'),
-      countEvents(token, FEISHU_BITABLE, FEISHU_TABLE, 'pay_intent')
-    ]);
-
-    return new Response(JSON.stringify({
-      configured: true,
-      diagnoses: diagnoses,
-      page_views: pageViews,
-      pay_intents: payIntents,
-      mrr: `¥${payIntents * 65}` // 估算：每个 pay_intent = ¥65/月订阅
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=30' }
+    const agg = { page_views: 0, diagnosis_starts: 0, claim_attempts: 0, claim_success: 0, customers: 0 };
+    let cursor;
+    do {
+      const page = await env.CUSTOMERS_KV.list({ prefix: 'event:', cursor });
+      for (const k of page.keys) {
+        const ev = k.name.split(':')[1] || '';
+        if (ev in agg) agg[ev] += 1;
+      }
+      cursor = page.list_complete ? undefined : page.cursor;
+    } while (cursor);
+    // 客户数：以 customer: 前缀统计
+    const custPage = await env.CUSTOMERS_KV.list({ prefix: 'customer:' });
+    agg.customers = custPage.keys.length;
+    return new Response(JSON.stringify({ ok: true, ...agg }), {
+      status: 200, headers: { 'Content-Type': 'application/json', ...cors },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ configured: true, error: e.message }), {
-      status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    return new Response(JSON.stringify({ ok: false, ...zero }), {
+      status: 200, headers: { 'Content-Type': 'application/json', ...cors },
     });
   }
-}
-
-async function countEvents(token, bitable, table, eventType) {
-  const resp = await fetch(
-    `https://open.feishu.cn/open-apis/bitable/v1/apps/${bitable}/tables/${table}/records?page_size=1&filter=CurrentValue.%5B%E4%BA%8B%E4%BB%B6%E7%B1%BB%E5%9E%8B%5D%3D%22${encodeURIComponent(eventType)}%22`,
-    { headers: { 'Authorization': `Bearer ${token}` } }
-  );
-  const d = await resp.json();
-  return d.data?.total || 0;
-}
-
-let _tokenCache = { t: '', exp: 0 };
-async function getFeishuToken(appId, appSecret) {
-  const now = Date.now();
-  if (_tokenCache.t && now < _tokenCache.exp) return _tokenCache.t;
-  const resp = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ app_id: appId, app_secret: appSecret })
-  });
-  const d = await resp.json();
-  _tokenCache = { t: d.tenant_access_token, exp: now + (d.expire - 120) * 1000 };
-  return _tokenCache.t;
 }

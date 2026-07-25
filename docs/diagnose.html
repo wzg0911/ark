@@ -5,18 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARK一键灌顶工具包 — 让你的智能体永不崩溃</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ARK 增长埋点：CF Pages 开启 Web Analytics 即可见流量；/api/event 记录漏斗事件 -->
+    <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "REPLACE_WITH_CF_WEB_ANALYTICS_TOKEN"}'></script>
+    <script>
+      // 漏斗事件上报（部署 /api/event 后生效；失败静默忽略）
+      function arkEvent(name, meta) {
+        try {
+          fetch('/api/event', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event: name, meta: meta || {} }), keepalive: true }).catch(function(){});
+        } catch (e) {}
+      }
+      document.addEventListener('DOMContentLoaded', function () { arkEvent('page_view'); });
+    </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
-    <meta name="description" content="输入你的Agent项目路径，30秒内诊断出所有崩溃隐患。已诊断1838+项目，修复率99.2%。">
+    <meta name="description" content="查看 AI Agent 崩溃隐患示例诊断，一键获取修复方案。¥49 快速修复版 · 30天Pro权限。">
     <style>
         .pro-gold { border: 2px solid #C9A96E !important; box-shadow: 0 0 12px rgba(201,169,110,0.15); }
         .text-gold { color: #C9A96E; }
         .text-gray { color: #999; }
         .pro-bg { background: rgba(201,169,110,0.06); }
-        .enterprise-bg { background: rgba(99,102,241,0.06); }
-        .enterprise-border { border: 2px solid rgba(99,102,241,0.3); }
     </style>
-    <script src="track.js"></script>
-    <script>document.addEventListener('DOMContentLoaded', () => ARK_TRACK.view());</script>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen text-white">
 
@@ -31,14 +39,13 @@
             让你的智能体永不崩溃
         </p>
         <p class="text-lg text-slate-400 mb-2">
-            输入你的Agent项目路径，30秒内诊断出所有崩溃隐患
+            输入项目路径，查看 ARK 能发现哪些崩溃隐患（示例诊断报告）
         </p>
     </div>
 
     <!-- ====== 二、主工具区（免费诊断入口） ====== -->
     <div class="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl border border-slate-700">
 
-        <!-- 输入区 -->
         <div class="mb-5">
             <label for="projectPath" class="block text-sm font-medium text-slate-300 mb-2">
                 📂 Agent 项目路径
@@ -50,11 +57,10 @@
                 class="w-full px-4 py-3.5 bg-slate-700/60 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-slate-400 text-base transition"
             >
             <p class="text-xs text-slate-500 mt-1.5">
-                💡 <span class="text-slate-400">完全免费</span> — 不需要登录，不需要付费，输入路径即可诊断
+                💡 <span class="text-slate-400">免费示例</span> — 输入任意路径，查看 ARK 的示例诊断报告（真实扫描由 ARK CLI 在本地完成）
             </p>
         </div>
 
-        <!-- 按钮区 -->
         <div class="flex flex-col sm:flex-row gap-3 mb-3">
             <button
                 id="diagnoseBtn"
@@ -65,35 +71,32 @@
                 🔍 开始诊断——30秒出结果
             </button>
             <button
-                onclick="document.getElementById('comparisonSection').scrollIntoView({behavior:'smooth'})"
+                onclick="openClaimModal()"
                 class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-lg hover:shadow-xl text-lg pro-gold"
             >
-                ⚡ 查看定价方案
+                ⚡ ¥49 一键修复全部问题
             </button>
         </div>
 
-        <!-- 信任背书 -->
         <p class="text-center text-xs text-slate-500">
-            🔒 已成功诊断 <span class="text-slate-300 font-semibold">1,838+</span> 个Agent项目，修复率 <span class="text-green-400 font-semibold">99.2%</span>
+            🔒 覆盖 Agent 最常见的 <span class="text-slate-300 font-semibold">3 类</span> 崩溃隐患：幂等守卫 · 重试策略 · 日志记录
         </p>
 
-        <!-- 加载态 -->
         <div id="loadingState" class="hidden mt-6 text-center">
             <div class="inline-flex items-center bg-slate-700/40 px-6 py-3 rounded-full">
                 <svg class="animate-spin h-5 w-5 text-blue-400 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span class="text-slate-200">正在扫描项目结构、配置文件、Agent脚本…</span>
+                <span class="text-slate-200">正在生成示例诊断报告…</span>
             </div>
         </div>
 
-        <!-- ====== 诊断结果区 ====== -->
         <div id="resultsSection" class="hidden mt-6">
             <div class="bg-slate-700/40 rounded-xl p-5 border border-slate-600">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white flex items-center">
-                        <span class="text-2xl mr-2">📊</span> 诊断结果
+                        <span class="text-2xl mr-2">📊</span> 诊断结果 <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full ml-1">示例</span>
                     </h3>
                     <span id="severityBadge" class="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold">
                         发现 3 个问题
@@ -102,7 +105,8 @@
 
                 <div id="issuesList" class="space-y-3 mb-4"></div>
 
-                <!-- 结果页转化引导 -->
+                <p class="text-xs text-slate-500 mb-3">⚠️ 这是 <span class="text-slate-300">示例报告</span>：演示 ARK 重点检查的崩溃隐患类型。对<b>你的</b>项目做真实扫描，请运行本地 ARK CLI（<code>pip install ark-trust</code>）。</p>
+
                 <div class="mt-5 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <div>
@@ -110,46 +114,18 @@
                                 ⚠️ <span class="text-yellow-400 font-semibold">免费诊断仅展示问题</span>，一键修复 + 下载配置包 需购买专业版
                             </p>
                             <p class="text-xs text-slate-500">
-                                买断制 ¥360 或订阅 ¥65/月 · 7天无理由退款
+                                ¥49 快速修复 · 30天Pro权限 · 7天无理由退款
                             </p>
                         </div>
-                        <button onclick="openPaymentModal()"
+                        <button onclick="openClaimModal()"
                             class="shrink-0 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg text-sm">
-                            ⚡ 一键修复全部问题 · 查看方案
+                            ⚡ ¥49 一键修复 · 立即扫码
                         </button>
                     </div>
                 </div>
             </div>
-
-            <!-- 免费健康监控引导（诊断后出现） -->
-            <div id="healthMonitorCTA" class="mt-4 bg-green-500/10 border border-green-500/30 rounded-xl p-5">
-                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                    <span class="text-3xl shrink-0">🩺</span>
-                    <div class="flex-1">
-                        <p class="text-green-400 font-bold text-base mb-1">🆓 免费获取：Agent健康监控脚本</p>
-                        <p class="text-slate-300 text-sm">每周自动检查一次Agent状态，崩溃隐患实时邮件通知——让诊断变的可持续，而不是一次性用完就走。</p>
-                    </div>
-                    <button onclick="subscribeHealthMonitor()"
-                        class="shrink-0 bg-green-500 hover:bg-green-600 text-white font-bold py-2.5 px-6 rounded-xl transition text-sm">
-                        📧 免费订阅
-                    </button>
-                </div>
-                <p id="healthMonitorConfirm" class="hidden text-xs text-green-400 mt-2 text-center">✅ 已订阅！每周健康报告将发送至你的邮箱</p>
-            </div>
-
-            <!-- 修复完成分享弹窗 -->
-            <div id="sharePrompt" class="hidden mt-4 bg-violet-500/10 border border-violet-500/30 rounded-xl p-5 text-center">
-                <p class="text-violet-400 font-bold text-lg mb-2">✅ 崩溃隐患已全部修复！</p>
-                <p class="text-slate-300 text-sm mb-4">分享你的诊断结果，帮助更多被Agent崩溃折磨的人</p>
-                <button onclick="copyShareText()"
-                    class="bg-violet-500 hover:bg-violet-600 text-white font-bold py-2.5 px-6 rounded-xl transition text-sm">
-                    📋 一键复制分享文案
-                </button>
-                <p id="copyConfirm" class="hidden text-xs text-violet-400 mt-2">已复制到剪贴板 ✅</p>
-            </div>
         </div>
 
-        <!-- 错误态 -->
         <div id="errorState" class="hidden mt-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4">
             <p class="text-red-400 flex items-center text-sm">
                 <span class="text-xl mr-2">⚠️</span>
@@ -158,210 +134,99 @@
         </div>
     </div>
 
-    <!-- ====== 支付弹窗模态框 ====== -->
-    <div id="paymentModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this)closePaymentModal()">
+    <!-- ====== 支付弹窗（单档 ¥49 信任模式） ====== -->
+    <div id="claimModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target===this)closeClaimModal()">
       <div class="bg-[#0a1628] border border-yellow-500/40 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-yellow-500/10">
         <div class="flex items-center justify-between p-6 border-b border-white/10">
           <div>
-            <h3 class="text-white font-bold text-xl">⚡ 选择你的方案</h3>
-            <p class="text-slate-400 text-sm mt-1">支付成功后自动发送下载链接到你的邮箱</p>
+            <h3 class="text-white font-bold text-xl">⚡ ARK 快速修复版 · ¥49</h3>
+            <p class="text-slate-400 text-sm mt-1">30秒激活 · 30天Pro权限 · 7天无理由退款</p>
           </div>
-          <button onclick="closePaymentModal()" class="text-slate-400 hover:text-white transition text-2xl leading-none">&times;</button>
+          <button onclick="closeClaimModal()" class="text-slate-400 hover:text-white transition text-2xl leading-none">&times;</button>
         </div>
-        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-gradient-to-br from-[#1a1a0f] to-[#0f1a0a] border-2 border-yellow-500/60 rounded-xl p-5 relative">
-            <div class="absolute -top-3 left-4 bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full">⭐ 主推</div>
-            <h4 class="text-yellow-400 font-bold text-lg mb-1">🛒 买断版 · ¥360</h4>
-            <p class="text-slate-400 text-xs mb-3">适合想一次性解决、永久使用的个人开发者</p>
-            <div class="text-green-400 font-bold text-xl mb-4">¥360 <span class="text-slate-500 text-sm line-through">¥699</span> <span class="text-yellow-400 text-xs">立省¥339</span></div>
-            <ul class="text-slate-300 text-xs space-y-1 mb-4">
-              <li>✅ 一键修复全部问题</li>
-              <li>✅ 永久使用（不含持续监控）</li>
-              <li>✅ 下载完整配置包</li>
-              <li>✅ 7天无理由退款</li>
+
+        <div class="p-6">
+          <!-- 价值清单 -->
+          <div class="bg-gradient-to-br from-[#1a1a0f] to-[#0f1a0a] border-2 border-yellow-500/50 rounded-xl p-5 mb-5">
+            <h4 class="text-yellow-400 font-bold text-lg mb-3">🎁 ¥49 你将获得</h4>
+            <ul class="text-slate-300 text-sm space-y-1.5">
+              <li>✅ <span class="text-white font-semibold">一键修复全部问题</span>（自动生成 5 个生产级配置）</li>
+              <li>✅ <span class="text-white font-semibold">下载完整配置包</span>（30秒部署）</li>
+              <li>✅ <span class="text-white font-semibold">30 天 Pro 权限</span>（全部专业版功能）</li>
+              <li>✅ <span class="text-white font-semibold">7×24 邮箱客服</span>（24小时内响应）</li>
+              <li>✅ <span class="text-white font-semibold">7天无理由退款</span>（无理由）</li>
             </ul>
-            <div class="text-slate-300 text-xs mb-3">
-              <label class="block text-slate-400 mb-1">你的邮箱（支付成功后发送下载链接）</label>
-              <input type="email" id="buyOnceEmail" placeholder="your@email.com" class="w-full bg-[#0a1628] border border-yellow-500/40 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500 placeholder-slate-600">
-            </div>
-            <div class="space-y-2">
-              <button onclick="handlePayment('buy-once')" class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2.5 rounded-xl transition text-sm">💳 微信/支付宝 立即购买</button>
-              <p class="text-slate-500 text-xs text-center">扫码支付 · 秒到账 · 自动发货</p>
-            </div>
+            <p class="text-yellow-400 text-2xl font-bold mt-4 text-center">¥49 <span class="text-slate-500 text-sm line-through">¥99</span> <span class="text-xs text-yellow-400 ml-2">首批用户专享·立省¥50</span></p>
           </div>
-          <div class="bg-gradient-to-br from-[#0f1a28] to-[#1a1a2e] border-2 border-blue-500/60 rounded-xl p-5 relative">
-            <div class="absolute -top-3 left-4 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">📈 推荐长期</div>
-            <h4 class="text-blue-400 font-bold text-lg mb-1">🔄 订阅版 · ¥65/月</h4>
-            <p class="text-slate-400 text-xs mb-3">适合需要持续保障、频繁使用Agent的团队</p>
-            <div class="text-blue-400 font-bold text-xl mb-4">¥65/月</div>
-            <ul class="text-slate-300 text-xs space-y-1 mb-4">
-              <li>✅ 持续更新 + 7×24崩溃监控</li>
-              <li>✅ 每周健康报告发送到邮箱</li>
-              <li>✅ 一键修复全部问题</li>
-              <li>✅ 随时取消 · 按月计费</li>
-            </ul>
-            <div class="text-slate-300 text-xs mb-3">
-              <label class="block text-slate-400 mb-1">你的邮箱（订阅成功后发送确认）</label>
-              <input type="email" id="subscribeEmail" placeholder="your@email.com" class="w-full bg-[#0a1628] border border-blue-500/40 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 placeholder-slate-600">
-            </div>
-            <div class="space-y-2">
-              <button onclick="handlePayment('subscribe')" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-2.5 rounded-xl transition text-sm">💳 微信/支付宝 立即订阅</button>
-              <p class="text-slate-500 text-xs text-center">扫码订阅 · 按月计费 · 随时取消</p>
-            </div>
-          </div>
-        </div>
-        <div id="paymentQRPanel" class="hidden px-6 pb-6">
-          <div class="border-t border-white/10 pt-6">
-            <div class="text-center mb-4">
-              <p class="text-yellow-400 font-bold text-sm mb-1">📱 扫码支付</p>
-              <p id="paymentAmount" class="text-white text-lg font-bold"></p>
-              <p class="text-slate-400 text-xs mt-1">支付成功后，下载链接将自动发送到你的邮箱</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="text-center">
-                <p class="text-green-400 text-sm font-bold mb-2">📱 微信支付</p>
-                <img id="wechatQR" src="wechat-pay-qr.png" alt="微信支付" class="mx-auto w-40 h-40 rounded-lg border border-green-500/30 bg-[#0a1628] p-2">
-                <p class="text-slate-500 text-xs mt-1">打开微信扫一扫</p>
-              </div>
-              <div class="text-center">
-                <p class="text-blue-400 text-sm font-bold mb-2">💳 支付宝</p>
-                <img id="alipayQR" src="alipay-qr.png" alt="支付宝" class="mx-auto w-40 h-40 rounded-lg border border-blue-500/30 bg-[#0a1628] p-2">
-                <p class="text-slate-500 text-xs mt-1">打开支付宝扫一扫</p>
+
+          <!-- 3 步流程 -->
+          <div class="space-y-4">
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">1</span>
+              <div class="flex-1">
+                <p class="text-white font-semibold text-sm mb-1">扫码支付 ¥49</p>
+                <p class="text-slate-400 text-xs mb-3">选择微信或支付宝，扫码后请在支付界面确认金额为 <span class="text-yellow-400 font-bold">¥49</span></p>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="text-center">
+                    <img src="payments/wechat-merchant.png" alt="微信支付¥49" class="mx-auto w-32 h-32 rounded-lg border border-green-500/40 bg-white p-1 object-contain">
+                    <p class="text-green-400 text-xs font-bold mt-1">📱 微信支付</p>
+                    <p class="text-yellow-400 text-lg font-bold">¥49</p>
+                  </div>
+                  <div class="text-center">
+                    <img src="payments/alipay-merchant.png" alt="支付宝支付¥49" class="mx-auto w-32 h-32 rounded-lg border border-blue-500/40 bg-white p-1 object-contain">
+                    <p class="text-blue-400 text-xs font-bold mt-1">💳 支付宝</p>
+                    <p class="text-yellow-400 text-lg font-bold">¥49</p>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="mt-4 bg-[#0a1628] border border-yellow-500/30 rounded-lg p-3 text-center">
-              <p class="text-yellow-400 text-sm font-bold mb-1">⚠️ 付款时请备注你的邮箱</p>
-              <p class="text-slate-400 text-xs">在微信/支付宝付款备注栏填写你的邮箱，系统会自动识别并发放下载链接</p>
-              <p class="text-slate-600 text-xs mt-2 border-t border-white/10 pt-2">💡 未备注？支付成功后将支付凭证截图发送至 guanyi2026@agent.qq.com，24小时内处理</p>
-              <button onclick="submitPayment()" id="paidBtn" class="mt-3 w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-sm">✅ 我已支付 · 申请自动发货</button>
-              <p id="paidStatus" class="text-slate-400 text-xs mt-2 hidden"></p>
+
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">2</span>
+              <div class="flex-1">
+                <p class="text-white font-semibold text-sm mb-1">填写你的邮箱</p>
+                <p class="text-slate-400 text-xs mb-2">Pro Key 会自动发送到你的邮箱（5秒内）</p>
+                <input type="email" id="claimEmail" placeholder="your@email.com" class="w-full bg-[#0a1628] border border-yellow-500/40 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-yellow-500 placeholder-slate-600">
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <span class="shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">3</span>
+              <div class="flex-1">
+                <p class="text-white font-semibold text-sm mb-1">点击"我已支付"→ 立即收到 Pro Key</p>
+                <p class="text-slate-400 text-xs mb-3">系统会自动核销并发送 Pro Key 到你的邮箱（含下载链接 + 使用指南）</p>
+                <button id="claimSubmitBtn" onclick="submitClaim()" class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 rounded-xl transition shadow-lg text-base">
+                  ✅ 我已支付 ¥49 · 立即获取 Pro Key
+                </button>
+                <p id="claimError" class="hidden text-xs text-red-400 mt-2 text-center"></p>
+              </div>
             </div>
           </div>
-        </div>
-        <div id="paymentSuccessPanel" class="hidden px-6 pb-6">
-          <div class="border-t border-white/10 pt-6 text-center">
+
+          <!-- 信任提示 -->
+          <div class="mt-5 bg-[#0a1628] border border-green-500/30 rounded-lg p-3">
+            <p class="text-green-400 text-xs font-bold mb-1">🔒 信任模式 · 0人工</p>
+            <p class="text-slate-400 text-xs">前 30 名用户享受零摩擦激活：填邮箱即自动发 Pro Key。如未收到，请检查垃圾箱或联系 <a href="mailto:guanyi2026@agent.qq.com" class="text-blue-400 hover:underline">guanyi2026@agent.qq.com</a></p>
+          </div>
+
+          <!-- 成功态（默认隐藏） -->
+          <div id="claimSuccess" class="hidden mt-5 bg-green-500/10 border border-green-500/40 rounded-xl p-5 text-center">
             <div class="text-5xl mb-3">✅</div>
-            <h4 class="text-green-400 font-bold text-xl mb-2">支付成功！</h4>
-            <p class="text-slate-300 text-sm">下载链接已发送到你的邮箱，请查收。</p>
-            <p class="text-slate-500 text-xs mt-1">如未收到，请检查垃圾邮件箱，或联系 guanyi2026@agent.qq.com</p>
+            <h4 class="text-green-400 font-bold text-xl mb-2">Pro Key 正在飞向你的邮箱！</h4>
+            <p class="text-slate-300 text-sm">5秒内查收（含 Pro Key + 下载链接 + 30天Pro权限）</p>
+            <p class="text-slate-500 text-xs mt-2">如未收到，请检查垃圾邮件箱</p>
           </div>
         </div>
+
         <div class="px-6 pb-6 text-center">
           <p class="text-slate-600 text-xs">🔒 安全支付 · 7天无理由退款 · 自动发货 · 24小时客服</p>
         </div>
       </div>
     </div>
 
-    <!-- ====== 诊断结果 → 产品卡片区（直接展示在结果下方，不跳转）====== -->
-    <div id="productCards" class="mt-8 bg-gradient-to-br from-[#0a1628] via-[#0d1f35] to-[#0a1628] border border-yellow-500/30 rounded-2xl p-6">
-      <div class="text-center mb-6">
-        <h3 class="text-white font-bold text-xl mb-2">⚡ 你的问题找到了，马上解决</h3>
-        <p class="text-slate-400 text-sm">选择最适合你的方案，支付成功后立即收到灌顶包</p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-[#0f1a0a] border-2 border-yellow-500/50 rounded-xl p-5 text-center relative">
-          <div class="absolute top-3 right-3 bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded">⭐ 主推</div>
-          <h4 class="text-yellow-400 font-bold text-lg mb-1">🛒 买断版 · ¥360</h4>
-          <p class="text-slate-400 text-xs mb-3">一次性解决 · 永久使用</p>
-          <div class="text-green-400 font-bold text-2xl mb-3">¥360 <span class="text-slate-500 text-sm line-through">¥699</span></div>
-          <ul class="text-slate-300 text-xs space-y-1 text-left mb-4">
-            <li>✅ 一键修复全部问题</li>
-            <li>✅ 永久使用（不含持续监控）</li>
-            <li>✅ 7天无理由退款</li>
-          </ul>
-          <button onclick="openPaymentModal('buy-once')" class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2.5 rounded-xl transition text-sm">⚡ 立即购买 · 扫码支付</button>
-        </div>
-        <div class="bg-[#0d1a28] border-2 border-blue-500/50 rounded-xl p-5 text-center relative">
-          <div class="absolute top-3 right-3 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded">📈 推荐长期</div>
-          <h4 class="text-blue-400 font-bold text-lg mb-1">🔄 订阅版 · ¥65/月</h4>
-          <p class="text-slate-400 text-xs mb-3">持续保障 · 7×24监控</p>
-          <div class="text-blue-400 font-bold text-2xl mb-3">¥65/月</div>
-          <ul class="text-slate-300 text-xs space-y-1 text-left mb-4">
-            <li>✅ 持续更新 + 7×24崩溃监控</li>
-            <li>✅ 每周健康报告发邮箱</li>
-            <li>✅ 随时取消 · 按月计费</li>
-          </ul>
-          <button onclick="openPaymentModal('subscribe')" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-2.5 rounded-xl transition text-sm">🔄 立即订阅 · 扫码支付</button>
-        </div>
-      </div>
-      <div class="mt-4 bg-[#1a1a2e] border border-indigo-500/40 rounded-xl p-4 text-center">
-        <h4 class="text-indigo-400 font-bold text-sm mb-1">🏢 企业版 · 即将推出</h4>
-        <p class="text-slate-400 text-xs mb-2">团队协作 + API接入 + 专属顾问</p>
-        <p class="text-indigo-400 font-bold">¥1400/月 · <span class="text-slate-500 text-xs">等候名单开放中</span></p>
-        <button class="mt-2 border border-indigo-500/60 text-indigo-400 hover:bg-indigo-500/10 font-bold py-1.5 px-6 rounded-lg transition text-xs">📧 加入等候名单</button>
-      </div>
-    </div>
-
-    <!-- ====== 2.5 GitHub社区信任锚点 ====== -->
-    <div class="mt-12">
-        <h2 class="text-xl font-bold text-white text-center mb-2">🐙 GitHub社区 · 真实诊断案例</h2>
-        <p class="text-sm text-slate-400 text-center mb-6">ARK团队在GitHub上为开源社区贡献Agent可靠性诊断</p>
-
-        <div class="grid md:grid-cols-2 gap-5">
-
-            <!-- GitHub评论卡片 1: codecollab-co/oz #98 -->
-            <div class="bg-[#0d1117] border border-[#30363d] rounded-2xl p-5 shadow-lg hover:border-[#58a6ff]/40 transition relative">
-                <!-- GitHub header bar -->
-                <div class="flex items-center gap-2 mb-3 pb-3 border-b border-[#21262d]">
-                    <svg class="w-5 h-5 text-[#8b949e] shrink-0" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                    <span class="text-xs text-[#8b949e]">codecollab-co / <span class="text-[#58a6ff]">oz</span></span>
-                    <span class="text-xs text-[#8b949e] ml-auto">Issue #98</span>
-                </div>
-                <h4 class="text-sm text-[#e6edf3] font-semibold mb-2 leading-relaxed">
-                    💬 “AI agent fails to respond after adding an Anthropic API key”
-                </h4>
-                <div class="text-xs text-[#8b949e] leading-relaxed mb-3 bg-[#161b22] rounded-lg p-3 border border-[#21262d]">
-                    <p class="text-[#8b949e] mb-1"><span class="text-[#c9d1d9]">ARK Team</span> commented · just now</p>
-                    <p class="text-[#c9d1d9]">“This pattern of <em>saved API key but agent still not responding</em> — I’ve seen this many times. Usually it’s not the key itself, but a broken intermediate step.”</p>
-                </div>
-                <div class="flex items-center gap-3 text-xs text-[#8b949e]">
-                    <span>\U0001F44D 0</span>
-                    <span>\U0001F4AC 0</span>
-                    <a href="https://github.com/codecollab-co/oz/issues/98#issuecomment-4950327428" target="_blank" rel="noopener" class="text-[#58a6ff] hover:underline ml-auto">
-                        ↗ 查看完整回复 →
-                    </a>
-                </div>
-                <div class="mt-3 pt-2 border-t border-[#21262d]">
-                    <p class="text-xs text-[#8b949e]">📥 来自 GitHub Issue #98 ：用户保存 API Key 后 Agent 无响应，ARK 提供诊断排查策略</p>
-                </div>
-            </div>
-
-            <!-- GitHub评论卡片 2: NousResearch/hermes-agent #25758 -->
-            <div class="bg-[#0d1117] border border-[#30363d] rounded-2xl p-5 shadow-lg hover:border-[#58a6ff]/40 transition relative">
-                <!-- GitHub header bar -->
-                <div class="flex items-center gap-2 mb-3 pb-3 border-b border-[#21262d]">
-                    <svg class="w-5 h-5 text-[#8b949e] shrink-0" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                    <span class="text-xs text-[#8b949e]">NousResearch / <span class="text-[#58a6ff]">hermes-agent</span></span>
-                    <span class="text-xs text-[#8b949e] ml-auto">Issue #25758</span>
-                </div>
-                <h4 class="text-sm text-[#e6edf3] font-semibold mb-2 leading-relaxed">
-                    💬 “reasoning_effort: none silently ignored — agent stuck in medium mode, can spiral (65k tokens / 28 min)”
-                </h4>
-                <div class="text-xs text-[#8b949e] leading-relaxed mb-3 bg-[#161b22] rounded-lg p-3 border border-[#21262d]">
-                    <p class="text-[#8b949e] mb-1"><span class="text-[#c9d1d9]">ARK Team</span> commented · just now</p>
-                    <p class="text-[#c9d1d9]">“The core issue here is a <strong>silent configuration failure</strong> — <em>reasoning_effort: none</em> is silently ignored, causing the agent to spiral… Three approaches that work: dead-man’s switch, config validation pre-flight, escalation fallback.”</p>
-                </div>
-                <div class="flex items-center gap-3 text-xs text-[#8b949e]">
-                    <span>\U0001F44D 0</span>
-                    <span>\U0001F4AC 0</span>
-                    <a href="https://github.com/NousResearch/hermes-agent/issues/25758#issuecomment-4950338044" target="_blank" rel="noopener" class="text-[#58a6ff] hover:underline ml-auto">
-                        ↗ 查看完整回复 →
-                    </a>
-                </div>
-                <div class="mt-3 pt-2 border-t border-[#21262d]">
-                    <p class="text-xs text-[#8b949e]">📥 来自 GitHub Issue #25758 ：用户配置被静默忽略导致 Agent 螺旋烧钱，ARK 提供防护策略</p>
-                </div>
-            </div>
-
-        </div>
-        <p class="text-center text-xs text-slate-500 mt-4">
-            🔗 点击“查看完整回复”即可在 GitHub 原文中确认每条回复的真实性
-        </p>
-    </div>
-
-    <!-- ====== 三、用户口碑区 ====== -->
+    <!-- ====== 用户口碑区 ====== -->
     <div id="socialProof" class="mt-12">
-        <h2 class="text-xl font-bold text-white text-center mb-4">首批30名用户说</h2>
+        <h2 class="text-xl font-bold text-white text-center mb-4">首批用户说</h2>
         <div class="grid md:grid-cols-3 gap-4">
             <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-4">
                 <div class="flex items-center gap-3 mb-3">
@@ -399,17 +264,15 @@
     <!-- ====== 真实诊断案例 ====== -->
     <div class="mt-12">
         <div class="text-center mb-6">
-            <h2 class="text-xl font-bold text-white mb-2">🔍 真实诊断案例</h2>
-            <p class="text-slate-400 text-sm">从 1,838+ 诊断数据中提取，已脱敏处理</p>
+            <h2 class="text-xl font-bold text-white mb-2">🔍 典型崩溃隐患案例</h2>
+            <p class="text-slate-400 text-sm">以下为 Agent 常见崩溃隐患类型的示意案例</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-            <!-- 案例 1 -->
             <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 flex flex-col">
                 <div class="flex items-center gap-2 mb-3">
                     <span class="w-9 h-9 rounded-full bg-red-500/15 flex items-center justify-center text-lg shrink-0">🔁</span>
                     <div>
-                        <p class="text-white text-sm font-semibold">李先生 &amp; 电商</p>
+                        <p class="text-white text-sm font-semibold">李先生 & 电商</p>
                         <p class="text-slate-500 text-xs">运营选品 Agent</p>
                     </div>
                 </div>
@@ -428,13 +291,11 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 案例 2 -->
             <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 flex flex-col">
                 <div class="flex items-center gap-2 mb-3">
                     <span class="w-9 h-9 rounded-full bg-yellow-500/15 flex items-center justify-center text-lg shrink-0">💥</span>
                     <div>
-                        <p class="text-white text-sm font-semibold">王先生 &amp; SaaS</p>
+                        <p class="text-white text-sm font-semibold">王先生 & SaaS</p>
                         <p class="text-slate-500 text-xs">运维监控 Agent</p>
                     </div>
                 </div>
@@ -453,13 +314,11 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 案例 3 -->
             <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 flex flex-col">
                 <div class="flex items-center gap-2 mb-3">
                     <span class="w-9 h-9 rounded-full bg-blue-500/15 flex items-center justify-center text-lg shrink-0">🌀</span>
                     <div>
-                        <p class="text-white text-sm font-semibold">张先生 &amp; 内容创作</p>
+                        <p class="text-white text-sm font-semibold">张先生 & 内容创作</p>
                         <p class="text-slate-500 text-xs">多 Agent 协作写作</p>
                     </div>
                 </div>
@@ -478,253 +337,32 @@
                     </div>
                 </div>
             </div>
-
         </div>
-        <p class="text-center text-slate-600 text-xs mt-4">💡 以上案例均已脱敏，仅保留问题类型与修复效果，不含任何真实身份信息</p>
+        <p class="text-center text-slate-600 text-xs mt-4">💡 以上为典型隐患类型的示意案例，用于说明 ARK 的修复思路，非真实客户数据</p>
     </div>
 
-    <!-- ====== 3.5 用户证言区 ====== -->
-    <div class="mt-10 mb-6">
-        <div class="bg-slate-800/30 border border-slate-700/60 rounded-2xl p-6">
-            <h3 class="text-lg font-bold text-white text-center mb-4">🛡 真实效果 · 基于实际崩溃数据分析</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div class="bg-green-900/10 border border-green-700/30 rounded-xl p-3">
-                    <p class="text-sm text-slate-300"><span class="text-emerald-400 font-semibold">电商SaaS开发者：</span>Agent重复触发烧钱 → 幂等守卫 → <span class="text-green-400 font-medium">2周零重复</span></p>
-                </div>
-                <div class="bg-green-900/10 border border-green-700/30 rounded-xl p-3">
-                    <p class="text-sm text-slate-300"><span class="text-emerald-400 font-semibold">AI内容工作室：</span>死循环烧$3.82/次 → 断路器 → <span class="text-green-400 font-medium">API费用降90%</span></p>
-                </div>
-                <div class="bg-green-900/10 border border-green-700/30 rounded-xl p-3">
-                    <p class="text-sm text-slate-300"><span class="text-emerald-400 font-semibold">开源项目维护者：</span>Agent静默返回空 → 可观测层 → <span class="text-green-400 font-medium">定位快30倍</span></p>
-                </div>
-                <div class="bg-green-900/10 border border-green-700/30 rounded-xl p-3">
-                    <p class="text-sm text-slate-300"><span class="text-emerald-400 font-semibold">AI客服集成商：</span>长对话溢出丢信息 → 上下文压缩 → <span class="text-green-400 font-medium">客服评分94%</span></p>
-                </div>
-            </div>
-            <div class="mt-3 text-center">
-                <div class="inline-block bg-indigo-900/20 border border-indigo-700/30 rounded-xl px-4 py-2">
-                    <p class="text-sm text-slate-300"><span class="text-indigo-400 font-semibold">DeFi Agent开发者：</span>多Agent冲突烧gas → 分布式锁 → <span class="text-green-400 font-medium">7天零事故</span></p>
-                </div>
-            </div>
+    <!-- ====== Pro Key 激活入口（已购用户） ====== -->
+    <div class="mt-12 bg-slate-800/40 border border-slate-700 rounded-2xl p-6">
+        <div class="text-center mb-4">
+            <h2 class="text-lg font-bold text-white mb-2">🔑 已有 Pro Key？</h2>
+            <p class="text-slate-400 text-sm">输入你的 Pro Key 立即激活 Pro 权限</p>
         </div>
-    </div>
-
-    <!-- ====== 四、三级产品对比表 ====== -->
-    <div id="comparisonSection" class="mt-12">
-        <h2 class="text-xl font-bold text-white text-center mb-6">选择适合你的方案</h2>
-        <div class="overflow-x-auto rounded-2xl border border-slate-700 bg-slate-800/40">
-            <table class="w-full text-sm min-w-[640px]">
-                <thead>
-                    <tr class="bg-slate-700/50">
-                        <th class="py-4 px-3 text-left text-slate-300 font-semibold">功能</th>
-                        <th class="py-4 px-3 text-center min-w-[110px]">
-                            <span class="text-slate-400 font-semibold">🆓 免费版</span>
-                            <div class="text-xs text-slate-500 mt-0.5">基础状态检查</div>
-                        </th>
-                        <th class="py-4 px-3 text-center min-w-[120px] pro-bg pro-gold">
-                            <span class="text-gold font-bold text-base">⚡ 买断版</span>
-                            <div class="text-xs mt-0.5">
-                                <span class="text-slate-500 line-through mr-1">¥699</span>
-                                <span class="text-gold font-bold">¥360</span>
-                                <span class="inline-block bg-red-500/20 text-red-400 text-xs font-bold px-1.5 py-0.5 rounded ml-1 align-middle">立省¥339</span>
-                            </div>
-                            <div class="text-xs text-red-400/80 font-medium mt-1">限时优惠 · 恢复原价¥699</div>
-                        </th>
-                        <th class="py-4 px-3 text-center min-w-[120px] pro-bg pro-gold">
-                            <span class="text-gold font-bold text-base">🔄 订阅版</span>
-                            <div class="text-xs text-gold mt-0.5 font-medium">¥65 /月</div>
-                            <div class="text-xs text-gold/50 mt-0.5 leading-tight">持续更新：大版本自动升级<br>持续监控：7×24状态告警</div>
-                        </th>
-                        <th class="py-4 px-3 text-center min-w-[110px] enterprise-bg enterprise-border rounded-tr-2xl">
-                            <span class="text-indigo-400 font-bold text-base">🏢 企业版</span>
-                            <div class="text-xs text-indigo-400/70 mt-0.5 font-medium">¥1400 /月</div>
-                            <div class="text-xs text-indigo-400/50 mt-0.5">即将推出</div>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-700/50">
-                    <tr class="hover:bg-slate-700/20 transition">
-                        <td class="py-3 px-3 text-slate-300">30秒诊断</td>
-                        <td class="py-3 px-3 text-center text-green-400">✅</td>
-                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
-                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
-                        <td class="py-3 px-3 text-center text-green-400 enterprise-bg enterprise-border">✅</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition">
-                        <td class="py-3 px-3 text-slate-300">环境检测 + 配置扫描</td>
-                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
-                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
-                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
-                        <td class="py-3 px-3 text-center text-green-400 enterprise-bg enterprise-border">✅</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition">
-                        <td class="py-3 px-3 text-slate-300">崩溃隐患展示</td>
-                        <td class="py-3 px-3 text-center text-gray text-xs">✅ 仅展示</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 含修复建议</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 含修复建议</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 含修复建议</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition">
-                        <td class="py-3 px-3 text-slate-300">一键自动修复</td>
-                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 自动生成配置</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 自动生成配置</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 自动生成配置</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition">
-                        <td class="py-3 px-3 text-slate-300">修复配置包（ZIP一键部署）</td>
-                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 一键部署</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 一键部署</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 一键部署</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition">
-                        <td class="py-3 px-3 text-slate-300">
-                            基础状态检查
-                            <span class="text-slate-600 cursor-help text-xs" title="诊断后单次快照，查看项目当前在线状态，不含告警功能">❓</span>
-                        </td>
-                        <td class="py-3 px-3 text-center text-xs text-slate-500">🕐 单次快照</td>
-                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">✅ 持续监控</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">✅ 持续监控</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition">
-                        <td class="py-3 px-3 text-slate-300">每周健康报告</td>
-                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
-                        <td class="py-3 px-3 text-center text-xs text-slate-500 pro-bg pro-gold">
-                            <span class="cursor-help" title="首期用户专享权益：6 个月后恢复不含。仅限前 100 名买断用户。">🕐 6个月<span class="text-yellow-400 ml-1">⚡</span></span>
-                        </td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 邮件报告</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 邮件报告</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition bg-slate-700/30">
-                        <td class="py-3 px-3 text-slate-300">
-                            7×24崩溃监控
-                            <span class="text-slate-600 cursor-help text-xs" title="24小时不间断监控，崩溃即推送邮件告警">❓</span>
-                        </td>
-                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
-                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 崩溃即告警</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 崩溃即告警</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition bg-slate-700/30">
-                        <td class="py-3 px-3 text-slate-300">大版本持续更新</td>
-                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
-                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 持续更新</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 持续更新</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition bg-slate-700/30">
-                        <td class="py-3 px-3 text-slate-300">优先技术支持</td>
-                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
-                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold pro-bg pro-gold">★ 24h响应</td>
-                        <td class="py-3 px-3 text-center text-gold font-bold enterprise-bg enterprise-border">★ 专属顾问</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition">
-                        <td class="py-3 px-3 text-slate-300">团队协作</td>
-                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
-                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
-                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
-                        <td class="py-3 px-3 text-center text-indigo-400 font-bold enterprise-bg enterprise-border">★ 团队共享</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition">
-                        <td class="py-3 px-3 text-slate-300">API接入</td>
-                        <td class="py-3 px-3 text-center text-red-400/40">❌</td>
-                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
-                        <td class="py-3 px-3 text-center text-red-400/40 pro-bg pro-gold">❌</td>
-                        <td class="py-3 px-3 text-center text-indigo-400 font-bold enterprise-bg enterprise-border">★ REST API</td>
-                    </tr>
-                    <tr class="hover:bg-slate-700/20 transition">
-                        <td class="py-3 px-3 text-slate-300">7天无理由退款</td>
-                        <td class="py-3 px-3 text-center text-slate-600">—</td>
-                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
-                        <td class="py-3 px-3 text-center text-green-400 pro-bg pro-gold">✅</td>
-                        <td class="py-3 px-3 text-center text-green-400 enterprise-bg enterprise-border">✅</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- 购买CTA -->
-        <div class="flex flex-col sm:flex-row gap-3 mt-6 justify-center">
-            <button onclick="openPaymentModal('buy-once')"
-                class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg text-base">
-                💳 ¥360 买断 · 锁定版
-            </button>
-            <button onclick="openPaymentModal('subscribe')"
-                class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg text-base">
-                🔄 ¥65/月 订阅 · 持续更新版
+        <div class="max-w-md mx-auto flex flex-col sm:flex-row gap-2">
+            <input
+                type="text"
+                id="proKeyInput"
+                placeholder="ARK-XXXX-XXXX-49QF"
+                class="flex-1 px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-white placeholder-slate-400 text-sm"
+            >
+            <button onclick="activateProKey()"
+                class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2.5 px-6 rounded-xl transition text-sm">
+                ⚡ 激活
             </button>
         </div>
-
-        <p class="text-xs text-red-400/80 mt-2 text-center font-medium">🔥 限时优惠 · 首批30名用户专享¥360 · 恢复原价¥699</p>
-        <p class="text-xs text-slate-600 mt-1 text-center">买断版含：诊断工具永久使用权 + 配置包下载权限（不含持续监控）· 支持微信/支付宝扫码付款</p>
-
-        <p class="text-xs text-slate-500 mt-2 text-center">按月付费，随时取消 · 7天无理由退款</p>
-
-        <!-- 退款说明 -->
-        <p class="text-xs text-slate-600 mt-3 max-w-md mx-auto text-center leading-relaxed">
-            💰 如需退款，发送邮件至 <a href="mailto:guanyi2026@agent.qq.com" class="text-blue-400 hover:underline">guanyi2026@agent.qq.com</a>，24小时内处理。
-        </p>
+        <p id="proKeyResult" class="hidden text-center text-sm mt-3"></p>
     </div>
 
-    <!-- ====== 五、企业版等候名单 ====== -->
-    <div class="mt-8 bg-slate-800/40 border border-indigo-500/20 rounded-2xl p-6 md:p-8">
-        <div class="flex flex-col md:flex-row items-start gap-6">
-            <div class="flex-1">
-                <h3 class="text-lg font-bold text-indigo-400 mb-2">🏢 企业版 · 即将推出</h3>
-                <p class="text-slate-300 text-sm mb-3">
-                    ¥1400/月 — 团队协作 + 优先技术支持 + 定制化配置 + API接入
-                </p>
-                <p class="text-slate-500 text-xs mb-4">
-                    适合有多个Agent运行的企业团队。加入等候名单，上线时第一时间通知。
-                </p>
-                <div class="flex gap-2">
-                    <input
-                        type="email"
-                        id="enterpriseEmail"
-                        placeholder="你的工作邮箱"
-                        class="flex-1 px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-400 text-sm"
-                    >
-                    <button onclick="joinEnterpriseWaitlist()"
-                        class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2.5 px-5 rounded-xl transition text-sm shrink-0">
-                        加入等候名单
-                    </button>
-                </div>
-                <p id="enterpriseConfirm" class="hidden text-xs text-indigo-400 mt-2">✅ 已加入等候名单，上线时将通过邮件通知你</p>
-            </div>
-            <div class="text-5xl shrink-0">🚀</div>
-        </div>
-    </div>
-    <!-- comparisonSection -->
-    -->
-
-    <!-- ====== 五·五、ARK 诊断统计看板 ====== -->
-    <div id="statsDashboard" class="mt-10 bg-slate-800/60 border border-slate-700 rounded-2xl p-6">
-        <h3 class="text-lg font-bold text-white mb-4">📊 ARK 诊断统计</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-slate-700/40 rounded-xl p-4 text-center">
-                <div id="stat-diagnoses" class="text-2xl font-bold text-cyan-400">--</div>
-                <div class="text-xs text-slate-400 mt-1">累计诊断次数</div>
-            </div>
-            <div class="bg-slate-700/40 rounded-xl p-4 text-center">
-                <div class="text-2xl font-bold text-green-400">550<span class="text-sm font-normal text-slate-500">/月</span></div>
-                <div class="text-xs text-slate-400 mt-1">npm 下载量</div>
-            </div>
-            <div class="bg-slate-700/40 rounded-xl p-4 text-center">
-                <div class="text-2xl font-bold text-yellow-400">588<span class="text-sm font-normal text-slate-500">/月</span></div>
-                <div class="text-xs text-slate-400 mt-1">PyPI 下载量</div>
-            </div>
-            <div class="bg-slate-700/40 rounded-xl p-4 text-center">
-                <div class="text-2xl font-bold text-purple-400" id="stat-mrr">¥0</div>
-                <div class="text-xs text-slate-400 mt-1">本月 MRR</div>
-            </div>
-        </div>
-        <p class="text-xs text-slate-600 text-center mt-4">🔍 诊断数据实时更新 · 每30秒自动刷新 · 来自 <a href="#" onclick="return false;" class="text-slate-500">ark-6ek.pages.dev</a></p>
-    </div>
-
-    <!-- ====== 六、页脚 ====== -->
+    <!-- ====== 页脚 ====== -->
     <div class="mt-12 text-center text-xs text-slate-500 border-t border-slate-800 pt-6 space-y-1">
         <p>© 2026 ARK Team · 让你的智能体永不崩溃</p>
         <p class="space-x-4">
@@ -732,27 +370,21 @@
             <span>·</span>
             <a href="https://dev.to/wzg0911" target="_blank" rel="noopener" class="text-slate-400 hover:text-white transition">Build in Public</a>
             <span>·</span>
-            <a href="https://x.com/wzg0911" target="_blank" rel="noopener" class="text-slate-400 hover:text-white transition">X/Twitter</a>
-            <span>·</span>
             <a href="mailto:guanyi2026@agent.qq.com" class="text-slate-400 hover:text-white transition">联系客服</a>
         </p>
-        <p class="text-slate-600 mt-1">退款邮箱：guanyi2026@agent.qq.com</p>
-        <p class="text-slate-500 mt-3">
-            还没有 Agent 项目？<a href="#healthMonitorCTA" onclick="document.getElementById('projectPath').focus(); document.getElementById('projectPath').placeholder='💡 没有项目？先点上面的“🩺 免费订阅”体验健康监控脚本'; return true;" class="text-green-400 hover:text-green-300 transition font-semibold">先下载免费健康监控脚本体验 →</a>
-        </p>
+        <p class="text-slate-600 mt-1">退款邮箱：guanyi2026@agent.qq.com · 7天无理由退款</p>
     </div>
 </div>
 
 <script>
 // ====== 诊断逻辑 ======
 async function startDiagnosis() {
-    ARK_TRACK.diagnose();
+    arkEvent('diagnosis_start');
     const projectPath = document.getElementById('projectPath').value.trim();
     if (!projectPath) { showError('请输入Agent项目路径，例如：/home/Hermes/项目/产品/'); return; }
 
     document.getElementById('loadingState').classList.remove('hidden');
     document.getElementById('resultsSection').classList.add('hidden');
-    document.getElementById('sharePrompt').classList.add('hidden');
     document.getElementById('errorState').classList.add('hidden');
     document.getElementById('diagnoseBtn').disabled = true;
     document.getElementById('diagnoseBtn').textContent = '⏳ 诊断中…';
@@ -800,9 +432,9 @@ function displayResults(data) {
             ? `<div class="mt-3 pt-3 border-t ${cfg.border}">
                    <div class="flex items-center justify-between flex-wrap gap-2">
                        <span class="text-xs text-slate-500">🔒 ${issue.severity === 'high' ? '高危' : '中危'}问题，需专业版修复</span>
-                       <button onclick="openPaymentModal()"
+                       <button onclick="openClaimModal()"
                            class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-1.5 px-4 rounded-lg transition text-xs shadow">
-                           ⚡ 一键修复 · 查看方案
+                           ⚡ ¥49 一键修复
                        </button>
                    </div>
                </div>`
@@ -827,34 +459,7 @@ function displayResults(data) {
     });
 
     resultsSection.classList.remove('hidden');
-    document.getElementById('healthMonitorCTA').classList.remove('hidden');
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-// ====== 健康监控订阅 ======
-function subscribeHealthMonitor() {
-    document.getElementById('healthMonitorConfirm').classList.remove('hidden');
-}
-
-// ====== 企业版等候名单 ======
-function joinEnterpriseWaitlist() {
-    const email = document.getElementById('enterpriseEmail').value.trim();
-    if (!email) { alert('请输入工作邮箱'); return; }
-    document.getElementById('enterpriseConfirm').classList.remove('hidden');
-}
-
-// ====== 分享弹窗 ======
-function showSharePrompt() {
-    document.getElementById('sharePrompt').classList.remove('hidden');
-    document.getElementById('sharePrompt').scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function copyShareText() {
-    const shareText = '🔥 刚用ARK一键灌顶工具包诊断了我的Agent项目——30秒发现3个崩溃隐患！\n\n免费诊断：https://ark-6ek.pages.dev/diagnose.html\n\n#Agent开发 #AI工具 #ARK灌顶';
-    navigator.clipboard.writeText(shareText).then(() => {
-        document.getElementById('copyConfirm').classList.remove('hidden');
-        setTimeout(() => document.getElementById('copyConfirm').classList.add('hidden'), 3000);
-    }).catch(() => { alert('复制失败，请手动复制：\n' + shareText); });
 }
 
 function showError(message) {
@@ -863,130 +468,143 @@ function showError(message) {
     document.getElementById('errorState').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-// 键盘快捷
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && document.activeElement === document.getElementById('projectPath')) {
-        e.preventDefault(); startDiagnosis();
-    }
-});
-
-// ====== 支付弹窗 ======
-function openPaymentModal(preset) {
-  ARK_TRACK.payModal(preset);
-  document.getElementById('paymentModal').classList.remove('hidden');
-  document.getElementById('paymentQRPanel').classList.add('hidden');
-  document.getElementById('paymentSuccessPanel').classList.add('hidden');
-  if (preset === 'buy-once') {
-    document.getElementById('paymentAmount').textContent = '应付金额：¥360';
-  } else if (preset === 'subscribe') {
-    document.getElementById('paymentAmount').textContent = '应付金额：¥65/月';
-  } else {
-    document.getElementById('paymentAmount').textContent = '选择产品后扫码支付';
-  }
+// ====== 支付弹窗（单档 ¥49 信任模式） ======
+function openClaimModal() {
+  document.getElementById('claimModal').classList.remove('hidden');
+  document.getElementById('claimSuccess').classList.add('hidden');
+  document.getElementById('claimError').classList.add('hidden');
   const storedEmail = localStorage.getItem('ark_user_email') || '';
-  document.getElementById('buyOnceEmail').value = storedEmail;
-  document.getElementById('subscribeEmail').value = storedEmail;
+  document.getElementById('claimEmail').value = storedEmail;
 }
 
-function closePaymentModal() {
-  document.getElementById('paymentModal').classList.add('hidden');
+function closeClaimModal() {
+  document.getElementById('claimModal').classList.add('hidden');
 }
 
-function handlePayment(type) {
-  const email = type === 'buy-once'
-    ? document.getElementById('buyOnceEmail').value
-    : document.getElementById('subscribeEmail').value;
+async function submitClaim() {
+  const email = document.getElementById('claimEmail').value.trim();
+  const errEl = document.getElementById('claimError');
+  const btn = document.getElementById('claimSubmitBtn');
 
-  if (!email || !email.includes('@')) {
-    alert('请输入正确的邮箱地址，支付成功后发送下载链接');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = '❌ 请输入正确的邮箱地址';
+    errEl.classList.remove('hidden');
     return;
   }
-  localStorage.setItem('ark_user_email', email);
-  ARK_TRACK.payIntent(type);
-  if (type === 'subscribe') ARK_TRACK.subscribeIntent();
-  document.getElementById('paymentQRPanel').classList.remove('hidden');
-  const amount = type === 'buy-once' ? '¥360' : '¥65/月';
-  document.getElementById('paymentAmount').textContent = '应付金额：' + amount;
-  document.getElementById('paymentQRPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
 
-// 申请发货：唤起邮件到支付邮箱（与 ARK 自动核销 cron 闭环）
-function submitPayment() {
-  const status = document.getElementById('paidStatus');
-  const email = (document.getElementById('paymentAmount').textContent||'').includes('65')
-    ? document.getElementById('subscribeEmail').value
-    : document.getElementById('buyOnceEmail').value;
-  if (!email || !email.includes('@')) { alert('请先填写邮箱，付款凭证将发往该邮箱对应的订单'); return; }
-  const subject = encodeURIComponent('ARK 支付凭证 - ' + email);
-  const body = encodeURIComponent('我已支付 ARK，邮箱：' + email + '\n请查收付款截图/凭证，系统将自动发放下载链接。');
-  // 优先尝试唤起邮件客户端，失败则复制邮箱提示
-  window.location.href = 'mailto:guanyi2026@agent.qq.com?subject=' + subject + '&body=' + body;
-  status.classList.remove('hidden');
-  status.className = 'text-green-400 text-xs mt-2';
-  status.innerHTML = '✅ 已唤起邮件。请发送付款截图到 <b>guanyi2026@agent.qq.com</b>，系统将在30分钟内自动发放下载链接到 ' + email + '。<br>如未唤起邮箱，请手动复制邮箱发送凭证。';
-  document.getElementById('paidBtn').textContent = '✅ 已申请，等待自动发货';
-}
+  arkEvent('claim_attempt');
+  btn.disabled = true;
+  btn.textContent = '⏳ 正在核销中…';
+  errEl.classList.add('hidden');
 
-// ====== 统计看板自动刷新 ======
-async function refreshStats() {
+  // === 主路径：CF Pages Function 自动核销 ===
   try {
-    const resp = await fetch('/api/stats');
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data.diagnoses) document.getElementById('stat-diagnoses').textContent = data.diagnoses;
-      if (data.mrr) document.getElementById('stat-mrr').textContent = data.mrr;
+    const res = await fetch('/api/claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        plan: 'quick-fix-49',
+        amount: 49,
+        timestamp: new Date().toISOString()
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success) {
+        arkEvent('claim_success');
+        localStorage.setItem('ark_user_email', email);
+        if (data.proKey) localStorage.setItem('ark_pro_key', data.proKey);
+        document.getElementById('claimSuccess').classList.remove('hidden');
+        btn.textContent = '✅ Pro Key 已发送到你的邮箱';
+        btn.classList.remove('from-yellow-500', 'to-orange-500', 'hover:from-yellow-600', 'hover:to-orange-600');
+        btn.classList.add('bg-green-500', 'cursor-default');
+        if (data.proKey) {
+          setTimeout(() => activateProKeyDirect(data.proKey), 1000);
+        }
+        return;
+      }
     }
-  } catch (e) { /* 后端未就绪则保持静态值 */ }
+    throw new Error('API 返回异常');
+  } catch (e) {
+    // === 兜底：邮件认领（auto_redeem.py 会自动处理）===
+    const subject = encodeURIComponent('I want ARK Pro Key');
+    const body = encodeURIComponent(`
+═══════════════════
+ARK Pro Key 申请
+═══════════════════
+我的邮箱：${email}
+方案：¥49 快速修复
+支付金额：¥49
+支付时间：${new Date().toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'})}
+备注：我已通过微信/支付宝扫码支付 ¥49
+═══════════════════`);
+    errEl.innerHTML = `
+      <div style="text-align:left">
+        <p style="color:#fbbf24;font-weight:bold;margin-bottom:8px">⏳ 自动核销暂时不可用</p>
+        <p style="color:#94a3b8;font-size:12px;margin-bottom:10px">请 <strong style="color:#fff">截屏你的支付记录</strong>，连同邮箱一起发送到：</p>
+        <a href="mailto:guanyi2026@agent.qq.com?subject=${subject}&body=${body}"
+           style="display:inline-block;background:#2563eb;color:#fff;font-weight:bold;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px">📧 发送支付凭证</a>
+        <p style="color:#64748b;font-size:11px;margin-top:8px">✅ 收到凭证后，我们将在 <strong style="color:#fbbf24">5分钟内</strong> 发送 Pro Key 到你的邮箱</p>
+      </div>`;
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = '📧 发送支付凭证获取 Pro Key';
+  }
 }
-document.addEventListener('DOMContentLoaded', () => { setInterval(refreshStats, 30000); refreshStats(); });
+
+// ====== Pro Key 激活（客户端本地校验）======
+async function activateProKey() {
+  const key = document.getElementById('proKeyInput').value.trim().toUpperCase();
+  const resultEl = document.getElementById('proKeyResult');
+  if (!key || !key.startsWith('ARK-')) {
+    resultEl.textContent = '❌ Pro Key 格式错误，应为 ARK-XXXX-XXXX-49QF 格式';
+    resultEl.className = 'text-center text-sm mt-3 text-red-400';
+    resultEl.classList.remove('hidden');
+    return;
+  }
+  // 调用后端验证
+  try {
+    const res = await fetch('/api/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: key })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.valid) {
+        resultEl.innerHTML = '✅ <span class="text-green-400 font-bold">激活成功！</span> Pro 权限已解锁（剩余 ' + data.daysLeft + ' 天）';
+        resultEl.className = 'text-center text-sm mt-3 text-green-400';
+        localStorage.setItem('ark_pro_key', key);
+        resultEl.classList.remove('hidden');
+        return;
+      }
+    }
+  } catch (e) {}
+  // 本地宽松校验（信任模式兜底）
+  if (key.match(/^ARK-[A-Z0-9]{4}-[A-Z0-9]{4}-49QF$/)) {
+    resultEl.innerHTML = '✅ <span class="text-green-400 font-bold">激活成功！</span> Pro 权限已解锁（30天）';
+    resultEl.className = 'text-center text-sm mt-3 text-green-400';
+    localStorage.setItem('ark_pro_key', key);
+    resultEl.classList.remove('hidden');
+  } else {
+    resultEl.textContent = '❌ Pro Key 无效，请检查后重试';
+    resultEl.className = 'text-center text-sm mt-3 text-red-400';
+    resultEl.classList.remove('hidden');
+  }
+}
+
+function activateProKeyDirect(key) {
+  document.getElementById('proKeyInput').value = key;
+  activateProKey();
+}
+
+// 键盘快捷
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.activeElement === document.getElementById('projectPath')) {
+    e.preventDefault(); startDiagnosis();
+  }
+});
 </script>
-
-            <!-- 📧 邮箱捕获区 -->
-            <div id="lead-capture" style="margin-top: 60px; padding: 40px 20px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 16px; border: 1px solid #bae6fd;">
-              <h3 style="font-size: 24px; color: #0c4a6e; margin: 0 0 8px 0; text-align: center;">🎯 想要第一时间获得修复方案？</h3>
-              <p style="font-size: 14px; color: #64748b; text-align: center; margin: 0 0 24px 0;">
-                留下邮箱，我们会在您的 Agent 项目有新进展时通知您。<br>
-                同时免费获取《Agent 7 种死法完整防御框架》PDF
-              </p>
-              <div style="max-width: 440px; margin: 0 auto; display: flex; gap: 8px;">
-                <input type="email" id="lead-email" placeholder="your@email.com" 
-                       style="flex: 1; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none;"
-                />
-                <button onclick="captureLead()"
-                        style="padding: 12px 24px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;">
-                  订阅 ↗
-                </button>
-              </div>
-              <p id="lead-msg" style="text-align: center; font-size: 13px; margin-top: 12px; color: #16a34a; display: none;">✅ 订阅成功！请查收邮件确认。</p>
-            </div>
-
-            <script>
-            function captureLead() {
-              var email = document.getElementById('lead-email').value.trim();
-              if (!email || !email.includes('@')) {
-                document.getElementById('lead-email').style.borderColor = '#ef4444';
-                return;
-              }
-              // 发邮件到核销邮箱
-              var mailto = 'mailto:guanyi2026@agent.qq.com?subject=LEAD%3A%20' + encodeURIComponent(email) + '%20from%20diagnose&body=' +
-                encodeURIComponent('新线索
-邮箱: ' + email + '
-来源: 诊断页
-时间: ' + new Date().toISOString());
-              window.location.href = mailto;
-              document.getElementById('lead-msg').style.display = 'block';
-              document.getElementById('lead-capture').innerHTML =
-                '<p style="font-size: 18px; color: #16a34a; text-align: center; padding: 20px;">✅ 感谢订阅！请检查邮件确认。</p>';
-            }
-            window.addEventListener('load', function() {
-              // 动态插入 lead capture 到支付弹窗后面
-              var container = document.querySelector('.result-section');
-              if (container) {
-                var leads = document.getElementById('lead-capture');
-                if (leads) container.after(leads);
-              }
-            });
-            </script>
-
 </body>
 </html>
