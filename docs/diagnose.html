@@ -193,10 +193,10 @@
             <div class="flex items-start gap-3">
               <span class="shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">3</span>
               <div class="flex-1">
-                <p class="text-white font-semibold text-sm mb-1">点击"我已支付"→ 立即收到 Pro Key</p>
+                <p class="text-white font-semibold text-sm mb-1">点击"我已支付"→ 提交申请，截图发客服</p>
                 <p class="text-slate-400 text-xs mb-3">系统会自动核销并发送 Pro Key 到你的邮箱（含下载链接 + 使用指南）</p>
                 <button id="claimSubmitBtn" onclick="submitClaim()" class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 rounded-xl transition shadow-lg text-base">
-                  ✅ 我已支付 ¥49 · 立即获取 Pro Key
+                  ✅ 我已支付 ¥49 · 提交申请领 Pro Key
                 </button>
                 <p id="claimError" class="hidden text-xs text-red-400 mt-2 text-center"></p>
               </div>
@@ -211,10 +211,10 @@
 
           <!-- 成功态（默认隐藏） -->
           <div id="claimSuccess" class="hidden mt-5 bg-green-500/10 border border-green-500/40 rounded-xl p-5 text-center">
-            <div class="text-5xl mb-3">✅</div>
-            <h4 class="text-green-400 font-bold text-xl mb-2">Pro Key 正在飞向你的邮箱！</h4>
-            <p class="text-slate-300 text-sm">5秒内查收（含 Pro Key + 下载链接 + 30天Pro权限）</p>
-            <p class="text-slate-500 text-xs mt-2">如未收到，请检查垃圾邮件箱</p>
+            <div class="text-5xl mb-3">📨</div>
+            <h4 class="text-green-400 font-bold text-xl mb-2">申请已提交，等待发货</h4>
+            <p class="text-slate-300 text-sm">请截图支付记录发到 <span class="text-blue-400">guanyi2026@agent.qq.com</span></p>
+            <p class="text-slate-500 text-xs mt-2">确认收款后 5 分钟内发送 Pro Key 到你的邮箱</p>
           </div>
         </div>
 
@@ -497,7 +497,7 @@ async function submitClaim() {
   btn.textContent = '⏳ 正在核销中…';
   errEl.classList.add('hidden');
 
-  // === 主路径：CF Pages Function 自动核销 ===
+  // === 主路径：提交核销申请（手动确认模式）===
   try {
     const res = await fetch('/api/claim', {
       method: 'POST',
@@ -511,17 +511,14 @@ async function submitClaim() {
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.success) {
-        arkEvent('claim_success');
+      if (data.success && data.status === 'pending_payment') {
+        arkEvent('claim_pending');
         localStorage.setItem('ark_user_email', email);
-        if (data.proKey) localStorage.setItem('ark_pro_key', data.proKey);
         document.getElementById('claimSuccess').classList.remove('hidden');
-        btn.textContent = '✅ Pro Key 已发送到你的邮箱';
+        btn.textContent = '✅ 申请已提交，等待发货';
         btn.classList.remove('from-yellow-500', 'to-orange-500', 'hover:from-yellow-600', 'hover:to-orange-600');
         btn.classList.add('bg-green-500', 'cursor-default');
-        if (data.proKey) {
-          setTimeout(() => activateProKeyDirect(data.proKey), 1000);
-        }
+        // 关键：不自动激活，必须付款 + 主人确认
         return;
       }
     }
@@ -541,7 +538,7 @@ ARK Pro Key 申请
 ═══════════════════`);
     errEl.innerHTML = `
       <div style="text-align:left">
-        <p style="color:#fbbf24;font-weight:bold;margin-bottom:8px">⏳ 自动核销暂时不可用</p>
+        <p style="color:#fbbf24;font-weight:bold;margin-bottom:8px">⏳ 自动提交失败</p>
         <p style="color:#94a3b8;font-size:12px;margin-bottom:10px">请 <strong style="color:#fff">截屏你的支付记录</strong>，连同邮箱一起发送到：</p>
         <a href="mailto:guanyi2026@agent.qq.com?subject=${subject}&body=${body}"
            style="display:inline-block;background:#2563eb;color:#fff;font-weight:bold;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px">📧 发送支付凭证</a>
