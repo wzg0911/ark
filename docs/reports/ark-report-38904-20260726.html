@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain#38904</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .score-bar { height: 8px; border-radius: 4px; background: #2a2a3e; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 1s ease-in-out; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/38904" class="text-blue-400 hover:underline">langchain-ai/langchain#38904</a>
+            · test_stream_error_callback 被 xfail 长期掩盖：错误断言让"流式错误回调"验证名存实亡
+            · 2026-07-26
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🟠</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">test_stream_error_callback</code>
+                    （langchain-core，chat_models/test_base.py）被标记为
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">@pytest.mark.xfail(reason="failing due to a bug in the testing code")</code>。
+                    真实根因不是产品代码，而是<strong class="text-orange-400">测试断言写错了</strong>：断言
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">generations == []</code>，
+                    但 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">generations</code> 是"每个 prompt 一个列表"的嵌套结构，空结果应是
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">[[]]</code>。
+                    修正断言即可通过。问题的严重性在于：<strong class="text-red-400">这条 xfail 让"流式错误回调"这一关键可靠性路径长期处于零覆盖状态</strong>。
+                </p>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400">中危 · 测试掩盖 / 安全网自身失效</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：影响分析 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">⚠️</span>
+            <h2 class="text-lg font-semibold text-white">影响分析</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-300">发生频率</span><span class="text-yellow-400">持续（每次 CI 运行）</span>
+                </div>
+                <p class="text-slate-400 text-sm">xfail 存在期间，<strong>每一次</strong>测试运行都跳过对流式错误回调的实际断言，绿色 CI 掩盖了验证缺口。</p>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-300">隐蔽性</span><span class="text-red-400">极高</span>
+                </div>
+                <p class="text-slate-400 text-sm"><code class="bg-slate-700 px-1 py-0.5 rounded">xfail</code> 在测试报告中显示为"预期失败/已知问题"，不触发红灯。维护者与用户都会默认"这块有测试保护"——实际上保护为零。</p>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-300">下游风险</span><span class="text-yellow-400">中</span>
+                </div>
+                <p class="text-slate-400 text-sm">被掩盖的正是<strong>流式过程中的错误回调路径</strong>——即"流到一半失败时，on_llm_error 是否被正确触发、generations 状态是否正确"。这恰是生产 Agent 最依赖、也最容易静默吞错的环节（参见 ARK 对 #38892/#39039 的流式静默丢弃诊断）。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：根因分析 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔬</span>
+            <h2 class="text-lg font-semibold text-white">根因分析</h2>
+        </div>
+        <div class="code-block mb-3 text-slate-300">
+<span class="text-purple-400"># test_base.py · test_stream_error_callback 内的 eval_response（简化）</span>
+<span class="text-blue-400">def</span> <span class="text-green-400">eval_response</span>(callback, i):
+    llm_result = callback.saved_things[<span class="text-yellow-400">"generation"</span>]
+    <span class="text-blue-400">if</span> i == <span class="text-yellow-400">0</span>:
+        <span class="text-blue-400">assert</span> llm_result.generations == []      <span class="text-gray-500"># ← 错：把嵌套结构当平坦列表</span>
+</div>
+        <p class="text-slate-300 text-sm mb-2">真相：<code class="bg-slate-700 px-1 py-0.5 rounded">LLMResult.generations</code> 的类型是 <code class="bg-slate-700 px-1 py-0.5 rounded">list[list[Generation]]</code>——外层每个元素对应一个 prompt。单 prompt 的空生成是 <code class="bg-slate-700 px-1 py-0.5 rounded">[[]]</code>，不是 <code class="bg-slate-700 px-1 py-0.5 rounded">[]</code>。</p>
+        <div class="code-block text-slate-300">
+<span class="text-purple-400"># 一行修复</span>
+<span class="text-blue-400">assert</span> llm_result.generations == [[]]     <span class="text-green-400"># ← 匹配 list[list[...]] 契约</span>
+<span class="text-gray-500"># 并移除 @pytest.mark.xfail，使该路径重新纳入回归保护</span>
+        </div>
+        <p class="text-slate-400 text-sm mt-2">根因是"测试断言与被测类型契约不符"，而处置方式（挂 xfail 而非修断言）把一个 5 秒可修的笔误，升级成了长期的<strong class="text-red-400">覆盖盲区</strong>。</p>
+    </div>
+
+    <!-- ====== 区块4：社区共识 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🏆</span>
+            <h2 class="text-lg font-semibold text-white">社区共识：根因清晰，修复已就绪</h2>
+        </div>
+        <div class="callout mb-3">
+            <p class="text-sm text-slate-300 mb-1">报告者与 <strong class="text-green-400">@Tanmay9223</strong> 均已定位到同一处断言，并在 <strong class="text-cyan-400">#38901</strong> 提交修复：修正断言为 <code class="bg-slate-700 px-1 py-0.5 rounded">[[]]</code> 并移除 xfail 标记。</p>
+            <p class="text-sm text-slate-300">这是一个"根因无争议、修复一行、却依赖上游合入节奏"的典型案例——与 ARK 此前诊断的 #38779（7 个 PR 被自动关闭）同属<strong class="text-orange-400">维护带宽瓶颈</strong>族。</p>
+        </div>
+        <p class="text-slate-400 text-sm">xfail 是把双刃剑：它让 CI 保持绿色、避免 flaky 阻塞合并，但一旦 reason 写成"测试代码的 bug"却无人回收，它就从"临时豁免"退化为"永久掩盖"。</p>
+    </div>
+
+    <!-- ====== 区块5：生产场景深度分析 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">⚖️</span>
+            <h2 class="text-lg font-semibold text-white">生产场景：被 xfail 掏空的安全网</h2>
+        </div>
+        <div class="space-y-3">
+            <div class="callout">
+                <p class="text-sm text-slate-200"><strong class="text-yellow-400">场景：团队复用上游测试模式作为自家回归基线</strong></p>
+                <p class="text-sm text-slate-300 mt-1">许多团队直接照搬 langchain-core 的回调测试范式来验证自家 Agent 的流式错误处理。若照搬了同款错误断言或"遇错就 xfail"的习惯——</p>
+                <p class="text-sm text-slate-300 mt-1"><strong class="text-red-400">→ CI 全绿，但流式失败路径从未被真正断言过</strong></p>
+                <p class="text-sm text-slate-300">→ 生产中一旦"流到一半失败"，on_error 未触发、部分结果被当成成功返回，直到用户投诉才暴露。</p>
+            </div>
+            <div class="callout">
+                <p class="text-sm text-slate-200"><strong class="text-yellow-400">问题本质</strong></p>
+                <p class="text-sm text-slate-300 mt-1">这是"<strong class="text-red-400">静默失败</strong>"从产品代码蔓延到<strong class="text-red-400">验证层</strong>的镜像：不是 Agent 骗了你，而是"证明 Agent 没骗你的那套测试"本身失效了。安全网破了个洞，而洞口贴着"预期之内"的绿色标签。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块6：ARK Trust 修复方案 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🛡️</span>
+            <h2 class="text-lg font-semibold text-white">ARK Trust 修复方案</h2>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <p class="text-sm font-semibold text-purple-300 mb-1">① OutputValidator — 运行时断言流式终止状态</p>
+                <div class="code-block text-slate-300">
+<span class="text-gray-500"># 不依赖测试是否被 xfail：在运行时强制校验"流失败 → 结果必须为空 + 错误必须上抛"</span>
+<span class="text-green-400">@output_validator</span>(schema={
+    <span class="text-yellow-400">"on_error"</span>: {<span class="text-yellow-400">"required_when"</span>: <span class="text-yellow-400">"stream_terminated_abnormally"</span>},
+    <span class="text-yellow-400">"generations"</span>: {<span class="text-yellow-400">"must_be_empty_on_error"</span>: <span class="text-blue-400">True</span>}
+})
+<span class="text-blue-400">def</span> <span class="text-green-400">stream_agent</span>(prompt): ...
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-purple-300 mb-1">② TrustLoop — xfail / skip 审计闸门</p>
+                <div class="code-block text-slate-300">
+<span class="text-gray-500"># CI 集成：统计带 reason="bug in ..." 的 xfail，超期未回收即红灯</span>
+ark trust audit-tests --flag-xfail-older-than 14d \
+    --pattern <span class="text-yellow-400">"bug in the testing code"</span>   <span class="text-gray-500"># 把"临时豁免"变成有时限的债务</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-purple-300 mb-1">③ OTel Bridge — 流式错误路径全链路留痕</p>
+                <div class="code-block text-slate-300">
+<span class="text-yellow-400">ark.stream.error</span> { terminated: <span class="text-yellow-400">"abnormal"</span>, on_error_fired: <span class="text-blue-400">true</span>,
+                   generations_len: <span class="text-yellow-400">0</span> }   <span class="text-gray-500"># 生产实证，不靠测试假设</span>
+                </div>
+                <p class="text-slate-400 text-sm mt-1">即使上游测试仍被 xfail，ARK 也能在真实流量上验证该路径行为符合契约。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块7：置信度评估 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">✅</span>
+            <h2 class="text-lg font-semibold text-white">置信度评估</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">根因确定性</span><span class="text-green-400">极高（报告者+#38901 一致定位）</span></div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:97%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">修复方案成熟度</span><span class="text-green-400">极高（一行断言修正 + 去 xfail）</span></div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:98%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">影响广度</span><span class="text-yellow-400">中（核心库测试覆盖盲区 + 模式外溢）</span></div>
+                <div class="score-bar"><div class="score-fill bg-yellow-500" style="width:55%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">静默性风险</span><span class="text-red-400">极高（安全网自身失效，显示为绿色）</span></div>
+                <div class="score-bar"><div class="score-fill bg-red-500" style="width:88%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">ARK契合度</span><span class="text-green-400">极高（验证+测试审计+OTel 三件套直击）</span></div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:90%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块8：诊断结论 ====== -->
+    <div class="report-card p-4 md:p-6">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🎯</span>
+            <h2 class="text-lg font-semibold text-white">诊断结论</h2>
+        </div>
+        <div class="space-y-2 text-sm text-slate-300">
+            <p><strong class="text-white">#38904 的价值不在这个一行断言笔误，而在它示范了"静默失败如何潜入验证层"。</strong>当测试用 xfail 掩盖自己的 bug，绿色 CI 就成了最危险的谎言——因为它给出的是"有保护"的假象。</p>
+            <p>被掩盖的恰是流式错误回调路径——生产 Agent 中最容易"流到一半悄悄吞错"的环节，与 ARK 反复诊断的 #38892/#39039 同源。</p>
+            <p>修复只需一行、根因毫无争议，却要等上游合入 #38901——再次印证：<strong class="text-cyan-400">可靠性防线必须建在自己这一侧</strong>，不能把安全网的完整性外包给上游的合并队列。</p>
+            <p>ARK 的运行时输出校验 + xfail/skip 审计闸门 + OTel 留痕，把"被掩盖的测试缺口"转化为<strong class="text-green-400">显式的运行时断言、有时限的技术债与可观测的生产证据</strong>——让安全网重新真正兜底。</p>
+        </div>
+    </div>
+
+</div>
+
+<div class="text-center text-slate-600 text-xs mt-8 pb-4">
+    🛡️ ARK — Agent Reliability Kit | <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a><br>
+    生成时间：2026-07-26 · ARK Cruise Bot · W31 诊断报告 (4/5)
+</div>
+
+</body>
+</html>
