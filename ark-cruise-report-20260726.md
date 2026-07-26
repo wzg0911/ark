@@ -1,4 +1,4 @@
-# ARK 巡航报告 — 2026-07-26 11:30 CST
+# ARK 巡航报告 — 2026-07-26 15:30 CST
 
 ## 一、状态总览
 
@@ -7,10 +7,10 @@
 | Stars / Forks | 0 / 0 | 冷启动瓶颈持续 |
 | Open Issues | 1 | #1（TrustLoop spam），需主人手动关闭 |
 | Open PRs | 0 | — |
-| 测试通过率 | ✅ 248 passed, 3 skipped | 全量无失败，43.38s |
+| 测试通过率 | ✅ 248 passed, 3 skipped | 全量无失败，80.6s |
 | Git | ✅ 已推送 | 与 origin/main 同步 |
 
-## 二、本次巡航结果（11:30）
+## 二、本次巡航结果（15:30）
 
 ### 1. GitHub 状态
 - **Stars: 0 / Forks: 0** — 无变化
@@ -21,7 +21,7 @@
 
 ### 2. 测试：✅ 全绿
 ```
-248 passed, 3 skipped in 43.38s
+248 passed, 3 skipped in 80.63s
 ```
 
 ### 3. Git 状态
@@ -41,4 +41,4 @@
 
 ---
 
-*生成时间：2026-07-26 11:30 CST | ARK Cruise Bot*
+*生成时间：2026-07-26 15:30 CST | ARK Cruise Bot*
