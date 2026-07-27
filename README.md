@@ -97,7 +97,7 @@ from ark import IdempotencyGuard, CircuitBreaker, OutputValidator
 
 ---
 
-## 👥 Trusted by 5,800+ Developers Shipping Production Agents
+## 👥 Built by developers, for developers shipping production agents
 
 From solo indie builders deploying their first payment agent to engineering teams running 50+ agents in production — ARK is the zero-config reliability layer they don't think about until it saves them.
 
@@ -114,7 +114,7 @@ From solo indie builders deploying their first payment agent to engineering team
 
 ## 🔍 Real Diagnosis Cases (Before → After)
 
-Extracted from **1,838+ real diagnoses**, fully anonymized. These are the exact failure patterns ARK catches — and the measurable results after the fix.
+From the failure patterns ARK catches in practice — and the measurable results after the fix:
 
 <p align="center">
   <a href="https://ark-6ek.pages.dev/diagnose">
