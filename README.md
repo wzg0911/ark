@@ -1,5 +1,7 @@
 # Your Agent Is Lying. ARK Makes It Trustworthy — 3 Lines of Code.
 
+> 🔍 **你的 Agent 也崩溃过吗？[30秒免费诊断 →](https://ark-6ek.pages.dev/diagnose)** — 输入项目路径，ARK 自动检查幂等守卫 / 重试策略 / 日志记录的3类致命隐患。
+
 **Built for every developer shipping AI agents that touch money, data, or real APIs.**  
 If your agent has ever double-charged a customer, silently ignored a failed tool call, or hallucinated a "sent" email that never arrived — ARK catches it before it costs you.
 
