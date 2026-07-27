@@ -45,7 +45,8 @@ export async function onRequestGet(context) {
       if (pageToken) url += `&page_token=${encodeURIComponent(pageToken)}`;
       const recResp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const recData = await recResp.json();
-      for (const row of (recData.records || [])) {
+      const items = (recData.data && recData.data.items) || recData.items || [];
+      for (const row of items) {
         const f = row.fields || {};
         const type = f['事件类型'] || f['type'] || '';
         const anon = String(f['匿名标识'] || f['anon_id'] || '');
@@ -66,7 +67,8 @@ export async function onRequestGet(context) {
         if (f['邮箱(文本)'] || f['邮箱']) agg.customers += 1;
         if (channel) agg.channels[channel] = (agg.channels[channel] || 0) + 1;
       }
-      pageToken = recData.has_more ? recData.page_token : undefined;
+      const ds = recData.data || recData;
+      pageToken = ds.has_more ? ds.page_token : undefined;
     } while (pageToken);
 
     return new Response(JSON.stringify({ ok: true, ...agg }), {
