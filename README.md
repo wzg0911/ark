@@ -150,6 +150,8 @@ Extracted from **1,838+ real diagnoses**, fully anonymized. These are the exact 
 
 > 💡 All cases are anonymized — only the problem type and fix result are retained, with no real identity information.
 
+**One more, from a public issue we dug into:** OpenClaw [#113434](https://github.com/openclaw/openclaw/issues/113434) — `sessions.reset` reuses the old session ID after retiring the generation, so the next turn self-rejects; meanwhile unbounded catalog scans quietly eat gateway RAM until it crashes. We wrote up the full root cause and fix code here: https://ark-6ek.pages.dev/reports/openclaw-113434.html
+
 **Try the live diagnosis yourself → [ark-6ek.pages.dev/diagnose](https://ark-6ek.pages.dev/diagnose)**
 
 ---
