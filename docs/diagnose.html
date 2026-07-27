@@ -5,14 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARK一键灌顶工具包 — 让你的智能体永不崩溃</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- ARK 增长埋点：CF Pages 开启 Web Analytics 即可见流量；/api/event 记录漏斗事件 -->
+    <!-- ARK 增长埋点：真实落点 = /api/track（写入飞书 Bitable，供增长分析）。/api/event 写未绑定 KV 已废弃。 -->
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "REPLACE_WITH_CF_WEB_ANALYTICS_TOKEN"}'></script>
     <script>
-      // 漏斗事件上报（部署 /api/event 后生效；失败静默忽略）
-      function arkEvent(name, meta) {
+      // 漏斗事件上报 → 真实落点 /api/track（飞书 Bitable，供 growth-tracker 读取）
+      function arkAnonId() {
+        try { var id = localStorage.getItem('ark_anon_id');
+          if (!id) { id = 'a_' + Math.random().toString(36).slice(2, 12); localStorage.setItem('ark_anon_id', id); }
+          return id; } catch (e) { return 'anon_' + Math.random().toString(36).slice(2, 10); }
+      }
+      function arkChannel() {
+        try { var r = document.referrer || '';
+          if (r.indexOf('github.com') >= 0) return 'github';
+          if (r.indexOf('news.ycombinator') >= 0 || r.indexOf('hn.algolia') >= 0) return 'hackernews';
+          if (r.indexOf('twitter.com') >= 0 || r.indexOf('x.com') >= 0) return 'x';
+          if (r.indexOf('producthunt') >= 0) return 'producthunt';
+          if (r.indexOf('dev.to') >= 0) return 'devto';
+          if (r.indexOf('reddit.com') >= 0) return 'reddit';
+          if (r) return 'referral'; return 'direct';
+        } catch (e) { return 'direct'; }
+      }
+      function arkEvent(type, meta) {
+        meta = meta || {};
         try {
-          fetch('/api/event', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ event: name, meta: meta || {} }), keepalive: true }).catch(function(){});
+          fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: type, channel: arkChannel(), anon_id: arkAnonId(),
+              product: meta.product || 'buy_once', email: meta.email || '' }), keepalive: true }).catch(function(){});
         } catch (e) {}
       }
       document.addEventListener('DOMContentLoaded', function () { arkEvent('page_view'); });
@@ -470,6 +488,7 @@ function showError(message) {
 
 // ====== 支付弹窗（单档 ¥49 信任模式） ======
 function openClaimModal() {
+  arkEvent('pay_modal_open');
   document.getElementById('claimModal').classList.remove('hidden');
   document.getElementById('claimSuccess').classList.add('hidden');
   document.getElementById('claimError').classList.add('hidden');
@@ -512,7 +531,7 @@ async function submitClaim() {
     if (res.ok) {
       const data = await res.json();
       if (data.success && data.status === 'pending_payment') {
-        arkEvent('claim_pending');
+        arkEvent('claim_pending', { email: email });
         localStorage.setItem('ark_user_email', email);
         document.getElementById('claimSuccess').classList.remove('hidden');
         btn.textContent = '✅ 申请已提交，等待发货';
