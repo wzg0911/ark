@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain-qdrant#39052</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; white-space: pre; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/39052" class="text-blue-400 hover:underline">langchain-ai/langchain#39052</a>
+            · QdrantVectorStore MMR 检索 lambda_mult 语义完全反转
+            · 2026-07-28 · W32 诊断 3/5
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🔴</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    使用 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">QdrantVectorStore.as_retriever(search_type="mmr")</code> 时，
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">lambda_mult</code> 的语义被<strong class="text-red-400">完全反转</strong>：
+                    LangChain 全生态约定 <code class="bg-slate-700 px-1 rounded text-sm">1.0=纯相关性、0.0=纯多样性</code>，
+                    而 Qdrant 路径把它直接透传给 Qdrant 的 <code class="bg-slate-700 px-1 rounded text-sm">diversity</code> 参数——
+                    Qdrant 内部再做 <code class="bg-slate-700 px-1 rounded text-sm">lambda = 1.0 - diversity</code>，两层约定叠加后
+                    <strong class="text-red-400">用户设 1.0 得到纯多样性、设 0.0 得到纯相关性</strong>。
+                    不报错、不告警、每次都返回「看起来合理」的文档列表——只是排序策略与用户的意图恰好相反。
+                </p>
+                <span class="badge mt-1 bg-red-500/20 text-red-400">语义反转 · 参数契约跨库漂移</span>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400 ml-1">静默错误 · 结果永远"合法"</span>
+                <span class="badge mt-1 bg-green-500/20 text-green-400 ml-1">ARK 实机双向确定性复现 ✅</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">langchain-qdrant 1.1.0（Qdrant 原生 MMR 路径）· 所有 RAG-MMR 用户</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ open · 社区已定位同一根因 · 修复 PR 待受理</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ OutputValidator 行为不变式探针</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位（P2 Probe）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-3">这是一次教科书级的「参数契约跨库漂移」——两个库各自都没写错，接缝处语义翻转：</p>
+        <ol class="text-sm text-slate-300 space-y-2 list-decimal list-inside">
+            <li>LangChain MMR 约定（<code class="bg-slate-700 px-1 rounded">langchain_qdrant/_utils.py:32</code>）：
+                <code class="bg-slate-700 px-1 rounded">score = lambda_mult × relevance − (1−lambda_mult) × redundancy</code> → 1.0 = 纯相关性</li>
+            <li>langchain-qdrant 走 Qdrant 原生 MMR 时直接透传（<code class="bg-slate-700 px-1 rounded">qdrant.py:830</code>）：
+                <code class="bg-slate-700 px-1 rounded">mmr=models.Mmr(diversity=lambda_mult, ...)</code></li>
+            <li>Qdrant 对 <code class="bg-slate-700 px-1 rounded">diversity</code> 的定义恰好相反（<code class="bg-slate-700 px-1 rounded">qdrant_client/local/local_collection.py:2109</code>）：
+                <code class="bg-slate-700 px-1 rounded">lambda_ = 1.0 - diversity</code> → diversity=1.0 = 纯多样性</li>
+            <li>同名概念、镜像定义、无单位换算 → 用户参数在管道里被静默取反</li>
+        </ol>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-white">为何数值上永远不炸：</strong>lambda_mult 与 diversity 同为 [0,1] 区间浮点数，
+            类型校验、范围校验全部通过；MMR 无论 lambda 取何值都返回 k 篇合法文档。
+            <strong class="text-white">错误只存在于语义层</strong>——这正是传统防御（类型系统/schema 校验）的盲区，
+            也是检索质量「莫名其妙变差」却极难归因的经典成因。用户跨 vectorstore 迁移（Chroma→Qdrant）时行为突变，代码却一行没改。</p>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：ARK 实机验证 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🧪</span>
+            <h2 class="text-lg font-semibold text-white">ARK 实机验证（2026-07-28 · langchain-qdrant 1.1.0 / qdrant-client 1.18.0 / Python 3.11）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">ARK 构造了比原 issue 更强的复现：<strong class="text-white">手工正交向量空间</strong>（3 个近重复"相关"文档 + 2 个正交"多样"文档），
+        无需嵌入模型、无需外部 Qdrant 服务（<code class="bg-slate-700 px-1 rounded">:memory:</code> 本地模式），完全确定性。<strong class="text-green-400">双向反转全部命中</strong>：</p>
+        <div class="code-block text-slate-300">lambda_mult=0.0（文档语义：纯多样性）
+  文档语义预期   : [相关A, 多样E, 多样D]
+  Qdrant 路径实际: [相关A, 相关B, 相关C]   ← 纯相关性！
+  与「取反后的 lambda=1.0」预测完全一致 ✅
+
+lambda_mult=1.0（文档语义：纯相关性）
+  文档语义预期   : [相关A, 相关B, 相关C]
+  Qdrant 路径实际: [相关A, 多样E, 多样D]   ← 纯多样性！
+  与「取反后的 lambda=0.0」预测完全一致 ✅
+
+VERDICT: INVERSION CONFIRMED — 反转不是近似偏差，是精确镜像</div>
+        <p class="text-xs text-slate-500 mt-2">验证强度说明：不仅证明「实际 ≠ 文档语义」，还证明「实际 == 取反语义的逐位预测」——排除了"MMR 实现差异导致的排序噪音"这一替代解释，把结论钉死在语义反转上。三级源码链（_utils.py:32 → qdrant.py:830 → local_collection.py:2109）与运行时行为互相印证。</p>
+    </div>
+
+    <!-- ====== 区块4：ARK 映射 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🛡️</span>
+            <h2 class="text-lg font-semibold text-white">ARK Trust Layer 如何拦截（P3 Prescribe）</h2>
+        </div>
+        <div class="space-y-3 text-sm text-slate-300">
+            <div class="callout">
+                <p><strong class="text-white">① OutputValidator · 行为不变式探针（集成时）</strong><br>
+                对任何声称实现 MMR 的检索组件，ARK 用已知构造的探针数据集（近重复簇 + 正交簇）跑一次极值自检：
+                <code class="bg-slate-700 px-1 rounded">lambda=1.0 结果必须 ⊆ 相关簇</code>、<code class="bg-slate-700 px-1 rounded">lambda=0.0 结果必须含跨簇文档</code>。
+                语义反转在接入当天现形，而非在生产检索质量报表上潜伏数月。</p>
+            </div>
+            <div class="callout">
+                <p><strong class="text-white">② InputGuard · 跨库参数契约显式声明</strong><br>
+                跨库透传的参数必须声明语义方向（<em>higher-is-relevance</em> vs <em>higher-is-diversity</em>）。
+                同名/同域但方向未声明的透传（本例 lambda_mult→diversity）被标记为高危接缝，强制适配层换算。</p>
+            </div>
+            <div class="callout">
+                <p><strong class="text-white">③ OTel 留痕</strong><br>
+                检索 span 记录 lambda_mult 原值 + 底层引擎实际生效参数。用户排查「检索结果变差」时，
+                能直接看到 <code class="bg-slate-700 px-1 rounded">lambda_mult=1.0 → qdrant.diversity=1.0 → effective_lambda=0.0</code> 的换算链。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：缺陷族归档 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📚</span>
+            <h2 class="text-lg font-semibold text-white">缺陷模式索引归档（P4 Publish）</h2>
+        </div>
+        <p class="text-sm text-slate-300">
+            设立新缺陷族 <strong class="text-orange-400">F8 · 语义反转 / 参数契约跨库漂移</strong>（首例）。
+            与 F3（静默失败）的区别：F3 是「失败被伪装成成功」，F8 是「<strong class="text-white">从头到尾没有失败</strong>——
+            每一步都是合法值、合法调用、合法返回，唯独整体语义与用户意图相反」。
+            这类缺陷不可能被异常监控捕获，只能被行为不变式探针捕获，恰好落在 ARK 的射程内、传统 APM 的射程外。
+        </p>
+    </div>
+
+    <!-- ====== 页脚 ====== -->
+    <div class="text-center text-xs text-slate-600 mt-6">
+        <p>ARK — Agent Reliability Kit · <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a></p>
+        <p class="mt-1">诊断方法论：4P Framework（Pinpoint → Probe → Prescribe → Publish）· 所有结论基于实机验证，复现与未复现均如实披露</p>
+        <p class="mt-1">生成时间：2026-07-28 11:40 CST · W32 诊断报告 3/5</p>
+    </div>
+
+</div>
+</body>
+</html>
