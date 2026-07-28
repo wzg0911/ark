@@ -1,6 +1,6 @@
 # ARK 诊断缺陷模式索引 (Defect Pattern Index)
 
-> 累积索引 · 覆盖 W29–W32（19 份诊断报告）| 更新：2026-07-28 23:40 CST | ARK Cruise Bot
+> 累积索引 · 覆盖 W29–W32（20 份诊断报告）| 更新：2026-07-29 05:34 CST | ARK Cruise Bot
 >
 > 目的：把散落在各周诊断报告中的真实 Agent 可靠性缺陷，按**缺陷族**归并成单一可导航索引——既是 ARK 价值主张的证据库，也是技术参考。每一条都源自主流框架（LangChain / LangGraph / CrewAI）的**真实 issue**，非虚构。
 
@@ -18,7 +18,7 @@
 | F6 | 无限循环 / 递归耗尽 | 1 | `CircuitBreaker`（递归/循环上限） | #6731 |
 | F7 | **非确定性一致性 / 批次时间基准漂移** | **2** ⚠️ | `OutputValidator`（完整性不变式）+ OTel 留痕 | #39087, #39106 |
 | F8 | **语义反转 / 参数契约跨库漂移** | **2** ⚠️ | `OutputValidator` 行为不变式探针 + `InputGuard` 契约声明 | #39052, #39047 |
-| F9 | **出站契约不对称 / 内部元数据泄漏到 wire 协议** | 1 | `OutputValidator` 出站 payload 契约 + `InputGuard` internal 字段标记 | #39100 ✅已修复 |
+| F9 | **出站契约不对称 / 内部元数据泄漏到 wire 协议** | **2** ⚠️ | `OutputValidator` 出站 payload 契约 + `InputGuard` internal 字段标记 | #39100 ✅已修复, #39113 |
 
 ---
 
@@ -124,10 +124,13 @@
 | Issue | 一句话 | 后果 |
 |-------|--------|------|
 | langchain-anthropic#39100 (W32) | `_format_messages()` 对 human/assistant 文本块收窄到 Anthropic 接受的字段，但 system 分支原样透传，`create_text_block()` 铸造的 `lc_` id 直达 API | `invoke()` 与 `get_num_tokens_from_messages()` 双双 400 `"system.0.id: Extra inputs are not permitted"`；v1 content_blocks（官方力推的迁移方向）越早采用越先崩；**ARK 实机离线复现**（出站 payload 检视，无需 API key） |
+| langchain-openai#39113 (W32) | Responses API 的 `_construct_responses_api_input()` assistant 分支把 `block.get("id")` 无形状校验写入出站 `input[].id`（human/system 的 id 已被 pop，唯独 assistant 缺清洗），`create_text_block()` 合成历史的 `lc_` id 直达 API | `invoke()` 400 `"Invalid 'input[2].id': 'lc_...'. Expected an ID that begins with 'msg'."`；同一合成历史 Anthropic/Google 正常、OpenAI 崩溃；对话压缩/摘要、few-shot 注入、多 Agent 回放全部踩雷；**ARK 实机离线复现**（`_get_request_payload()` 三态对照，无需 API key） |
 
 **🏁 上游闭环（2026-07-28）：** #39100 于诊断发布**当天**即被 maintainer（ccurme）关闭（state_reason: completed），修复 PR [#39101](https://github.com/langchain-ai/langchain/pull/39101)「strip unsupported fields from system message content blocks」已合并（21:34 CST）——修复方案与 ARK 诊断的处方（system 分支补一道出站字段清洗）完全一致。这是 F9 族首例、也是 W32 首个**当日诊断→当日上游修复**的完整闭环，ARK 「诊断报告 + 离线确定性复现」范式的时效性与准确性获上游行动背书。
 
 **共性：** 与 F2 互为镜像——F2 泄漏在**时间维度**（本次参数污染下次调用），F9 泄漏在**层级维度**（框架内部元数据穿透到 provider 协议层）。根因同为「边界上缺一道强制清洗」，且遗漏概率随「适配器 × 消息角色分支」数量线性放大：v1 内容块把 id 设计为一等公民后，每个 provider 的每个分支都必须记得过滤。ARK 对策：`OutputValidator` 对每个 provider 声明 wire schema 白名单并在发送前对账 + `InputGuard` 给框架自铸字段（`lc_` 前缀）统一打 internal 标记，任何 internal 字段出现在出站 payload 即契约违规——把 N×M 人工纪律收敛为单点自动强制。与 #39047 共享「官方推荐路径先崩」叙事。
+
+**#39113 对本族的扩展（复发确认）：** 与 #39100 构成**跨 provider 精确镜像**——同一个自铸 `lc_` id、同一类出站边界，Anthropic 漏在 system 分支（human/assistant 已收窄），OpenAI 漏在 assistant 分支（human/system 已 pop）。两个适配器各自「做对了三分之二」，遗漏的恰好是互补的那一块。更关键的证据：#39100 的修复 PR #39101 只堵了 Anthropic system 一处，OpenAI assistant 分支的同类缺陷原样存活并于同日被独立报告——逐点修补追不上 N×M 组合面，唯有单点出站契约强制可收敛。
 
 ---
 
