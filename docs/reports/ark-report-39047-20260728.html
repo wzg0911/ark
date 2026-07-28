@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain-core#39047</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; white-space: pre; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/39047" class="text-blue-400 hover:underline">langchain-ai/langchain#39047</a>
+            · index() 弃用警告把用户引向必然崩溃的 key_encoder
+            · 2026-07-28 · W32 诊断 4/5
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🔴</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">langchain_core.indexing.index()</code> 的默认
+                    <code class="bg-slate-700 px-1 rounded text-sm">key_encoder="sha1"</code> 会发出 UserWarning，
+                    <strong class="text-white">官方建议</strong>用户切换到 <code class="bg-slate-700 px-1 rounded text-sm">"blake2b" / "sha256" / "sha512"</code>。
+                    但 <code class="bg-slate-700 px-1 rounded text-sm">_calculate_hash()</code> 只有 sha1 分支把摘要包装成
+                    <code class="bg-slate-700 px-1 rounded text-sm">uuid.uuid5()</code>，其余三个分支返回 64/128 位裸 hexdigest——
+                    <strong class="text-red-400">遵循框架自己的弃用建议，会让所有 UUID 校验型 vectorstore（Qdrant 等）当场崩溃</strong>：
+                    <code class="bg-slate-700 px-1 rounded text-sm">ValueError: Point id ... is not a valid UUID</code>。
+                </p>
+                <span class="badge mt-1 bg-red-500/20 text-red-400">官方指引即陷阱 · 弃用路径未验证</span>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400 ml-1">跨库 ID 契约漂移</span>
+                <span class="badge mt-1 bg-green-500/20 text-green-400 ml-1">ARK 实机 4/4 矩阵复现 ✅</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">langchain-core 1.5.1 · 所有听从 sha1 弃用警告 + UUID 校验型存储的用户</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ open · 4 位贡献者排队认领 · 修复方向已共识（全算法 uuid5 包装）</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ InputGuard ID 契约校验 + 迁移不变式</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位（P2 Probe）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-3">缺陷坐落在「弃用迁移路径」上——最不该有坑的地方：</p>
+        <ol class="text-sm text-slate-300 space-y-2 list-decimal list-inside">
+            <li><code class="bg-slate-700 px-1 rounded">_calculate_hash()</code>（<code class="bg-slate-700 px-1 rounded">langchain_core/indexing/api.py</code>）：
+                sha1 分支 → <code class="bg-slate-700 px-1 rounded">uuid.uuid5(NAMESPACE_UUID, digest)</code>，输出 36 字符合法 UUID</li>
+            <li>sha256 / sha512 / blake2b 分支 → 直接 <code class="bg-slate-700 px-1 rounded">hexdigest()</code>，输出 64–128 字符裸十六进制，<strong class="text-white">非 UUID 形状</strong></li>
+            <li>该 ID 被用作 vectorstore 的 point/document id；Qdrant（含 <code class="bg-slate-700 px-1 rounded">:memory:</code> 本地模式）在 upsert 时强制校验 UUID → <code class="bg-slate-700 px-1 rounded">ValueError</code></li>
+            <li>同时，框架对默认 sha1 发出 UserWarning，<strong class="text-red-400">明确建议切换到这三个必崩的选项</strong>——弃用建议本身从未在 UUID 校验型存储上验证过</li>
+        </ol>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-white">更隐蔽的第二层伤害（ID 契约漂移）：</strong>
+            即使目标存储不校验 UUID（如 Chroma/FAISS 接受任意字符串），切换 key_encoder 也会让<strong class="text-white">同一批文档拿到全新 ID</strong>，
+            增量索引（cleanup="incremental"/"full"）的去重与清理逻辑将把旧数据视为无关数据——
+            表面「迁移成功」，实际全量重复写入或误删。崩溃（Qdrant）反而是幸运的失败模式，静默的 ID 漂移才是更贵的那个。</p>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：ARK 实机验证 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🧪</span>
+            <h2 class="text-lg font-semibold text-white">ARK 实机验证（2026-07-28 · langchain-core 1.5.1 / langchain-qdrant 1.1.0 / qdrant-client 1.18.0 / Python 3.11）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">ARK 将原 issue 的单点复现扩展为 <strong class="text-white">4×1 全矩阵复现</strong>：同一份文档、同一个 <code class="bg-slate-700 px-1 rounded">:memory:</code> Qdrant，仅变更 key_encoder。完全确定性、无外部依赖：</p>
+        <div class="code-block text-slate-300">[sha1    ] OK    indexed=1  ids_are_uuid=True  id=91bb7324-3dc0-5dad-8c72-...
+[sha256  ] FAIL  ValueError: Point id 40a0c12e...f310b8d0 is not a valid UUID
+[sha512  ] FAIL  ValueError: Point id 3e903683...(128 hex) is not a valid UUID
+[blake2b ] FAIL  ValueError: Point id 415e4701...(128 hex) is not a valid UUID
+
+VERDICT: REPRODUCED — 被弃用的 sha1 是唯一能用的选项；
+官方警告推荐的全部三个替代品 100% 崩溃</div>
+        <p class="text-xs text-slate-500 mt-2">验证强度说明：矩阵式复现证明这不是某个算法的偶发问题，而是「除 sha1 外全部缺 uuid5 包装」的结构性缺陷；错误在首次 upsert 即触发，与数据内容无关。复现脚本：<code class="bg-slate-700 px-1 rounded">scripts/repros/repro_39047_key_encoder_uuid_break.py</code>。</p>
+    </div>
+
+    <!-- ====== 区块4：ARK 映射 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🛡️</span>
+            <h2 class="text-lg font-semibold text-white">ARK Trust Layer 如何拦截（P3 Prescribe）</h2>
+        </div>
+        <div class="space-y-3 text-sm text-slate-300">
+            <div class="callout">
+                <p><strong class="text-white">① InputGuard · 跨组件 ID 形状契约（写入前）</strong><br>
+                目标存储声明其 ID 契约（<em>uuid-required</em> / <em>free-form</em>）；ARK 在文档进入写入管道前校验生成 ID 是否满足下游契约。
+                本例中 sha256 的 64 位 hexdigest 在<strong class="text-white">进入 upsert 之前</strong>就被拦截并给出明确原因，
+                而非在 qdrant-client 深处抛一个用户看不懂来源的 ValueError。</p>
+            </div>
+            <div class="callout">
+                <p><strong class="text-white">② OutputValidator · 迁移不变式（换 encoder 时）</strong><br>
+                增量索引的核心不变式是「同一文档 → 同一 ID」。ARK 在 key_encoder 变更时对既有样本重算 ID 并对账：
+                检测到 <code class="bg-slate-700 px-1 rounded">ID(sha1) ≠ ID(sha256)</code> 即告警「本次切换将使全部既有记录失去去重锚点」，
+                把静默的全量重写/误删风险变成迁移前的显式决策。</p>
+            </div>
+            <div class="callout">
+                <p><strong class="text-white">③ OTel 留痕</strong><br>
+                索引 span 记录 <code class="bg-slate-700 px-1 rounded">key_encoder → id_shape(uuid|hex64|hex128) → store_contract</code> 链路。
+                「为什么换了个哈希算法索引就炸了」从数小时的跨库归因，变成一眼可见的契约不匹配。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：缺陷族归档 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📚</span>
+            <h2 class="text-lg font-semibold text-white">缺陷模式索引归档（P4 Publish）</h2>
+        </div>
+        <p class="text-sm text-slate-300">
+            归入 <strong class="text-orange-400">F8 · 语义反转 / 参数契约跨库漂移</strong>（第 2 例，与 #39052 同族同库接缝）。
+            共性：langchain-core 与 qdrant 各自内部一致，缺陷只存在于<strong class="text-white">接缝处的隐式契约</strong>（ID 必须是 UUID / lambda 方向）。
+            本例的独特增量：漂移的引信是<strong class="text-white">框架自己的弃用警告</strong>——「官方最佳实践」与「能跑的配置」精确互斥，
+            用户越守规矩越先崩溃。这把 F8 的边界从「参数语义」扩展到「迁移指引」。
+        </p>
+    </div>
+
+    <!-- ====== 页脚 ====== -->
+    <div class="text-center text-xs text-slate-600 mt-6">
+        <p>ARK — Agent Reliability Kit · <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a></p>
+        <p class="mt-1">诊断方法论：4P Framework（Pinpoint → Probe → Prescribe → Publish）· 所有结论基于实机验证，复现与未复现均如实披露</p>
+        <p class="mt-1">生成时间：2026-07-28 13:35 CST · W32 诊断报告 4/5</p>
+    </div>
+
+</div>
+</body>
+</html>
