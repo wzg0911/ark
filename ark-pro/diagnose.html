@@ -5,8 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARK一键灌顶工具包 — 让你的智能体永不崩溃</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ARK 增长埋点：真实落点 = /api/track（写入飞书 Bitable，供增长分析）。/api/event 写未绑定 KV 已废弃。 -->
+    <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "REPLACE_WITH_CF_WEB_ANALYTICS_TOKEN"}'></script>
+    <script>
+      // 漏斗事件上报 → 真实落点 /api/track（飞书 Bitable，供 growth-tracker 读取）
+      function arkAnonId() {
+        try { var id = localStorage.getItem('ark_anon_id');
+          if (!id) { id = 'a_' + Math.random().toString(36).slice(2, 12); localStorage.setItem('ark_anon_id', id); }
+          return id; } catch (e) { return 'anon_' + Math.random().toString(36).slice(2, 10); }
+      }
+      function arkChannel() {
+        try { var r = document.referrer || '';
+          if (r.indexOf('github.com') >= 0) return 'github';
+          if (r.indexOf('news.ycombinator') >= 0 || r.indexOf('hn.algolia') >= 0) return 'hackernews';
+          if (r.indexOf('twitter.com') >= 0 || r.indexOf('x.com') >= 0) return 'x';
+          if (r.indexOf('producthunt') >= 0) return 'producthunt';
+          if (r.indexOf('dev.to') >= 0) return 'devto';
+          if (r.indexOf('reddit.com') >= 0) return 'reddit';
+          if (r) return 'referral'; return 'direct';
+        } catch (e) { return 'direct'; }
+      }
+      function arkEvent(type, meta) {
+        meta = meta || {};
+        try {
+          fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: type, channel: arkChannel(), anon_id: arkAnonId(),
+              product: meta.product || 'buy_once', email: meta.email || '' }), keepalive: true }).catch(function(){});
+        } catch (e) {}
+      }
+      document.addEventListener('DOMContentLoaded', function () { arkEvent('page_view'); });
+    </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
-    <meta name="description" content="输入你的Agent项目路径，30秒内诊断出所有崩溃隐患。¥49快速修复全部问题，30天Pro权限。">
+    <meta name="description" content="查看 AI Agent 崩溃隐患示例诊断，一键获取修复方案。¥49 快速修复版 · 30天Pro权限。">
     <style>
         .pro-gold { border: 2px solid #C9A96E !important; box-shadow: 0 0 12px rgba(201,169,110,0.15); }
         .text-gold { color: #C9A96E; }
@@ -27,7 +57,7 @@
             让你的智能体永不崩溃
         </p>
         <p class="text-lg text-slate-400 mb-2">
-            输入你的Agent项目路径，30秒内诊断出所有崩溃隐患
+            输入项目路径，查看 ARK 能发现哪些崩溃隐患（<span class="text-green-400 font-semibold">无需注册</span> · 30秒出示例诊断）
         </p>
     </div>
 
@@ -45,7 +75,7 @@
                 class="w-full px-4 py-3.5 bg-slate-700/60 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-slate-400 text-base transition"
             >
             <p class="text-xs text-slate-500 mt-1.5">
-                💡 <span class="text-slate-400">完全免费</span> — 不需要登录，不需要付费，输入路径即可诊断
+                💡 <span class="text-slate-400">免费实时演示</span> — 直接点「开始诊断」即可看 ARK 如何定位 3 类崩溃隐患（也可粘贴你的项目路径看针对性演示）
             </p>
         </div>
 
@@ -67,7 +97,7 @@
         </div>
 
         <p class="text-center text-xs text-slate-500">
-            🔒 已成功诊断 <span class="text-slate-300 font-semibold">1,838+</span> 个Agent项目，修复率 <span class="text-green-400 font-semibold">99.2%</span>
+            🔒 覆盖 Agent 最常见的 <span class="text-slate-300 font-semibold">3 类</span> 崩溃隐患：幂等守卫 · 重试策略 · 日志记录
         </p>
 
         <div id="loadingState" class="hidden mt-6 text-center">
@@ -76,7 +106,7 @@
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span class="text-slate-200">正在扫描项目结构、配置文件、Agent脚本…</span>
+                <span class="text-slate-200">正在生成示例诊断报告…</span>
             </div>
         </div>
 
@@ -84,7 +114,7 @@
             <div class="bg-slate-700/40 rounded-xl p-5 border border-slate-600">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white flex items-center">
-                        <span class="text-2xl mr-2">📊</span> 诊断结果
+                        <span class="text-2xl mr-2">📊</span> 诊断结果 <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full ml-1">示例</span>
                     </h3>
                     <span id="severityBadge" class="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold">
                         发现 3 个问题
@@ -92,6 +122,8 @@
                 </div>
 
                 <div id="issuesList" class="space-y-3 mb-4"></div>
+
+                <p class="text-xs text-slate-500 mb-3">⚠️ 这是 <span class="text-slate-300">演示报告</span>：演示 ARK 重点检查的崩溃隐患类型。对你<b>自己的</b>项目做真实扫描 → 前往 GitHub 获取 ARK CLI：<a href="https://github.com/wzg0911/ark" target="_blank" rel="noopener" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a>（<code>python ark_trust_cli.py &lt;项目路径&gt;</code>）</p>
 
                 <div class="mt-5 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -179,10 +211,10 @@
             <div class="flex items-start gap-3">
               <span class="shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">3</span>
               <div class="flex-1">
-                <p class="text-white font-semibold text-sm mb-1">点击"我已支付"→ 立即收到 Pro Key</p>
+                <p class="text-white font-semibold text-sm mb-1">点击"我已支付"→ 提交申请，截图发客服</p>
                 <p class="text-slate-400 text-xs mb-3">系统会自动核销并发送 Pro Key 到你的邮箱（含下载链接 + 使用指南）</p>
                 <button id="claimSubmitBtn" onclick="submitClaim()" class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 rounded-xl transition shadow-lg text-base">
-                  ✅ 我已支付 ¥49 · 立即获取 Pro Key
+                  ✅ 我已支付 ¥49 · 提交申请领 Pro Key
                 </button>
                 <p id="claimError" class="hidden text-xs text-red-400 mt-2 text-center"></p>
               </div>
@@ -197,10 +229,10 @@
 
           <!-- 成功态（默认隐藏） -->
           <div id="claimSuccess" class="hidden mt-5 bg-green-500/10 border border-green-500/40 rounded-xl p-5 text-center">
-            <div class="text-5xl mb-3">✅</div>
-            <h4 class="text-green-400 font-bold text-xl mb-2">Pro Key 正在飞向你的邮箱！</h4>
-            <p class="text-slate-300 text-sm">5秒内查收（含 Pro Key + 下载链接 + 30天Pro权限）</p>
-            <p class="text-slate-500 text-xs mt-2">如未收到，请检查垃圾邮件箱</p>
+            <div class="text-5xl mb-3">📨</div>
+            <h4 class="text-green-400 font-bold text-xl mb-2">申请已提交 ✅</h4>
+            <p class="text-slate-300 text-sm">Pro Key 将在确认收款后 <span class="text-yellow-400 font-bold">5 分钟内自动发到你的邮箱</span>（请查收，含垃圾箱）</p>
+            <p class="text-slate-500 text-xs mt-2">⚡ 想更快？把支付截图回复本页底部客服邮箱，可优先秒级发货</p>
           </div>
         </div>
 
@@ -250,8 +282,8 @@
     <!-- ====== 真实诊断案例 ====== -->
     <div class="mt-12">
         <div class="text-center mb-6">
-            <h2 class="text-xl font-bold text-white mb-2">🔍 真实诊断案例</h2>
-            <p class="text-slate-400 text-sm">从 1,838+ 诊断数据中提取，已脱敏处理</p>
+            <h2 class="text-xl font-bold text-white mb-2">🔍 典型崩溃隐患案例</h2>
+            <p class="text-slate-400 text-sm">以下为 Agent 常见崩溃隐患类型的示意案例</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 flex flex-col">
@@ -324,7 +356,7 @@
                 </div>
             </div>
         </div>
-        <p class="text-center text-slate-600 text-xs mt-4">💡 以上案例均已脱敏，仅保留问题类型与修复效果，不含任何真实身份信息</p>
+        <p class="text-center text-slate-600 text-xs mt-4">💡 以上为典型隐患类型的示意案例，用于说明 ARK 的修复思路，非真实客户数据</p>
     </div>
 
     <!-- ====== Pro Key 激活入口（已购用户） ====== -->
@@ -365,8 +397,9 @@
 <script>
 // ====== 诊断逻辑 ======
 async function startDiagnosis() {
-    const projectPath = document.getElementById('projectPath').value.trim();
-    if (!projectPath) { showError('请输入Agent项目路径，例如：/home/Hermes/项目/产品/'); return; }
+    arkEvent('diagnosis_start');
+    let projectPath = document.getElementById('projectPath').value.trim();
+    if (!projectPath) { projectPath = '/home/your-agent/产品/'; /* 未填路径→演示项目，降低门槛，确保访客立即看到报告 */ }
 
     document.getElementById('loadingState').classList.remove('hidden');
     document.getElementById('resultsSection').classList.add('hidden');
@@ -455,6 +488,7 @@ function showError(message) {
 
 // ====== 支付弹窗（单档 ¥49 信任模式） ======
 function openClaimModal() {
+  arkEvent('pay_modal_open');
   document.getElementById('claimModal').classList.remove('hidden');
   document.getElementById('claimSuccess').classList.add('hidden');
   document.getElementById('claimError').classList.add('hidden');
@@ -477,11 +511,12 @@ async function submitClaim() {
     return;
   }
 
+  arkEvent('claim_attempt');
   btn.disabled = true;
   btn.textContent = '⏳ 正在核销中…';
   errEl.classList.add('hidden');
 
-  // === 主路径：CF Pages Function 自动核销 ===
+  // === 主路径：提交核销申请（手动确认模式）===
   try {
     const res = await fetch('/api/claim', {
       method: 'POST',
@@ -495,16 +530,14 @@ async function submitClaim() {
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.status === 'pending_payment') {
+        arkEvent('claim_pending', { email: email });
         localStorage.setItem('ark_user_email', email);
-        if (data.proKey) localStorage.setItem('ark_pro_key', data.proKey);
         document.getElementById('claimSuccess').classList.remove('hidden');
-        btn.textContent = '✅ Pro Key 已发送到你的邮箱';
+        btn.textContent = '✅ 申请已提交，等待发货';
         btn.classList.remove('from-yellow-500', 'to-orange-500', 'hover:from-yellow-600', 'hover:to-orange-600');
         btn.classList.add('bg-green-500', 'cursor-default');
-        if (data.proKey) {
-          setTimeout(() => activateProKeyDirect(data.proKey), 1000);
-        }
+        // 关键：不自动激活，必须付款 + 主人确认
         return;
       }
     }
@@ -524,11 +557,11 @@ ARK Pro Key 申请
 ═══════════════════`);
     errEl.innerHTML = `
       <div style="text-align:left">
-        <p style="color:#fbbf24;font-weight:bold;margin-bottom:8px">⏳ 自动核销暂时不可用</p>
-        <p style="color:#94a3b8;font-size:12px;margin-bottom:10px">请 <strong style="color:#fff">截屏你的支付记录</strong>，连同邮箱一起发送到：</p>
+        <p style="color:#fbbf24;font-weight:bold;margin-bottom:8px">⏳ 网络提交失败，改用邮件申请</p>
+        <p style="color:#94a3b8;font-size:12px;margin-bottom:10px">点击下方按钮，把你的 <strong style="color:#fff">邮箱 + 已支付 ¥49</strong> 发给我们（可附截图加速）：</p>
         <a href="mailto:guanyi2026@agent.qq.com?subject=${subject}&body=${body}"
-           style="display:inline-block;background:#2563eb;color:#fff;font-weight:bold;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px">📧 发送支付凭证</a>
-        <p style="color:#64748b;font-size:11px;margin-top:8px">✅ 收到凭证后，我们将在 <strong style="color:#fbbf24">5分钟内</strong> 发送 Pro Key 到你的邮箱</p>
+           style="display:inline-block;background:#2563eb;color:#fff;font-weight:bold;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px">📧 邮件申请 Pro Key</a>
+        <p style="color:#64748b;font-size:11px;margin-top:8px">✅ 收到后，我们将在 <strong style="color:#fbbf24">5分钟内</strong> 发送 Pro Key 到你的邮箱</p>
       </div>`;
     errEl.classList.remove('hidden');
     btn.disabled = false;
