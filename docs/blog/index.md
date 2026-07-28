@@ -4,6 +4,10 @@ Thoughts on AI agent reliability, production patterns, and building trustworthy 
 
 ---
 
+## [2026-07-28 · Follow the Official Advice, Crash Immediately](2026-07-28_follow-the-official-advice-crash-immediately.md)
+
+> Two LangChain bugs where the framework's own recommended path fails first — deprecation advice that crashes 100%, and a v1 API that leaks internal IDs onto the wire. Evidence: #39047 + #39100.
+
 ## [2026-07-10 · 5 Common Agent Failures (and How ARK Fixes Them in 3 Lines)](2026-07-10_5-common-agent-failures-and-ark-fix.md)
 
 > Real-world production scenarios: duplicate payments, silent API failures, hallucinations, and memory leaks — each with actual code.
