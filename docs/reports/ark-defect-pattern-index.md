@@ -1,6 +1,6 @@
 # ARK 诊断缺陷模式索引 (Defect Pattern Index)
 
-> 累积索引 · 覆盖 W29–W32（17 份诊断报告）| 更新：2026-07-28 13:35 CST | ARK Cruise Bot
+> 累积索引 · 覆盖 W29–W32（18 份诊断报告）| 更新：2026-07-28 15:38 CST | ARK Cruise Bot
 >
 > 目的：把散落在各周诊断报告中的真实 Agent 可靠性缺陷，按**缺陷族**归并成单一可导航索引——既是 ARK 价值主张的证据库，也是技术参考。每一条都源自主流框架（LangChain / LangGraph / CrewAI）的**真实 issue**，非虚构。
 
@@ -18,6 +18,7 @@
 | F6 | 无限循环 / 递归耗尽 | 1 | `CircuitBreaker`（递归/循环上限） | #6731 |
 | F7 | **非确定性一致性 / 批次时间基准漂移** | 1 | `OutputValidator`（完整性不变式）+ OTel 留痕 | #39087 |
 | F8 | **语义反转 / 参数契约跨库漂移** | **2** ⚠️ | `OutputValidator` 行为不变式探针 + `InputGuard` 契约声明 | #39052, #39047 |
+| F9 | **出站契约不对称 / 内部元数据泄漏到 wire 协议** | 1 | `OutputValidator` 出站 payload 契约 + `InputGuard` internal 字段标记 | #39100 |
 
 ---
 
@@ -115,6 +116,16 @@
 
 ---
 
+### F9 · 出站契约不对称 / 内部元数据泄漏到 wire 协议 → `OutputValidator` 出站 payload 契约 🆕 (W32)
+
+| Issue | 一句话 | 后果 |
+|-------|--------|------|
+| langchain-anthropic#39100 (W32) | `_format_messages()` 对 human/assistant 文本块收窄到 Anthropic 接受的字段，但 system 分支原样透传，`create_text_block()` 铸造的 `lc_` id 直达 API | `invoke()` 与 `get_num_tokens_from_messages()` 双双 400 `"system.0.id: Extra inputs are not permitted"`；v1 content_blocks（官方力推的迁移方向）越早采用越先崩；**ARK 实机离线复现**（出站 payload 检视，无需 API key） |
+
+**共性：** 与 F2 互为镜像——F2 泄漏在**时间维度**（本次参数污染下次调用），F9 泄漏在**层级维度**（框架内部元数据穿透到 provider 协议层）。根因同为「边界上缺一道强制清洗」，且遗漏概率随「适配器 × 消息角色分支」数量线性放大：v1 内容块把 id 设计为一等公民后，每个 provider 的每个分支都必须记得过滤。ARK 对策：`OutputValidator` 对每个 provider 声明 wire schema 白名单并在发送前对账 + `InputGuard` 给框架自铸字段（`lc_` 前缀）统一打 internal 标记，任何 internal 字段出现在出站 payload 即契约违规——把 N×M 人工纪律收敛为单点自动强制。与 #39047 共享「官方推荐路径先崩」叙事。
+
+---
+
 ## 三、方法论 · ARK 4P Framework
 
 每份诊断遵循：**P1 Pinpoint**（精准定位错误模式）→ **P2 Probe**（探测根因）→ **P3 Prescribe**（映射 ARK 组件）→ **P4 Publish**（发布报告 + 归档知识库）。
@@ -122,12 +133,13 @@
 ## 四、核心叙事（对外分发用）
 
 > 我们没有编造用例。我们逐周拆解 LangChain / LangGraph / CrewAI 里**真实存在**的可靠性缺陷。
-> 17 份报告收敛成 8 个缺陷族，其中「可变状态原地篡改」三次复发、「静默失败」四次复发，
-> 最新的 F8「语义反转/契约漂移」族已两次复发——它证明存在一类**永远不抛异常、永远返回合法值、却与用户意图精确相反**的缺陷，
+> 18 份报告收敛成 9 个缺陷族，其中「可变状态原地篡改」三次复发、「静默失败」四次复发，
+> F8「语义反转/契约漂移」族已两次复发——它证明存在一类**永远不抛异常、永远返回合法值、却与用户意图精确相反**的缺陷，
 > 甚至框架自己的弃用建议都可能是崩溃引信（#39047：官方推荐的三个 encoder 100% 崩溃）。
+> 最新的 F9 则揭示官方力推的 v1 content_blocks API 自铸的元数据会穿透到 provider 协议层（#39100：SystemMessage 一用就 400）。
 > 传统 APM 与类型系统对其完全免疫失效，唯有行为不变式探针可捕获。
 > **ARK 就是 Agent 与这些危险边界之间的唯一信任层。**
 
 ---
 
-*生成时间：2026-07-28 13:35 CST | ARK Cruise Bot | 累积索引 v2.3（W29–W32）*
+*生成时间：2026-07-28 15:38 CST | ARK Cruise Bot | 累积索引 v2.4（W29–W32）*
