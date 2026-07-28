@@ -1,6 +1,6 @@
 # ARK 诊断缺陷模式索引 (Defect Pattern Index)
 
-> 累积索引 · 覆盖 W29–W32（14 份诊断报告）| 更新：2026-07-28 09:00 CST | ARK Cruise Bot
+> 累积索引 · 覆盖 W29–W32（15 份诊断报告）| 更新：2026-07-28 09:35 CST | ARK Cruise Bot
 >
 > 目的：把散落在各周诊断报告中的真实 Agent 可靠性缺陷，按**缺陷族**归并成单一可导航索引——既是 ARK 价值主张的证据库，也是技术参考。每一条都源自主流框架（LangChain / LangGraph / CrewAI）的**真实 issue**，非虚构。
 
@@ -12,7 +12,7 @@
 |---|--------|---------|--------------|---------|
 | F1 | 重复执行 / 幂等缺失 | 2 | `IdempotencyGuard` | #34974, #38708 |
 | F2 | **可变状态原地篡改 / 「配置即状态」** | **3** ⚠️ | `InputGuard`（入参不可变契约）+ OTel 漂移留痕 | #38779, #38840, #38989 |
-| F3 | 静默失败 / 失败流伪装成功流 | 3 | `OutputValidator` + `CircuitBreaker` | #39039, #38892, #38893 |
+| F3 | 静默失败 / 失败流伪装成功流 | **4** ⚠️ | `OutputValidator` + `CircuitBreaker` + `InputGuard` | #39039, #38892, #38893, #39099 |
 | F4 | 测试掩盖 / 断言失效 | 2 | 测试即契约（xfail 审计 + 结构断言） | #38904, #35475 |
 | F5 | 畸形输入 / DoS | 2 | `OutputValidator` Schema + `CircuitBreaker` | #38667, #38843 |
 | F6 | 无限循环 / 递归耗尽 | 1 | `CircuitBreaker`（递归/循环上限） | #6731 |
@@ -53,8 +53,9 @@
 | langchain#39039 | Responses API 流式静默丢弃 `response.failed`/`error` 事件 | 失败流与成功流无法区分 |
 | langchain#38892 | `RunnableWithFallbacks` 把合法空流误判为失败，备胎静默替换 | 静默数据污染（9 个 PR 卡关同因） |
 | langchain#38893 | `ModelRetryMiddleware` 把「不可重试异常」吞成正常 `AIMessage` | 同一契约工具侧/模型侧行为相反 |
+| langchain-core#39099 (W32) | args_schema 前向引用未解析时，工具静默以「零参数」schema 递交模型；同错误在签名一级却是硬 `NameError` | advertised ≠ enforced schema，12/13 工具空参数数月无人察觉；**ARK 实机 5/5 完全复现** |
 
-**共性：** 框架在边界上「假装成功」。ARK 以终态不变式强制校验，让失败无法伪装成成功。
+**共性：** 框架在边界上「假装成功」。#39099 把该族从「运行时失败被吞」扩展到「**构建时降级被吞**」——schema 构建失败被静默折叠成语义完全不同的合法值（空 schema）。ARK 以终态不变式 + 注册期 schema 完整性门禁（`__pydantic_complete__` + 签名/schema 参数数对账）强制校验，让失败无法伪装成成功。
 
 ---
 
@@ -107,10 +108,10 @@
 ## 四、核心叙事（对外分发用）
 
 > 我们没有编造用例。我们逐周拆解 LangChain / LangGraph / CrewAI 里**真实存在**的可靠性缺陷。
-> 14 份报告收敛成 7 个缺陷族，其中「可变状态原地篡改」已**第三次复发**——
+> 15 份报告收敛成 7 个缺陷族，其中「可变状态原地篡改」三次复发、「静默失败」四次复发——
 > 这证明：Agent 框架的可靠性问题不是偶发 bug，而是系统性反模式。
 > **ARK 就是 Agent 与这些危险边界之间的唯一信任层。**
 
 ---
 
-*生成时间：2026-07-28 09:00 CST | ARK Cruise Bot | 累积索引 v2（W29–W32）*
+*生成时间：2026-07-28 09:35 CST | ARK Cruise Bot | 累积索引 v2.1（W29–W32）*
