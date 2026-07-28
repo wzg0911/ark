@@ -1,6 +1,6 @@
 # ARK 诊断缺陷模式索引 (Defect Pattern Index)
 
-> 累积索引 · 覆盖 W29–W32（18 份诊断报告）| 更新：2026-07-28 15:38 CST | ARK Cruise Bot
+> 累积索引 · 覆盖 W29–W32（19 份诊断报告）| 更新：2026-07-28 21:40 CST | ARK Cruise Bot
 >
 > 目的：把散落在各周诊断报告中的真实 Agent 可靠性缺陷，按**缺陷族**归并成单一可导航索引——既是 ARK 价值主张的证据库，也是技术参考。每一条都源自主流框架（LangChain / LangGraph / CrewAI）的**真实 issue**，非虚构。
 
@@ -16,7 +16,7 @@
 | F4 | 测试掩盖 / 断言失效 | 2 | 测试即契约（xfail 审计 + 结构断言） | #38904, #35475 |
 | F5 | 畸形输入 / DoS | 2 | `OutputValidator` Schema + `CircuitBreaker` | #38667, #38843 |
 | F6 | 无限循环 / 递归耗尽 | 1 | `CircuitBreaker`（递归/循环上限） | #6731 |
-| F7 | **非确定性一致性 / 批次时间基准漂移** | 1 | `OutputValidator`（完整性不变式）+ OTel 留痕 | #39087 |
+| F7 | **非确定性一致性 / 批次时间基准漂移** | **2** ⚠️ | `OutputValidator`（完整性不变式）+ OTel 留痕 | #39087, #39106 |
 | F8 | **语义反转 / 参数契约跨库漂移** | **2** ⚠️ | `OutputValidator` 行为不变式探针 + `InputGuard` 契约声明 | #39052, #39047 |
 | F9 | **出站契约不对称 / 内部元数据泄漏到 wire 协议** | 1 | `OutputValidator` 出站 payload 契约 + `InputGuard` internal 字段标记 | #39100 |
 
@@ -93,11 +93,14 @@
 
 ---
 
-### F7 · 非确定性一致性 / 批次时间基准漂移 → `OutputValidator` 完整性不变式 🆕 (W32)
+### F7 · 非确定性一致性 / 批次时间基准漂移 → `OutputValidator` 完整性不变式 ⚠️ 第二次复发 (W32)
 
 | Issue | 一句话 | 后果 |
 |-------|--------|------|
 | langchain-core#39087 | `InMemoryRecordManager.update()` 循环内逐文档取 `get_time()`，批次时间基准漂移越过 `index_start_dt` 分界线 | `cleanup="full"` 静默漏删，RAG 脏文档残留 |
+| langchain-core#39106 (W32) | `list_keys(before=...)` 用 `>=` 排除 `updated_at` 恰好等于 `before` 的记录；低分辨率时钟（Windows）下 `index_start_dt` 与写入戳相等 | `cleanup="full"/"incremental"` 静默漏删（num_deleted=0），无异常无告警；**ARK 冻结时钟同步/异步双路径确定性复现** |
+
+**镜像对：** #39087 与 #39106 是同一时间基准脆弱性的两个极端——前者是时钟**太快**（批次内漂移越过分界线），后者是时钟**太慢**（分辨率不足导致等值碰撞）。两侧共享同一清理谓词的边界缺陷，且 `SQLRecordManager` 用严格 `<` 而 `InMemoryRecordManager` 用 `>=`，同一抽象两实现边界语义不一致。
 
 **共性：** 批次级属性（时间基准）被实现成文档级属性，清理谓词的不变式被概率性破坏——测试机绿灯、生产高负载随机失守。**ARK 实机验证（诚实披露）：** 反模式在源码级确认属实（批次内 ~0.1ms 漂移），但 issue 声称的 num_deleted 漂移在本机 5/5 次均未触发——正因触发是非确定的，「多测几次」无用，唯有 `OutputValidator` 把「预期删除数=实际删除数」固化为运行时不变式 + OTel 留痕，才能让哪次触发哪次现形。
 
@@ -142,4 +145,4 @@
 
 ---
 
-*生成时间：2026-07-28 15:38 CST | ARK Cruise Bot | 累积索引 v2.4（W29–W32）*
+*生成时间：2026-07-28 21:40 CST | ARK Cruise Bot | 累积索引 v2.5（W29–W32 · 19报告/9族）*

@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><title>ARK 诊断报告 #39106</title>
+<style>body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.6;color:#1a1a1a}.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;background:#e8f5e9;color:#2e7d32;font-weight:600}.ark{color:#2e7d32;font-weight:700}pre{background:#f5f5f5;padding:14px;border-radius:8px;overflow:auto;font-size:13px}table{border-collapse:collapse;width:100%;margin:16px 0}th,td{border:1px solid #ddd;padding:8px 10px;text-align:left;font-size:14px}th{background:#fafafa}h2{border-left:4px solid #2e7d32;padding-left:10px;margin-top:32px}</style></head>
+<body>
+<h1>🛡 ARK Trust 诊断报告 · langchain#39106</h1>
+<p><span class="badge">ARK v0.8.0 · Public Building Phase · W32</span> &nbsp; <span class="badge">缺陷族 F2 / F7 边界 变体</span></p>
+<h2>一、问题</h2>
+<p><code>InMemoryRecordManager.list_keys(before=...)</code> 使用严格比较 <code>&gt;=</code> / <code>&lt;=</code>，
+把 <code>updated_at</code> <strong>正好等于</strong> <code>before</code> 的记录排除在清理查询之外。</p>
+<p>当系统时钟分辨率低（Windows 上 <code>time.time()</code> 常返回同一浮点值），<code>index()</code> 启动时取的 <code>index_start_dt</code>
+与随后 <code>update()</code> 写入的 <code>updated_at</code> 完全相同 —— 导致 <code>cleanup="full"</code> / <code>"incremental"</code>
+在重建索引（空列表重索引）时<strong>静默漏删陈旧文档</strong>。</p>
+<h2>二、根因</h2>
+<pre>def list_keys(self, *, before=None, after=None, ...):
+    for key, data in self.records.items():
+        if before and data["updated_at"] >= before:   # ← 严格 >= 边界
+            continue
+        result.append(key)</pre>
+<p>边界语义错误：<code>before</code> 应为"严格早于本次索引开始"，却把等值记录一并排除。
+<code>SQLRecordManager</code> 实现为严格 <code>&lt;</code>，二者不一致 —— 说明 <code>InMemoryRecordManager</code> 才是偏差方，
+正确修复点应在 <code>update()</code>（本运行写入的记录 <code>updated_at</code> 必须严格 &gt; <code>index_start_dt</code>）。</p>
+<h2>三、ARK 实机复现</h2>
+<p>冻结时钟模拟低分辨率时间源（无需联网、无需模型下载），复现同步与异步两条路径：</p>
+<pre>$ uv run scripts/repros/repro_39106_list_keys_before_boundary.py
+[sync ] cleanup='full' re-index with []  -> num_deleted=0
+[async] cleanup='full' re-index with []  -> num_deleted=0
+expected: num_deleted == 2
+BUG REPRODUCED ✅（同步/异步双路径 5/5 复现）</pre>
+<h2>四、ARK 修复映射</h2>
+<table>
+<tr><th>ARK 组件</th><th>作用</th></tr>
+<tr><td class="ark">OutputValidator（边界不变式探针）</td><td>对 <code>index()</code> 的 <code>num_deleted</code> 结果做完整性不变式校验：期望删除数必须与陈旧记录数一致，<strong>静默漏删即拦截</strong>。</td></tr>
+<tr><td class="ark">InputGuard（不可变契约 + 时间基准隔离）</td><td>强制"本运行写入时间戳必须严格晚于索引起点"，把靠人自觉的边界语义升级为运行时可强制校验，杜绝低分辨率时钟下的静默错误。</td></tr>
+<tr><td class="ark">OTel 漂移留痕</td><td>对 <code>index_start_dt</code> 与 <code>updated_at</code> 的时间基准差做留痕，异常相等时报警而非静默通过。</td></tr>
+</table>
+<h2>五、结论</h2>
+<p>这是"可变状态 / 边界情况静默失败"缺陷族的又一次真实复发 —— 框架在清理边界上"假装成功"。
+ARK 以终态不变式 + 时间基准隔离把"看运气"的索引清理升级为<strong>可强制校验的信任层</strong>。
+本报告与社区 #39087 同源（<code>InMemoryRecordManager.update()</code> 逐文档取时），作者已认领修复。</p>
+<p style="color:#888;font-size:12px">ARK Cruise Bot · 2026-07-28 21:34 CST · 源 issue: langchain-ai/langchain#39106</p>
+</body></html>
