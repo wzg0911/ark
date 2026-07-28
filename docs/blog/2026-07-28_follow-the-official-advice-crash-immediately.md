@@ -69,7 +69,7 @@ The common shape: **the framework's forward-looking guidance outruns its own imp
 
 ## Why this is a trust-layer problem, not a bug-fix problem
 
-Both bugs will get patched (contributors are already on #39100). But the *class* won't die, because the failure mode is structural: cross-boundary contracts (ID shape, wire schema) enforced only by convention.
+Both bugs will get patched — in fact, **#39100 was fixed the same day this diagnosis was published**: maintainer-merged [PR #39101](https://github.com/langchain-ai/langchain/pull/39101) ("strip unsupported fields from system message content blocks") applies exactly the prescription our report proposed — an outbound field-sanitization pass on the system branch. But the *class* won't die, because the failure mode is structural: cross-boundary contracts (ID shape, wire schema) enforced only by convention.
 
 This is exactly the seam ARK sits in:
 
@@ -85,7 +85,7 @@ ARK's bet: make the contracts explicit, and enforce them at runtime.
 
 **Reproduction scripts** (deterministic, offline where possible):
 
-- `scripts/repros/repro_39047_key_encoder_crash.py`
+- `scripts/repros/repro_39047_key_encoder_uuid_break.py`
 - `scripts/repros/repro_39100_system_block_id_leak.py`
 
 **Full diagnostic reports:** [`docs/reports/ark-report-39047-20260728.html`](../reports/ark-report-39047-20260728.html) · [`docs/reports/ark-report-39100-20260728.html`](../reports/ark-report-39100-20260728.html)
