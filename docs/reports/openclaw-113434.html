@@ -122,6 +122,19 @@ const refresh = debounce(fetchCatalog, 2000, { leading: true });</code></pre>
 npm install @feilunxitong/arkit   # TypeScript</code></pre>
   </div>
 
+  <!-- 6. Community Validation -->
+  <div class="card" style="border:1px solid rgba(74,222,128,.35)">
+    <h2 style="color:var(--ok)">6 · Community Validation (updated 2026-07-28)</h2>
+    <p>After this report was published, upstream work independently confirmed both critical findings — with merged code, not opinions:</p>
+    <table>
+      <tr><th>Finding</th><th>Upstream confirmation</th></tr>
+      <tr><td>F-2 (reset reuses the retired ID)</td><td><a href="https://github.com/openclaw/openclaw/pull/114056">PR #114056</a> resolves the same-ID reset path while retaining deletion fences</td></tr>
+      <tr><td>F-1 (unbounded full rescans)</td><td><a href="https://github.com/openclaw/openclaw/pull/114401">PR #114401</a> + <a href="https://github.com/openclaw/openclaw/pull/114478">PR #114478</a> replace <code>sessions.files.list</code> full rescans with incremental touched-file folding, bounded LRU state, per-session singleflight, and inter-page yields; <a href="https://github.com/openclaw/openclaw/pull/114358">PR #114358</a> removes repeated entry-store enumeration within one catalog request</td></tr>
+      <tr><td>Remaining seam</td><td>Cross-request <code>sessions.catalog.list</code> provider coalescing — <a href="https://github.com/openclaw/openclaw/pull/114160">PR #114160</a> is the narrower candidate (per-provider in-flight sharing), pending exact-head validation</td></tr>
+    </table>
+    <p style="color:var(--muted);font-size:14px">Credit: <a href="https://github.com/openclaw/openclaw/issues/113434#issuecomment-5091410164">PollyBot13's current-main update</a> mapped these merged fixes back to the findings above. The fix shapes match this report's recommendations (coalesce + cache for F-1; explicit generation-handle rebind for F-2).</p>
+  </div>
+
   <div class="cta">
     <h2 style="color:#fff">Does <em>your</em> agent have these 3 hidden crash risks?</h2>
     <p style="color:rgba(255,255,255,.85)">Idempotency guards · retry policy · logging — free 30-second check.</p>
