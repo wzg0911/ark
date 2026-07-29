@@ -130,7 +130,7 @@
 
 **共性：** 与 F2 互为镜像——F2 泄漏在**时间维度**（本次参数污染下次调用），F9 泄漏在**层级维度**（框架内部元数据穿透到 provider 协议层）。根因同为「边界上缺一道强制清洗」，且遗漏概率随「适配器 × 消息角色分支」数量线性放大：v1 内容块把 id 设计为一等公民后，每个 provider 的每个分支都必须记得过滤。ARK 对策：`OutputValidator` 对每个 provider 声明 wire schema 白名单并在发送前对账 + `InputGuard` 给框架自铸字段（`lc_` 前缀）统一打 internal 标记，任何 internal 字段出现在出站 payload 即契约违规——把 N×M 人工纪律收敛为单点自动强制。与 #39047 共享「官方推荐路径先崩」叙事。
 
-**⏳ #39113 上游进展（2026-07-29 09:20 CST）：** 贡献者 RahilOp 提交修复 PR [#39116](https://github.com/langchain-ai/langchain/pull/39116)「omit non-msg_ ids for synthetic AI messages in Responses API input」——其根因分析与修复方案（仅保留 `msg_` 前缀的真实 OpenAI id，其余合成 id 出站前剔除，对齐既有 `store=False` 路径）与 ARK 诊断处方**完全一致**，并附 `store=None/True` 回归测试。PR 当前处于 closed 待 maintainer reopen/assign 状态，持续跟踪。此为 F9 族第二例「ARK 处方与社区修复方向同向」证据。
+**⏳ #39113 上游进展（2026-07-29 09:20 CST）：** 贡献者 RahilOp 提交修复 PR [#39116](https://github.com/langchain-ai/langchain/pull/39116)「omit non-msg_ ids for synthetic AI messages in Responses API input」——其根因分析与修复方案（仅保留 `msg_` 前缀的真实 OpenAI id，其余合成 id 出站前剔除，对齐既有 `store=False` 路径）与 ARK 诊断处方**完全一致**，并附 `store=None/True` 回归测试。PR 当前处于 closed 待 maintainer reopen/assign 状态，持续跟踪。此为 F9 族第二例「ARK 处方与社区修复方向同向」证据。**（11:11 CST 更新）** 第二名贡献者 cyforkk 亦发表认领评论，根因分析与 RahilOp、ARK 诊断处方**三方一致**——#39113 进入两人竞领状态，复现了 #39106 的「诊断发布 → 社区多人竞相认领」模式（第 2 次）。
 
 **#39113 对本族的扩展（复发确认）：** 与 #39100 构成**跨 provider 精确镜像**——同一个自铸 `lc_` id、同一类出站边界，Anthropic 漏在 system 分支（human/assistant 已收窄），OpenAI 漏在 assistant 分支（human/system 已 pop）。两个适配器各自「做对了三分之二」，遗漏的恰好是互补的那一块。更关键的证据：#39100 的修复 PR #39101 只堵了 Anthropic system 一处，OpenAI assistant 分支的同类缺陷原样存活并于同日被独立报告——逐点修补追不上 N×M 组合面，唯有单点出站契约强制可收敛。
 
