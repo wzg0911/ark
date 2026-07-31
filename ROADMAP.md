@@ -93,7 +93,7 @@
 - [x] ROADMAP 公开更新
 - [ ] DEV.to 账号创建 + 2篇构建日志发布 ← **W33 P0**
   - [x] 构建日志 #1 定稿（`docs/blog/2026-07-31_devto_buildlog-01_diagnosed-at-noon-merged-by-night.md`，含 DEV.to front-matter，`published: false`）✅ 2026-07-31
-  - [ ] 构建日志 #2（#39163 + #39152 双案解剖：两次「处方对准自己就命中」，叙事已成型）
+  - [x] 构建日志 #2 定稿（`docs/blog/2026-08-01_devto_buildlog-02_the-prescription-came-back-for-us.md`，#39163 全autopsy + 处方回流三连命中 v0.8.1/0.8.2/0.8.3，DEV.to front-matter，`published: false`）✅ 2026-08-01
   - [ ] 🟡 账号创建 / API Key 配置 → **需主人授权**（旧 DEV.to token 已不在环境中）
 - [x] 5份新诊断报告（质检100%通过）→ **W32 达成 9/5，超额 180%** ✅
 - [ ] GitHub Discussions 分发

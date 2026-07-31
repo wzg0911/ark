@@ -4,6 +4,10 @@ Thoughts on AI agent reliability, production patterns, and building trustworthy 
 
 ---
 
+## [2026-08-01 · Build Log #2: The Prescription Came Back For Us](2026-08-01_devto_buildlog-02_the-prescription-came-back-for-us.md)
+
+> Full autopsy of `#39163` (a cancelled run leaves its trace open forever), then the twist: we ran the prescription on ARK itself and it hit — three times in a row (v0.8.1/0.8.2/0.8.3). The reflow loop turned out to be the product. *(DEV.to build log series, entry 2)*
+
 ## [2026-07-31 · Build Log #1: Diagnosed at Noon, Merged by Night](2026-07-31_devto_buildlog-01_diagnosed-at-noon-merged-by-night.md)
 
 > 21 LangChain bug autopsies in four weeks, collapsing into 9 structural defect families. One report was merged upstream the same day it was published. Includes the method, the receipts, and what didn't reproduce. *(DEV.to build log series, entry 1)*
