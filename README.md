@@ -9,7 +9,7 @@ If your agent has ever double-charged a customer, silently ignored a failed tool
   <a href="https://pypi.org/project/ark-trust/"><img src="https://img.shields.io/pypi/v/ark-trust?style=flat-square&color=blue" alt="PyPI version"></a>
   <a href="https://pypi.org/project/ark-trust/"><img src="https://img.shields.io/pypi/dm/ark-trust?style=flat-square&color=green" alt="Downloads"></a>
   <a href="https://github.com/wzg0911/ark"><img src="https://img.shields.io/github/stars/wzg0911/ark?style=flat-square" alt="GitHub stars"></a>
-  <a href="https://github.com/wzg0911/ark/actions"><img src="https://img.shields.io/badge/tests-248%2F251-brightgreen?style=flat-square" alt="Tests"></a>
+  <a href="https://github.com/wzg0911/ark/actions"><img src="https://img.shields.io/badge/tests-300%2F303-brightgreen?style=flat-square" alt="Tests"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.9+-blue?style=flat-square" alt="Python"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple?style=flat-square" alt="License"></a>
 </p>
