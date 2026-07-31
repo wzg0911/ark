@@ -416,7 +416,7 @@
 async function startDiagnosis() {
     arkEvent('diagnosis_start');
     let projectPath = document.getElementById('projectPath').value.trim();
-    if (!projectPath) { projectPath = '/home/your-agent/产品/'; /* 未填路径→演示项目，降低门槛，确保访客立即看到报告 */ }
+    if (!projectPath) { projectPath = '/home/your-agent/产品/'; /* 未填路径→用占位项目，降低门槛，确保访客立即看到真实案例展览 */ }
 
     document.getElementById('loadingState').classList.remove('hidden');
     document.getElementById('resultsSection').classList.add('hidden');
@@ -426,16 +426,8 @@ async function startDiagnosis() {
 
     try {
         await new Promise(r => setTimeout(r, 2500));
-        const data = {
-            status: 'success',
-            issues: [
-                { type: 'missing_idempotent_guard', severity: 'high', title: '缺少幂等守卫', detail: 'Agent配置中未检测到 idempotent_guard 机制，存在重复执行风险。同一任务可能被多次触发，浪费API费用甚至误操作数据。', fix: '在Agent系统提示词中添加幂等守卫规则，确保每次执行前检查任务是否已处理。专业版可自动生成配置。', needsPro: true },
-                { type: 'no_retry_strategy', severity: 'medium', title: '缺少重试策略', detail: 'Agent脚本中未定义错误重试逻辑。当API暂时不可用或网络波动时，任务会直接失败而不重试。', fix: '为关键API调用添加指数退避重试机制（最多3次，间隔1s/2s/4s）。专业版可自动生成重试配置。', needsPro: true },
-                { type: 'no_logging', severity: 'low', title: '缺少日志记录', detail: '项目中没有检测到日志配置。没有日志意味着崩溃发生时，无法定位根因。', fix: '添加结构化日志（JSON格式），记录每次Agent执行的关键步骤和决策。', needsPro: false }
-            ],
-            stats: { total_files: 47, config_files_found: 2, risk_score: 72 }
-        };
-        displayResults(data);
+        // 触发真实诊断案例展览（displayResults 内部渲染真实报告，不再生成假数据）
+        displayResults({ status: 'success', issues: [] });
     } catch (error) {
         showError('诊断失败，请检查路径是否正确后重试。');
     } finally {
