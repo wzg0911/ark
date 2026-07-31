@@ -4,6 +4,10 @@ Thoughts on AI agent reliability, production patterns, and building trustworthy 
 
 ---
 
+## [2026-07-31 · Build Log #1: Diagnosed at Noon, Merged by Night](2026-07-31_devto_buildlog-01_diagnosed-at-noon-merged-by-night.md)
+
+> 21 LangChain bug autopsies in four weeks, collapsing into 9 structural defect families. One report was merged upstream the same day it was published. Includes the method, the receipts, and what didn't reproduce. *(DEV.to build log series, entry 1)*
+
 ## [2026-07-28 · Follow the Official Advice, Crash Immediately](2026-07-28_follow-the-official-advice-crash-immediately.md)
 
 > Two LangChain bugs where the framework's own recommended path fails first — deprecation advice that crashes 100%, and a v1 API that leaks internal IDs onto the wire. Evidence: #39047 + #39100.

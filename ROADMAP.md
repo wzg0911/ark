@@ -91,7 +91,10 @@
 
 ### Week 2: 破冰行动 (2026-07-17 ~ 07-23)
 - [x] ROADMAP 公开更新
-- [ ] DEV.to 账号创建 + 2篇构建日志发布 ← **唯一长期未启动项，W33 P0**
+- [ ] DEV.to 账号创建 + 2篇构建日志发布 ← **W33 P0**
+  - [x] 构建日志 #1 定稿（`docs/blog/2026-07-31_devto_buildlog-01_diagnosed-at-noon-merged-by-night.md`，含 DEV.to front-matter，`published: false`）✅ 2026-07-31
+  - [ ] 构建日志 #2（#39163 完整解剖 + 终态不变式设计）
+  - [ ] 🟡 账号创建 / API Key 配置 → **需主人授权**（旧 DEV.to token 已不在环境中）
 - [x] 5份新诊断报告（质检100%通过）→ **W32 达成 8/5，超额 160%** ✅
 - [ ] GitHub Discussions 分发
 - [ ] 主动追问已触达用户
@@ -103,6 +106,7 @@
 - [x] 缺陷模式索引 v2.8（9 族 / 21 报告）
 - [x] 6 份离线确定性 repro 脚本（`scripts/repros/`）
 - [x] 回归测试 248 passed / 3 skipped 连续多轮全绿
+- [x] **DEV.to 构建日志 #1 定稿** —— W2 长期缺口首次落地为可发布成品（07-31 13:30）
 
 ### Week 3+: Scaling (规划中)
 - [ ] 免费诊断邀请（V2EX/Reddit/DEV.to）
