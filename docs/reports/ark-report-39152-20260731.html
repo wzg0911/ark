@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain-core#39152</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; white-space: pre; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/39152" class="text-blue-400 hover:underline">langchain-ai/langchain#39152</a>
+            · DictPromptTemplate 静默删除列表里的非 str/dict 元素
+            · 2026-07-31 · W32 诊断 9/5（超额 180%）
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🔴</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">DictPromptTemplate.format()</code>
+                    的契约是「替换模板变量，其余原样返回」。实际行为是：任何嵌在
+                    <code class="bg-slate-700 px-1 rounded text-sm">list</code> /
+                    <code class="bg-slate-700 px-1 rounded text-sm">tuple</code> 里、且不是
+                    <code class="bg-slate-700 px-1 rounded text-sm">str</code> 或
+                    <code class="bg-slate-700 px-1 rounded text-sm">dict</code> 的元素，会被<strong>无声删除</strong>——
+                    <code class="bg-slate-700 px-1 rounded text-sm">int</code>、<code class="bg-slate-700 px-1 rounded text-sm">float</code>、
+                    <code class="bg-slate-700 px-1 rounded text-sm">bool</code>、<code class="bg-slate-700 px-1 rounded text-sm">None</code>、嵌套列表，全部消失。
+                </p>
+                <p class="text-sm text-slate-400 mt-2">
+                    不抛异常、不打日志、不降级警告。同一个 <code class="bg-slate-700 px-1 rounded">1</code>，
+                    写成 <code class="bg-slate-700 px-1 rounded">{"scalar": 1}</code> 就保留，
+                    写成 <code class="bg-slate-700 px-1 rounded">{"nums": [1]}</code> 就蒸发。
+                    <strong class="text-red-400">决定数据生死的不是数据本身，而是它被放在哪种容器里。</strong>
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-3">
+            <span class="badge bg-red-900 text-red-200">静默数据销毁</span>
+            <span class="badge bg-orange-900 text-orange-200">F8 族 · 第 3 例</span>
+            <span class="badge bg-purple-900 text-purple-200">新亚型：无声删除</span>
+            <span class="badge bg-slate-700 text-slate-200">langchain-core 1.5.3 实机复现</span>
+            <span class="badge bg-blue-900 text-blue-200">公开 API 可达</span>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位（P2 Probe）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-3">缺陷表面是「少写了一个 <code class="bg-slate-700 px-1 rounded">else</code> 分支」，真正的结构问题是<strong>同一函数内对相同数据采用了两套互相矛盾的默认策略</strong>：</p>
+        <ol class="text-sm text-slate-300 space-y-2 list-decimal list-inside">
+            <li><code class="bg-slate-700 px-1 rounded">_insert_input_variables()</code> 的顶层 <code class="bg-slate-700 px-1 rounded">else</code> 采用<strong>白名单外放行</strong>（不认识的类型原样保留）；</li>
+            <li>而其 list/tuple 内层循环采用<strong>白名单外丢弃</strong>（不认识的类型直接不 append）；</li>
+            <li>两套策略相隔 4 行代码，对同一个值给出<strong>完全相反</strong>的处置。这不是设计取舍，是遗漏——因为没有任何注释、文档或类型签名声明列表是有损的；</li>
+            <li>同样的遗漏在 <code class="bg-slate-700 px-1 rounded">_get_input_variables()</code> 里<strong>再次出现</strong>：它同样只递归 str/dict。后果是嵌套列表里的 <code class="bg-slate-700 px-1 rounded">{var}</code> 永远不会被登记为 input variable，<strong>缺参保护 KeyError 在结构上无法触发</strong>。</li>
+        </ol>
+        <div class="code-block mt-3 text-slate-300"># langchain_core/prompts/dict.py :: _insert_input_variables
+    elif isinstance(v, (list, tuple)):
+        formatted_v: list[str | dict[str, Any]] = []
+        for x in v:
+            if isinstance(x, str):
+                formatted_v.append(formatter(x, **inputs))
+            elif isinstance(x, dict):
+                formatted_v.append(_insert_input_variables(x, inputs, template_format))
+            # ← 没有 else。int / float / bool / None / list 在此静默消失
+        formatted[k] = type(v)(formatted_v)
+    else:
+        formatted[k] = v          # ← 列表外的同一个标量，在这里被完整保留</div>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-indigo-400">ARK 离线确定性复现（无 API key、无网络）：</strong>
+            <strong>六臂对照</strong>锁死根因与边界——
+            A（列表内标量）与 B（列表外同款标量）构成最小差分：<strong>唯一变量是容器类型</strong>；
+            C（变量藏在嵌套列表）证明 <code class="bg-slate-700 px-1 rounded">input_variables</code> 返回 <code class="bg-slate-700 px-1 rounded">[]</code> 且 <code class="bg-slate-700 px-1 rounded">format()</code> 不缺参报错，
+            D 对照组（同一变量浅一层）正常登记并抛 <code class="bg-slate-700 px-1 rounded">KeyError</code>；
+            E 证明经 <code class="bg-slate-700 px-1 rounded">ChatPromptTemplate.from_messages()</code> 公开 API 同样中招；
+            F 证明<strong>模板完全没有变量时数据照样被销毁</strong>——说明这不是渲染副作用，是无条件的结构性丢弃。
+            <strong class="text-green-400">6/6 与预测完全一致。</strong><br>
+            脚本：<code class="bg-slate-700 px-1 rounded">scripts/repros/repro_39152_dict_prompt_list_scalar_drop.py</code> · 验证于 langchain-core 1.5.3</p>
+        </div>
+        <div class="code-block mt-3 text-slate-300">#  case                                     result                              verdict
+A  {"nums":[1,2,3], "flags":[True,None]}    -> {"nums":[], "flags":[]}          BUG: 数据被删除
+B  {"scalar":1, "nested":{"scalar":2}}      -> 原样保留                          OK  (控制臂)
+C  {"payload":[["prefix","{q}"]]}           input_variables=[]  format()不报错   BUG: 保护机制失效
+D  {"payload":["{q}"]}                      input_variables=['q'] format()KeyError OK (控制臂)
+E  ChatPromptTemplate.from_messages(...)    -> {"nums":[]}                      BUG: 公开 API 可达
+F  {"nums":[1,2]}  (零变量 · mustache)      -> {"nums":[]}                      BUG: 与渲染无关</div>
+    </div>
+
+    <!-- ====== 区块3：后果与叙事 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">💥</span>
+            <h2 class="text-lg font-semibold text-white">后果分析</h2>
+        </div>
+        <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside">
+            <li><strong>命中的正是多模态与 tool_use 内容块的主力字段：</strong>provider 内容块 schema 里数值数组是常规写法——<code class="bg-slate-700 px-1 rounded">dims:[512,512]</code>、<code class="bg-slate-700 px-1 rounded">bbox:[0.1,0.2,0.9,0.8]</code>、<code class="bg-slate-700 px-1 rounded">top_k_scores</code>、<code class="bg-slate-700 px-1 rounded">amount_cents</code>、布尔 flag 数组。ARK 实测 <code class="bg-slate-700 px-1 rounded">image_url</code> 块的 <code class="bg-slate-700 px-1 rounded">dims</code>/<code class="bg-slate-700 px-1 rounded">bbox</code> 双双清空；</li>
+            <li><strong>损坏后的 payload 依然是合法 JSON：</strong>下游 provider 收到的是一个字段齐全、类型正确、只是数组空了的请求。它可能返回 200，也可能返回一个语义完全跑偏的结果——<strong>没有任何一层会说「你丢了数据」</strong>；</li>
+            <li><strong>唯一的自动保护被同一个 bug 一并拆除：</strong>正常情况下写错变量名会得到 <code class="bg-slate-700 px-1 rounded">KeyError</code>。但嵌套列表里的变量根本没被登记，于是「模板写错了」和「模板写对了」产生完全相同的输出。C/D 对照臂显示：<strong>一层嵌套深度决定了你有没有安全网</strong>；</li>
+            <li><strong>损失与调用次数无关，与数据形状有关：</strong>这类缺陷不会在压测里暴露（不崩、不慢、不报错），只会在「为什么模型对这张图的坐标理解不对」这类模糊问题里以幻觉的形式浮现——归因成本极高；</li>
+            <li><strong>F8 族第 3 例，但是新亚型：</strong>前两例（#39052 lambda 语义反转、#39047 官方推荐 encoder 崩 UUID 契约）是「返回了合法但错误的值」，本例是<strong>「返回了合法但残缺的值」</strong>——不是把 A 变成 B，而是让 A 干脆不存在。审计时前者尚有矛盾可查，后者只留下一个空数组，与「用户本来就传了空数组」不可区分。</li>
+        </ul>
+    </div>
+
+    <!-- ====== 区块4：ARK 处方 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">💊</span>
+            <h2 class="text-lg font-semibold text-white">ARK 处方（P3 Prescribe）</h2>
+        </div>
+        <table class="w-full text-sm text-slate-300">
+            <thead><tr class="text-slate-500 border-b border-slate-700 text-left">
+                <th class="py-2">层</th><th class="py-2">组件</th><th class="py-2">机制</th>
+            </tr></thead>
+            <tbody>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">上游修复建议</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">dict.py</code> 两个递归函数</td>
+                    <td class="py-2">list/tuple 分支改为<strong>按项递归</strong>（而非 str/dict 特例化），未知类型走 <code class="bg-slate-700 px-1 rounded">else: append(x)</code> 与顶层策略对齐；<code class="bg-slate-700 px-1 rounded">_get_input_variables</code> 同步递归，让嵌套变量重新可见。回归需覆盖嵌套列表、混合列表、tuple 保型、零变量模板四种形状（issue 报告人已指出 <code class="bg-slate-700 px-1 rounded">test_dict.py</code> 目前<strong>一个含 list 值的用例都没有</strong>）</td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">ARK 防线 1</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">OutputValidator</code> 结构守恒</td>
+                    <td class="py-2">对「变换前后应保持结构」的操作声明<strong>守恒不变式</strong>：渲染前后逐路径比对容器基数，<code class="bg-slate-700 px-1 rounded">len(before) != len(after)</code> 且未声明为过滤操作 → 契约违规。<strong>不依赖开发者预先知道哪些类型会被吃掉</strong></td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">ARK 防线 2</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">InputGuard</code> 模板契约</td>
+                    <td class="py-2">模板注册时抽取<strong>完整</strong>变量集（含任意深度容器），与运行时实际提供的 inputs 对账；出现「模板里有占位符但未被登记」立即告警——把 C 臂那种「保护机制被静默拆除」变为显式失败</td>
+                </tr>
+                <tr>
+                    <td class="py-2">ARK 防线 3</td>
+                    <td class="py-2">OTel 留痕</td>
+                    <td class="py-2">新增 <code class="bg-slate-700 px-1 rounded">ark.payload.silent_drop</code> 事件，携带丢失路径与被删类型，把「不可见的数据蒸发」升级为可告警指标</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-indigo-400">为什么这不是「再补一个 else 就完了」：</strong>
+            上游补丁修的是<strong>这一个函数的这一个分支</strong>。但同样的「白名单外丢弃 vs 白名单外放行」不一致，在
+            <code class="bg-slate-700 px-1 rounded">_get_input_variables</code> 里已经复制了一份——<strong>同一个 bug 在同一个文件里出现了两次</strong>，
+            这正是「靠人记住约定」的失效证据（与 F9 族 #39100/#39113 跨 provider 镜像遗漏同构）。
+            ARK 的结构守恒不变式不关心是谁、在哪个分支、忘了写什么：只要一次变换让容器基数无故减少，就会被运行时抓住。</p>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：族谱 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🧬</span>
+            <h2 class="text-lg font-semibold text-white">缺陷族谱 · F8「语义反转 / 契约漂移」第 3 例</h2>
+        </div>
+        <table class="w-full text-sm text-slate-300">
+            <thead><tr class="text-slate-500 border-b border-slate-700 text-left">
+                <th class="py-2">Issue</th><th class="py-2">亚型</th><th class="py-2">机制</th><th class="py-2">用户看到的</th>
+            </tr></thead>
+            <tbody>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">#39052</td><td class="py-2">语义反转</td><td class="py-2">MMR <code class="bg-slate-700 px-1 rounded">lambda_mult</code> 传参时含义被反向解释</td><td class="py-2 text-orange-400">合法但相反的结果</td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">#39047</td><td class="py-2">契约漂移</td><td class="py-2">官方弃用警告推荐的 encoder 产出非 UUID 文档 ID</td><td class="py-2 text-orange-400">崩溃或静默去重失效</td>
+                </tr>
+                <tr>
+                    <td class="py-2">#39152</td><td class="py-2 text-red-400"><strong>无声删除</strong>（新）</td><td class="py-2">list 内非 str/dict 元素被丢弃，且保护机制同步失效</td><td class="py-2 text-red-400"><strong>合法但残缺的 payload</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="text-sm text-slate-400 mt-3">前两例的共性是「值被改错」，本例把 F8 族推到了另一个极端：<strong>值不是被改错，是被取消存在</strong>。
+        从可靠性工程视角看，这类缺陷对传统防御的免疫力最强——类型系统看到的是合法 <code class="bg-slate-700 px-1 rounded">list[Any]</code>，
+        schema 校验看到的是合法空数组，APM 看到的是一次成功调用，单元测试看不到（因为 <code class="bg-slate-700 px-1 rounded">test_dict.py</code> 里根本没有含 list 的用例）。
+        <strong>唯一能捕获它的是「变换前后结构守恒」这一类行为不变式探针</strong>——这正是 ARK <code class="bg-slate-700 px-1 rounded">OutputValidator</code> 的设计前提。</p>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-indigo-400">跨族观察：</strong>本例与 F9 族（#39100 / #39113 出站元数据泄漏）互为<strong>反向镜像</strong>——
+            F9 是「不该出现的字段出去了」，F8 本例是「该出现的字段没出去」。两者根因完全同构：
+            <strong>边界上缺一道强制对账，且遗漏概率随分支数量线性放大</strong>。
+            这也是 ARK 把出站契约与结构守恒收敛到同一个 <code class="bg-slate-700 px-1 rounded">OutputValidator</code> 单点的原因。</p>
+        </div>
+    </div>
+
+    <!-- ====== 页脚 ====== -->
+    <div class="text-center text-xs text-slate-600 mt-6">
+        <p>ARK — Agent Reliability Kit · <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a></p>
+        <p class="mt-1">4P Framework: Pinpoint → Probe → Prescribe → Publish · 生成于 2026-07-31 17:40 CST</p>
+    </div>
+
+</div>
+</body>
+</html>

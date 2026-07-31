@@ -48,6 +48,7 @@ class EventType(str, Enum):
     CIRCUIT_HALF_OPEN = "ark.circuit.half_open"      # 半开探测
     VALIDATION_FAIL = "ark.validation.fail"          # 输出验证失败
     VALIDATION_PASS = "ark.validation.pass"          # 输出验证通过
+    VALIDATION_DROPPED = "ark.validation.dropped"    # 未声明字段被过滤（结构守恒留痕）
     GUARDIAN_INTERCEPT = "ark.guardian.intercept"    # 预测性守护拦截
 
 

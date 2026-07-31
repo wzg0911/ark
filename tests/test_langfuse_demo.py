@@ -4,7 +4,7 @@ ARK × Langfuse 演示 E2E 测试
 验证:
 1. 演示 app.py 的所有导入和场景函数可正常调用
 2. OTelExporter 推送到端点后端,事件被正确发出
-3. 8 种事件类型都通过演示脚本 emit 至少一次
+3. 所有已登记事件类型都通过演示脚本 emit 至少一次
 4. 演示文件结构完整 (docker-compose / collector config / README)
 
 这是 0-star 仓库破圈演示的核心保证 — 演示不能跑 = 项目信誉受损
@@ -155,8 +155,13 @@ class TestDemoE2EFlow:
         assert len(span["traceId"]) == 32
         assert len(span["spanId"]) == 16
 
-    def test_all_8_event_types_emittable(self):
-        """8 种事件类型都能 emit 不报错"""
+    def test_all_event_types_emittable(self):
+        """每一种已登记的事件类型都能 emit 不报错
+
+        断言对齐 ``EventType`` 枚举的实际基数，而非硬编码的 8。
+        否则新增事件类型时，本用例会把「能力变强」误报为回归失败
+        （v0.8.2 新增 ark.validation.dropped 时实际发生过）。
+        """
         from ark.otel_exporter import OTelExporter, EventType
 
         with patch("httpx.post", return_value=MagicMock(status_code=200)):
@@ -168,9 +173,11 @@ class TestDemoE2EFlow:
                 exporter.emit(event_type=evt, tool_name=f"test.{evt.name}")
             exporter.flush()
 
-        # 8 种事件,每种至少 emit 成功
-        assert exporter._total_emitted == 8
+        # 每种事件至少 emit 成功一次，且一条不丢
+        assert exporter._total_emitted == len(EventType)
         assert exporter._total_dropped == 0
+        # 下限护栏：防止枚举被误删后本用例退化为空转
+        assert len(EventType) >= 9
 
 
 class TestDockerComposeUp:

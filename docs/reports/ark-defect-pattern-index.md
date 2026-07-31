@@ -1,6 +1,6 @@
 # ARK 诊断缺陷模式索引 (Defect Pattern Index)
 
-> 累积索引 · 覆盖 W29–W32（21 份诊断报告）| 更新：2026-07-31 15:35 CST（v2.9 · F3 处方回流自身代码库）| ARK Cruise Bot
+> 累积索引 · 覆盖 W29–W32（22 份诊断报告）| 更新：2026-07-31 17:45 CST（v3.0 · F8 新增无声删除亚型 + 第 2 次处方回流自身代码库）| ARK Cruise Bot
 >
 > 目的：把散落在各周诊断报告中的真实 Agent 可靠性缺陷，按**缺陷族**归并成单一可导航索引——既是 ARK 价值主张的证据库，也是技术参考。每一条都源自主流框架（LangChain / LangGraph / CrewAI）的**真实 issue**，非虚构。
 
@@ -17,7 +17,7 @@
 | F5 | 畸形输入 / DoS | 2 | `OutputValidator` Schema + `CircuitBreaker` | #38667, #38843 |
 | F6 | 无限循环 / 递归耗尽 | 1 | `CircuitBreaker`（递归/循环上限） | #6731 |
 | F7 | **非确定性一致性 / 批次时间基准漂移** | **2** ⚠️ | `OutputValidator`（完整性不变式）+ OTel 留痕 | #39087, #39106 |
-| F8 | **语义反转 / 参数契约跨库漂移** | **2** ⚠️ | `OutputValidator` 行为不变式探针 + `InputGuard` 契约声明 | #39052, #39047 |
+| F8 | **语义反转 / 契约漂移 / 无声删除** | **3** ⚠️ | `OutputValidator` 行为不变式探针 + **结构守恒不变式** + `InputGuard` 契约声明 | #39052, #39047, **#39152** |
 | F9 | **出站契约不对称 / 内部元数据泄漏到 wire 协议** | **2** ⚠️ | `OutputValidator` 出站 payload 契约 + `InputGuard` internal 字段标记 | #39100 ✅已修复, #39113 |
 
 ---
@@ -147,6 +147,16 @@
 
 **#39047 对本族的扩展：** 漂移引信可以是**框架自己的迁移指引**——「官方最佳实践」（弃用警告推荐的 encoder）与「能跑的配置」精确互斥，用户越守规矩越先崩溃。且崩溃（UUID 校验型存储）是幸运分支；非校验型存储下 ID 契约漂移完全静默，增量索引的去重锚点全部失效。ARK 对策：`InputGuard` ID 形状契约（uuid-required/free-form）写入前校验 + 迁移不变式对账（换 encoder 时重算既有样本 ID 并告警）。
 
+#### 🆕 第 3 例 · 新亚型「无声删除」（2026-07-31）
+
+| Issue | 一句话 | 后果 |
+|-------|--------|------|
+| langchain-core#39152 (W32) | `DictPromptTemplate.format()` 的 list/tuple 分支只处理 `str`/`dict`，缺少 `else` 兜底，导致 `int`/`float`/`bool`/`None`/嵌套列表被静默删除；而同函数顶层 `else` 对同一个标量却是原样保留 | 多模态与 tool_use 内容块的数值字段（`dims`、`bbox`、`amount_cents`、`top_k_scores`、flag 数组）在渲染后变成空数组，payload 仍是合法 JSON，provider 照常返回 200；**且 `_get_input_variables()` 同款遗漏使嵌套列表里的 `{var}` 永不登记，缺参 KeyError 在结构上无法触发**；**ARK 实机 6/6 六臂对照复现**（无 API key、无网络） |
+
+**#39152 对本族的扩展：** 前两例是「值被改错」，本例是**「值被取消存在」**。关键结构证据是**同一函数内两套互相矛盾的默认策略**——顶层 `else` 白名单外放行，list 内层白名单外丢弃，相隔 4 行代码，对同一个 `1` 给出完全相反的处置，且无任何注释/文档/类型签名声明列表是有损的。更强的证据是**同一个遗漏在同一个文件里出现了两次**（`_insert_input_variables` 与 `_get_input_variables`），与 F9 族 #39100/#39113 跨 provider 镜像遗漏同构——都是「靠人记住约定」的失效。最小差分对照：A（列表内标量，删除）vs B（列表外同款标量，保留），**唯一变量是容器类型**；C（变量藏嵌套列表，`input_variables=[]` 且不报错）vs D（同变量浅一层，正常登记并抛 `KeyError`），**一层嵌套深度决定有没有安全网**；F 臂证明零变量模板照样丢数据——排除「渲染副作用」解释，钉死为无条件结构性丢弃。ARK 对策：`OutputValidator` **结构守恒不变式**（变换前后逐路径比对容器基数，无故减少即契约违规）+ `InputGuard` 模板契约（抽取任意深度变量集与运行时 inputs 对账）。
+
+**🔁 处方回流自身代码库（第 2 次，2026-07-31 17:45）：** 按本例处方对 ARK 自审，`OutputValidator.validate()` 命中**同型缺陷**——Schema 未声明的字段被直接过滤掉，却返回 `valid=True` / `errors=[]`，调用方零信号（实测 `currency`/`idempotency_key`/`line_items` 三个业务关键字段静默蒸发）。与 #39152 形状完全一致：**过滤是设计意图，静默不是。** 已修复为 v0.8.2 结构守恒不变式：新增 `ValidationResult.dropped_fields` 留痕、`lossless` 属性、`strict_extra=True` 严格模式（丢弃升级为契约违规）、`ark.validation.dropped` OTel 事件、`stats.drop_rate` 度量；默认宽松保持向后兼容。新增 `tests/test_v0_8_2_validator_conservation.py` A/B/C/D 四臂对照 16 用例。**副产物：** 修复过程中 `test_langfuse_demo.py` 的 `assert _total_emitted == 8` 硬编码把「新增事件类型」误报为回归失败——该断言已改为对齐 `len(EventType)`，属 F4 族「测试即契约」的自身命中。回归 265 → 281 passed / 3 skipped 全绿。
+
 ---
 
 ### F9 · 出站契约不对称 / 内部元数据泄漏到 wire 协议 → `OutputValidator` 出站 payload 契约 🆕 (W32)
@@ -183,4 +193,4 @@
 
 ---
 
-*生成时间：2026-07-31 11:30 CST | ARK Cruise Bot | 累积索引 v2.8（W29–W32 · 21报告/9族 · #39163 上游双人竞领，第 3 例社区分析与 ARK 处方同向）*
+*生成时间：2026-07-31 17:45 CST | ARK Cruise Bot | 累积索引 v3.0（W29–W32 · 22报告/9族 · F8 新增「无声删除」亚型 #39152 · 连续第 2 次处方回流自身代码库并命中同型缺陷）*
