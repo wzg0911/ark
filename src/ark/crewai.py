@@ -20,10 +20,11 @@ try:
 except ImportError:
     HAS_CREWAI = False
 
-from ..guard import IdempotencyGuard
-from ..breaker import CircuitBreaker
-from ..validator import OutputValidator
-from ..trace import Trace
+from .guard import IdempotencyGuard
+from .breaker import CircuitBreaker
+from .validator import OutputValidator
+from .trace import Trace
+from .attrs import attr_text
 
 
 class ARKCrewCallback:
@@ -49,8 +50,10 @@ class ARKCrewCallback:
     def on_task_start(self, task: Any, agent: Any):
         """CrewAI task开始"""
         self._task_count += 1
-        agent_role = getattr(agent, 'role', 'unknown')
-        task_desc = getattr(task, 'description', 'unknown')[:80]
+        # A present-but-None `description` bypasses the getattr default and
+        # makes the slice raise TypeError. See ark.attrs (#39167 reflow).
+        agent_role = attr_text(agent, 'role', 'unknown')
+        task_desc = attr_text(task, 'description', 'unknown', limit=80)
         self.trace.start_span("crew_task", agent=agent_role, task=task_desc)
     
     def on_task_complete(self, task: Any, output: str):

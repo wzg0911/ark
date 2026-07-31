@@ -39,7 +39,9 @@ from .errors import (
     truncate_error, error_to_llm_context, should_retry, retry_delay,
     ErrorContext, error_context, with_retry, NON_RETRYABLE_TYPES,
 )
+from .attrs import attr, attr_mapping, attr_text, is_present, prune_absent
 __all__ = [
+    "attr", "attr_mapping", "attr_text", "is_present", "prune_absent",
     "IdempotencyGuard", "CircuitBreaker", "OutputValidator", "Trace",
     "ReliabilityScore", "SchemaRegistry", "auto_init", "detect_frameworks",
     "Dashboard", "get_dashboard", "Event", "Achievements", "Achievement", "Tier",

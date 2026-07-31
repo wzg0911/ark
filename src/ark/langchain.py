@@ -11,6 +11,12 @@ Usage:
     # All tool calls now auto-guarded
 """
 
+# Annotations reference langchain-only names (LLMResult, AgentAction,
+# AgentFinish). Without PEP 563 they are evaluated at class-definition time and
+# raise NameError whenever langchain is absent — which is the whole point of
+# the try/except ImportError guard below. Keep this import first.
+from __future__ import annotations
+
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 import time
@@ -24,10 +30,11 @@ except ImportError:
     HAS_LANGCHAIN = False
     BaseCallbackHandler = object
 
-from ..guard import IdempotencyGuard
-from ..breaker import CircuitBreaker
-from ..validator import OutputValidator
-from ..trace import Trace
+from .guard import IdempotencyGuard
+from .breaker import CircuitBreaker
+from .validator import OutputValidator
+from .trace import Trace
+from .attrs import attr_mapping
 
 
 class ARKCallbackHandler(BaseCallbackHandler if HAS_LANGCHAIN else object):
@@ -60,9 +67,13 @@ class ARKCallbackHandler(BaseCallbackHandler if HAS_LANGCHAIN else object):
     
     def on_llm_end(self, response: LLMResult, **kwargs):
         if self._trace:
+            # `LLMResult.llm_output` is declared `dict | None` and DEFAULTS to
+            # None, so `getattr(response, 'llm_output', {})` returns None and
+            # the trailing `.get()` raises. Absence was guarded; nullity was
+            # not. See ark.attrs (#39167 prescription reflow).
             self._trace.end_span(
-                tokens=getattr(response, 'llm_output', {}).get('token_usage', {}),
-                generations=len(response.generations)
+                tokens=attr_mapping(response, 'llm_output').get('token_usage', {}),
+                generations=len(getattr(response, 'generations', None) or [])
             )
     
     def on_llm_error(self, error, **kwargs):
