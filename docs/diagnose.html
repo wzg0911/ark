@@ -126,16 +126,14 @@
             <div class="bg-slate-700/40 rounded-xl p-5 border border-slate-600">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white flex items-center">
-                        <span class="text-2xl mr-2">📊</span> 诊断结果 <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full ml-1">示例</span>
+                        <span class="text-2xl mr-2">📊</span> 诊断结果 <span class="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full ml-1">真实案例</span>
                     </h3>
-                    <span id="severityBadge" class="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold">
-                        发现 3 个问题
-                    </span>
+                    <span id="severityBadge" class="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold">真实诊断案例 · 3 份</span>
                 </div>
 
                 <div id="issuesList" class="space-y-3 mb-4"></div>
 
-                <p class="text-xs text-slate-500 mb-3">⚠️ 这是 <span class="text-slate-300">演示报告</span>：ARK 重点检查的崩溃隐患类型示意。上面三条是<a href="https://github.com/wzg0911/ark/discussions/7" target="_blank" rel="noopener" class="text-blue-400 hover:underline">真实案例里最常见的三类</a>——但你的项目可能藏着更隐蔽的。<b class="text-slate-300">贴你的日志到讨论区，我陪你一起看真实诊断。</b></p>
+                <p class="text-xs text-slate-500 mb-3">✅ 以下是 <span class="text-green-300">真实拆过的诊断案例</span>（非演示）：ARK 在 OpenClaw 社区一连串真实崩溃里发现的"状态句柄失效"家族。你的项目可能藏着更隐蔽的。<b class="text-slate-300">贴你的日志到讨论区，我陪你一起看真实诊断。</b></p>
 
                 <div class="mt-5 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -451,49 +449,64 @@ function displayResults(data) {
     const resultsSection = document.getElementById('resultsSection');
     const issuesList = document.getElementById('issuesList');
     const severityBadge = document.getElementById('severityBadge');
-    const highCount = data.issues.filter(i => i.severity === 'high').length;
-    severityBadge.textContent = `发现 ${data.issues.length} 个问题（${highCount}个高危）`;
-    severityBadge.className = highCount > 0 ? 'px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-semibold' : 'px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold';
+    severityBadge.textContent = '真实诊断案例 · 3 份';
+    severityBadge.className = 'px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold';
+
+    // 真实诊断报告展览（非演示假数据）：用公开的真实案例替代硬编码演示
+    const realReports = [
+        {
+            icon: '🔴',
+            color: 'text-red-400', bg: 'bg-red-500/5', border: 'border-red-500/20',
+            title: 'OpenClaw #113434',
+            tag: '会话句柄失效',
+            detail: '上游 generation 退休后，新句柄没交回客户端，旧句柄被当成有效 → 莫名 400/会话失效。随后被上游合并的 PR（#114056/#114401/#114478）独立印证。',
+            link: 'https://ark-6ek.pages.dev/reports/openclaw-113434',
+            linkText: '看完整真实诊断 →'
+        },
+        {
+            icon: '🟡',
+            color: 'text-yellow-400', bg: 'bg-yellow-500/5', border: 'border-yellow-500/20',
+            title: 'OpenClaw #114234',
+            tag: 'PID 锁泄漏',
+            detail: '容器重建后 PID 被复用，"按进程是否活着"判活的锁被骗成"永远活着"，缓存冻结。根因：锁的有效性证据 = 一个重启后会失效的标识符。',
+            link: 'https://ark-6ek.pages.dev/reports/openclaw-114234',
+            linkText: '看完整真实诊断 →'
+        },
+        {
+            icon: '🔵',
+            color: 'text-blue-400', bg: 'bg-blue-500/5', border: 'border-blue-500/20',
+            title: 'OpenClaw #114255',
+            tag: '状态生命周期',
+            detail: '网关重启后 session 状态仍停在 running，下游据此认为"还在跑" → 永久阻塞。根因：重启前写的状态，被当成当前活跃度。',
+            link: 'https://ark-6ek.pages.dev/reports/openclaw-114255',
+            linkText: '看完整真实诊断 →'
+        }
+    ];
 
     issuesList.innerHTML = '';
-    const severityConfig = {
-        high:   { icon: '🔴', color: 'text-red-400',   bg: 'bg-red-500/5',   border: 'border-red-500/20' },
-        medium: { icon: '🟡', color: 'text-yellow-400', bg: 'bg-yellow-500/5', border: 'border-yellow-500/20' },
-        low:    { icon: '🔵', color: 'text-blue-400',   bg: 'bg-blue-500/5',  border: 'border-blue-500/20' }
-    };
-
-    data.issues.forEach((issue) => {
-        const cfg = severityConfig[issue.severity];
-        const tagText = issue.severity === 'high' ? '高危' : issue.severity === 'medium' ? '中危' : '低危';
-        const proBtnHTML = issue.needsPro
-            ? `<div class="mt-3 pt-3 border-t ${cfg.border}">
-                   <div class="flex items-center justify-between flex-wrap gap-2">
-                       <span class="text-xs text-slate-500">🔒 ${issue.severity === 'high' ? '高危' : '中危'}问题，需专业版修复</span>
-                       <button onclick="openClaimModal()"
-                           class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-1.5 px-4 rounded-lg transition text-xs shadow">
-                           ⚡ ¥49 一键修复
-                       </button>
-                   </div>
-               </div>`
-            : `<div class="mt-2 pt-2 border-t ${cfg.border}"><span class="text-xs text-green-400">🔓 低危问题，可自行修复</span></div>`;
-
+    realReports.forEach((r) => {
         const card = document.createElement('div');
-        card.className = `${cfg.bg} ${cfg.border} border rounded-xl p-4`;
+        card.className = `${r.bg} ${r.border} border rounded-xl p-4`;
         card.innerHTML = `
             <div class="flex items-start gap-3">
-                <span class="text-xl mt-0.5 shrink-0">${cfg.icon}</span>
+                <span class="text-xl mt-0.5 shrink-0">${r.icon}</span>
                 <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-white font-semibold text-sm">${issue.title}</span>
-                        <span class="px-2 py-0.5 ${cfg.color} ${cfg.bg} rounded text-xs font-medium">${tagText}</span>
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <span class="text-white font-semibold text-sm">${r.title}</span>
+                        <span class="px-2 py-0.5 ${r.color} ${r.bg} rounded text-xs font-medium">${r.tag}</span>
                     </div>
-                    <p class="text-slate-300 text-sm leading-relaxed mb-2">${issue.detail}</p>
-                    <p class="text-slate-500 text-xs">💡 <span class="text-slate-400">修复方案：</span>${issue.fix}</p>
-                    ${proBtnHTML}
+                    <p class="text-slate-300 text-sm leading-relaxed mb-2">${r.detail}</p>
+                    <a href="${r.link}" target="_blank" rel="noopener" class="text-blue-400 hover:underline text-xs font-medium">${r.linkText}</a>
                 </div>
             </div>`;
         issuesList.appendChild(card);
     });
+
+    // 真实钩子：把"看案例"转为"你的也能这样拆"
+    const hook = document.createElement('div');
+    hook.className = 'mt-3 pt-3 border-t border-slate-700 text-center';
+    hook.innerHTML = '<p class="text-sm text-slate-300">这些都是 <b class="text-white">真实拆过的崩溃</b>。你的 Agent 半夜崩？<a href="https://github.com/wzg0911/ark/discussions/7" target="_blank" rel="noopener" class="text-blue-400 hover:underline font-semibold">把日志贴到免费诊断日讨论区</a>，我亲自陪你一起看。</p>';
+    issuesList.appendChild(hook);
 
     resultsSection.classList.remove('hidden');
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
