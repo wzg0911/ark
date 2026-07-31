@@ -200,6 +200,8 @@
               <div class="flex-1">
                 <p class="text-white font-semibold text-sm mb-1">扫码支付 ¥49</p>
                 <p class="text-slate-400 text-xs mb-3">选择微信或支付宝，扫码后请在支付界面确认金额为 <span class="text-yellow-400 font-bold">¥49</span></p>
+                <div id="payCodesArea" class="hidden">
+                <p class="text-yellow-400 text-xs font-bold mb-2 text-center">👇 先填下方邮箱，点击"我已支付"提交后，收款码会在此显示</p>
                 <div class="grid grid-cols-2 gap-3">
                   <div class="text-center">
                     <img src="payments/wechat-merchant.png" alt="微信支付¥49" class="mx-auto w-32 h-32 rounded-lg border border-green-500/40 bg-white p-1 object-contain">
@@ -211,6 +213,12 @@
                     <p class="text-blue-400 text-xs font-bold mt-1">💳 支付宝</p>
                     <p class="text-yellow-400 text-lg font-bold">¥49</p>
                   </div>
+                </div>
+                </div>
+                <div id="payCodesLocked" class="text-center py-6 bg-[#0a1628] border border-yellow-500/30 rounded-xl">
+                  <div class="text-4xl mb-2">🔒</div>
+                  <p class="text-slate-300 text-sm font-semibold">收款码已锁定</p>
+                  <p class="text-slate-500 text-xs mt-1">填写邮箱并点击"我已支付 ¥49"，即可解锁收款码 + 确保 Key 发到你邮箱</p>
                 </div>
               </div>
             </div>
@@ -516,6 +524,9 @@ function openClaimModal() {
   document.getElementById('claimModal').classList.remove('hidden');
   document.getElementById('claimSuccess').classList.add('hidden');
   document.getElementById('claimError').classList.add('hidden');
+  // 强制先填邮箱提交 claim 才显收款码，杜绝绕过表单直接扫码导致收付失联
+  document.getElementById('payCodesArea').classList.add('hidden');
+  document.getElementById('payCodesLocked').classList.remove('hidden');
   const storedEmail = localStorage.getItem('ark_user_email') || '';
   document.getElementById('claimEmail').value = storedEmail;
 }
@@ -558,7 +569,9 @@ async function submitClaim() {
         arkEvent('claim_pending', { email: email });
         localStorage.setItem('ark_user_email', email);
         document.getElementById('claimSuccess').classList.remove('hidden');
-        btn.textContent = '✅ 申请已提交，等待发货';
+        document.getElementById('payCodesLocked').classList.add('hidden');
+        document.getElementById('payCodesArea').classList.remove('hidden');
+        btn.textContent = '✅ 申请已提交，收款码已解锁';
         btn.classList.remove('from-yellow-500', 'to-orange-500', 'hover:from-yellow-600', 'hover:to-orange-600');
         btn.classList.add('bg-green-500', 'cursor-default');
         // 关键：不自动激活，必须付款 + 主人确认
