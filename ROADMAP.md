@@ -107,6 +107,7 @@
 - [x] 6 份离线确定性 repro 脚本（`scripts/repros/`）
 - [x] 回归测试 248 passed / 3 skipped 连续多轮全绿
 - [x] **DEV.to 构建日志 #1 定稿** —— W2 长期缺口首次落地为可发布成品（07-31 13:30）
+- [x] **诊断处方回流产品（v0.8.1 Trace 终态不变式）** —— 首次完成「诊断上游 → 发现自身同型缺陷 → 修复并固化为回归」闭环；终态集合 `ok|error|cancelled|orphaned`，265/265 全绿（07-31 15:35）✅
 
 ### Week 3+: Scaling (规划中)
 - [ ] 免费诊断邀请（V2EX/Reddit/DEV.to）

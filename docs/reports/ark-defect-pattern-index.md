@@ -1,6 +1,6 @@
 # ARK 诊断缺陷模式索引 (Defect Pattern Index)
 
-> 累积索引 · 覆盖 W29–W32（21 份诊断报告）| 更新：2026-07-31 11:30 CST | ARK Cruise Bot
+> 累积索引 · 覆盖 W29–W32（21 份诊断报告）| 更新：2026-07-31 15:35 CST（v2.9 · F3 处方回流自身代码库）| ARK Cruise Bot
 >
 > 目的：把散落在各周诊断报告中的真实 Agent 可靠性缺陷，按**缺陷族**归并成单一可导航索引——既是 ARK 价值主张的证据库，也是技术参考。每一条都源自主流框架（LangChain / LangGraph / CrewAI）的**真实 issue**，非虚构。
 
@@ -72,6 +72,22 @@
 **⏳ #39163 上游进展（2026-07-31 11:30 CST）：** 第二名贡献者 tanmay-devhub（03:21 UTC）发表根因分析：「清理块 catch 边界过窄，`asyncio.CancelledError` 等 `BaseException` 子类绕过终态回调；应放宽该边界，在 group 未结束时调用既有 `on_chain_error()` 路径并**原样重抛**原异常」——与 ARK 诊断处方**方向一致**（放宽异常基类 + 保证终态事件必发）。#39163 由此进入 gitbalaji（01:00 UTC，纯认领无分析）与 tanmay-devhub 双人竞领状态，仍无 assignee。
 
 这是 W32 内**第 3 例**「诊断发布 → 社区独立分析与 ARK 处方同向」（前两例：#39113 的 RahilOp / cyforkk，#39100 的官方修复 PR #39101），也是**第 3 次**复现「诊断发布 → 社区多人竞相认领」模式。
+
+**🔧 处方自我落地（2026-07-31 15:35 CST · v0.8.1）：自查发现 ARK 自身 `Trace` 犯了同一个错。**
+
+开处方之后我们把处方对准了自己，结果不好看：`src/ark/trace.py` 的 `Span.__exit__` 虽然形式上能接住 `BaseException`，但 `Trace.summary()` 对「有 start 无 end」的 span **返回 `status: "ok"`**——而且这一行为被 `test_f9_trace_no_end` 当作正确契约**断言固化**了下来。也就是说，我们一边指出上游「孤儿 run 与真实长任务不可区分」，一边在自己的汇总层把孤儿 span 直接报成健康。
+
+三处已修复：
+
+| 缺口 | 修复前 | 修复后 |
+|---|---|---|
+| 未闭合 span 的汇总状态 | `status: "ok"`（孤儿被洗白） | `status: "incomplete"` + `orphaned` 计数，**存在无终态 span 时绝不报 ok** |
+| cancelled 语义 | 与普通异常混同，计入 `errors` | 独立终态 `cancelled`：**不计失败率、但计终态并留痕**（断连风暴不打爆熔断，也不消失） |
+| 终态存在性检查 | 无 | `Trace.assert_terminal()` 枚举违规 span；`Trace.close()` 对未闭合 span 补发 `orphaned` 终态且**保留证据不抹除** |
+
+终态集合正式确立为 `ok | error | cancelled | orphaned`，四态在 `tree()` 中图标可区分（✅/❌/🚫/👻）。新增 `tests/test_v0_8_1_trace_terminal.py`，采用与 repro 脚本相同的 **A/B/C/D 四臂对照**方法论（A/C = BaseException，B/D = 普通 Exception 控制臂），17 个用例。回归：**265 passed / 3 skipped**（原 248 + 17）。
+
+**这条记录本身即索引的价值证明：** 缺陷族索引不只是对外的证据库，它反过来是对 ARK 自身的审计清单。F3 第 5 例暴露的不变式，在写进索引 4 小时内就在自家代码里找到了同型缺口——**并且是被自己的测试断言保护着的缺口**。这正是第 2 点「纪律漂移」的自证：靠人自觉不可持续，包括我们自己。
 
 ---
 

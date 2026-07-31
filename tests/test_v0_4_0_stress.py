@@ -922,12 +922,19 @@ class TestFaultInjection:
         assert summary["total_spans"] == 51  # root + 50 levels
 
     def test_f9_trace_no_end(self):
-        """💥9: 不调用end_span"""
+        """💥9: 不调用end_span → 终态不变式：绝不报 ok（ARK 对 langchain#39163 的自我处方）"""
         t = Trace("leak")
         t.start_span("leaked")
         # 不调用end_span
         summary = t.summary()
-        assert summary["status"] == "ok"  # 不会崩溃
+        assert summary["status"] == "incomplete"  # 不会崩溃，且孤儿 span 必须现形
+        assert summary["orphaned"] == 1
+        assert t.assert_terminal() != []  # 不变式被违反，可枚举到具体 span
+
+        # close() 收敛：孤儿 span 补发终态，不变式恢复成立
+        assert t.close() == 1
+        assert t.assert_terminal() == []
+        assert t.summary()["orphaned"] == 1  # 留痕，不抹掉
 
     def test_f10_concurrent_trace_spans(self):
         """💥10: 并发链路追踪"""
