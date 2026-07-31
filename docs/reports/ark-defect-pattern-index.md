@@ -1,6 +1,6 @@
 # ARK 诊断缺陷模式索引 (Defect Pattern Index)
 
-> 累积索引 · 覆盖 W29–W32（20 份诊断报告）| 更新：2026-07-29 05:34 CST | ARK Cruise Bot
+> 累积索引 · 覆盖 W29–W32（21 份诊断报告）| 更新：2026-07-31 09:40 CST | ARK Cruise Bot
 >
 > 目的：把散落在各周诊断报告中的真实 Agent 可靠性缺陷，按**缺陷族**归并成单一可导航索引——既是 ARK 价值主张的证据库，也是技术参考。每一条都源自主流框架（LangChain / LangGraph / CrewAI）的**真实 issue**，非虚构。
 
@@ -12,7 +12,7 @@
 |---|--------|---------|--------------|---------|
 | F1 | 重复执行 / 幂等缺失 | 2 | `IdempotencyGuard` | #34974, #38708 |
 | F2 | **可变状态原地篡改 / 「配置即状态」** | **3** ⚠️ | `InputGuard`（入参不可变契约）+ OTel 漂移留痕 | #38779, #38840, #38989 |
-| F3 | 静默失败 / 失败流伪装成功流 | **4** ⚠️ | `OutputValidator` + `CircuitBreaker` + `InputGuard` | #39039, #38892, #38893, #39099 |
+| F3 | 静默失败 / 失败流伪装成功流 | **5** 🔥 | `OutputValidator` + `CircuitBreaker` + `InputGuard` + **`Trace` 终态不变式** | #39039, #38892, #38893, #39099, **#39163** |
 | F4 | 测试掩盖 / 断言失效 | 2 | 测试即契约（xfail 审计 + 结构断言） | #38904, #35475 |
 | F5 | 畸形输入 / DoS | 2 | `OutputValidator` Schema + `CircuitBreaker` | #38667, #38843 |
 | F6 | 无限循环 / 递归耗尽 | 1 | `CircuitBreaker`（递归/循环上限） | #6731 |
@@ -56,8 +56,18 @@
 | langchain#38892 | `RunnableWithFallbacks` 把合法空流误判为失败，备胎静默替换 | 静默数据污染（9 个 PR 卡关同因） |
 | langchain#38893 | `ModelRetryMiddleware` 把「不可重试异常」吞成正常 `AIMessage` | 同一契约工具侧/模型侧行为相反 |
 | langchain-core#39099 (W32) | args_schema 前向引用未解析时，工具静默以「零参数」schema 递交模型；同错误在签名一级却是硬 `NameError` | advertised ≠ enforced schema，12/13 工具空参数数月无人察觉；**ARK 实机 5/5 完全复现** |
+| langchain-core#39163 (W32) 🆕 | `trace_as_chain_group`/`atrace_as_chain_group` 只 catch `Exception`，`CancelledError`/`KeyboardInterrupt` 绕过全部终态回调，run 永久 pending | 客户端断连（WebSocket 常态）即产生孤儿 span；p99 延迟与成本归因失真；**ARK 实机 4/4 对照复现** |
 
 **共性：** 框架在边界上「假装成功」。#39099 把该族从「运行时失败被吞」扩展到「**构建时降级被吞**」——schema 构建失败被静默折叠成语义完全不同的合法值（空 schema）。ARK 以终态不变式 + 注册期 schema 完整性门禁（`__pydantic_complete__` + 签名/schema 参数数对账）强制校验，让失败无法伪装成成功。
+
+**#39163 对本族的扩展（第 5 例 · 新亚型「终态事件缺失」）：** 前四例都是「失败伪装成成功」——至少产生了一个（错误的）值，事后审计能在数据里找到矛盾。#39163 把 F3 推到极端：**连假装都没有，终态事件根本不发生**。run 有 start 无 end 无 error，在任何遥测后端里都与「真实的长任务」不可区分。
+
+三点使其成为本索引最有说服力的一例：
+1. **触发条件是生产常态而非边缘情况** —— ASGI/WebSocket 客户端断连即 `CancelledError`，交互越重的服务污染越严重，形成「越关键越不可信」的反向相关；
+2. **同文件内已有正确写法** —— `manager.py` 里 runnable 回调辅助函数已 catch `BaseException`，两个 chain group CM 仍写 `except Exception`。这不是设计取舍，是纪律漂移，正是「靠人自觉」不可持续的直接物证；
+3. **它发生在 observability 组件自己身上** —— 负责「记录一切」的模块自身缺终态不变式。用来发现问题的工具漏掉了整整一类问题。
+
+因此 ARK 的应对与前四例不同：前四例靠 `OutputValidator` 校验**终态的内容**，本例必须靠 `Trace` 校验**终态的存在性**（span 退出无终态则自动补发 `ark.span.orphaned`），并由 `CircuitBreaker` 将 cancelled 归一为独立终态（不计失败率、但计终态），避免取消风暴既不熔断也不留痕。
 
 ---
 
@@ -153,4 +163,4 @@
 
 ---
 
-*生成时间：2026-07-28 23:40 CST | ARK Cruise Bot | 累积索引 v2.6（W29–W32 · 19报告/9族 · #39100 上游修复闭环）*
+*生成时间：2026-07-31 09:40 CST | ARK Cruise Bot | 累积索引 v2.7（W29–W32 · 21报告/9族 · F3 第 5 例新亚型「终态事件缺失」#39163）*
