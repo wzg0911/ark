@@ -154,6 +154,8 @@ From the failure patterns ARK catches in practice — and the measurable results
 
 **Try the live diagnosis yourself → [ark-6ek.pages.dev/diagnose](https://ark-6ek.pages.dev/diagnose)**
 
+**Not sure if any of this applies to you? → [Run the 3-minute Agent Crash Risk Self-Check](https://ark-6ek.pages.dev/selfcheck)** — 15 questions across the three defect families above (idempotency boundaries, state lifecycle, retry storms), each backed by a real diagnosed case. Runs entirely in your browser; nothing is uploaded.
+
 ---
 
 ## 📐 Research: The "Proof-of-State" Trap
