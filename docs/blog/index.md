@@ -4,6 +4,14 @@ Thoughts on AI agent reliability, production patterns, and building trustworthy 
 
 ---
 
+## 📐 Living document
+
+### [The "Proof-of-State" Trap](https://ark-6ek.pages.dev/proof-of-state-trap)
+
+> Why your agent dies after every restart. Four production autopsies that look unrelated but share one root cause — plus the invariant that kills the whole defect family. **Continuously updated: every new diagnosis lands here first.**
+
+---
+
 ## [2026-08-01 · Build Log #2: The Prescription Came Back For Us](2026-08-01_devto_buildlog-02_the-prescription-came-back-for-us.md)
 
 > Full autopsy of `#39163` (a cancelled run leaves its trace open forever), then the twist: we ran the prescription on ARK itself and it hit — three times in a row (v0.8.1/0.8.2/0.8.3). The reflow loop turned out to be the product. *(DEV.to build log series, entry 2)*

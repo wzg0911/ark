@@ -111,6 +111,7 @@
 - [x] **诊断处方回流产品（v0.8.1 Trace 终态不变式）** —— 首次完成「诊断上游 → 发现自身同型缺陷 → 修复并固化为回归」闭环；终态集合 `ok|error|cancelled|orphaned`，265/265 全绿（07-31 15:35）✅
 - [x] **第 9 份诊断 #39152**（F8 族新亚型「无声删除」，6 臂对照离线复现）—— W32 诊断 9/5，超额 180%（07-31 17:40）✅
 - [x] **处方回流第 2 例（v0.8.2 OutputValidator 结构守恒）** —— 按 #39152 处方自审，命中 ARK 自身「静默丢弃未声明字段」同型缺陷；新增 `dropped_fields`/`lossless`/`strict_extra`/`ark.validation.dropped`，281/281 全绿（07-31 17:50）✅
+- [x] **技术品牌阵地入口打通（08-01 09:35）** —— 巡航发现 `proof-of-state-trap.html` 虽已上线（200 OK）但全站**零入链**（孤岛页），实际曝光为 0；已从 README、落地页 hero 区、blog index 三处建立入口；同时修复落地页测试计数漂移（248/251 → 300/303）与语言数错误（2 → 3）✅
 - [x] **处方回流第 3 例（v0.8.3 属性访问不变式）** —— 诊断 `langchain-exa#39167`（`getattr(x,"y")` 两参伪守护 + 真值当存在性）后自审，命中 ARK 自身 `getattr(response,'llm_output',{}).get(...)` 同型缺陷（缺席已守、空值未守）；新增 `ark.attrs`（`attr`/`attr_mapping`/`attr_text`/`is_present`/`prune_absent`），确立「可选属性读取必为全函数：缺席或 None 皆归哨兵，绝不误删 falsy」不变式；修复 crewai/langchain 相对导入越界 + langchain 注解 PEP563，300/303 全绿（3 skipped）（08-01 01:28）✅
 
 ### Week 3+: Scaling (规划中)

@@ -156,6 +156,22 @@ From the failure patterns ARK catches in practice — and the measurable results
 
 ---
 
+## 📐 Research: The "Proof-of-State" Trap
+
+> **Why your agent dies after every restart.**
+
+We autopsied four production crashes that looked completely unrelated — a stale session handle ([#113434](https://ark-6ek.pages.dev/reports/openclaw-113434)), a PID-reuse lock leak ([#114234](https://ark-6ek.pages.dev/reports/openclaw-114234)), a session stuck in `running` after restart ([#114255](https://ark-6ek.pages.dev/reports/openclaw-114255)), and a `keepalive` LaunchAgent restart loop (#115326, community-reported by **robingutsche**).
+
+They share one root cause:
+
+> **Any assertion that "X is still alive / still yours / still current" which relies on an identifier that expires across restarts silently becomes a permanent denial.**
+
+The invariant: **proof-of-state must be bound to the incarnation.** PID alive ≠ lock held. Session state persisted ≠ process running. Config valid ≠ runtime healthy.
+
+**📖 Read the full teardown → [ark-6ek.pages.dev/proof-of-state-trap](https://ark-6ek.pages.dev/proof-of-state-trap)** *(living document — every new diagnosis lands here first)*
+
+---
+
 ## ⭐ Star History
 
 <p align="center">
