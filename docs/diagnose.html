@@ -516,6 +516,17 @@ function displayResults(data) {
     hook.innerHTML = '<p class="text-sm text-slate-300">这些都是 <b class="text-white">真实拆过的崩溃</b>。你的 Agent 半夜崩？<a href="https://github.com/wzg0911/ark/discussions/7" target="_blank" rel="noopener" class="text-blue-400 hover:underline font-semibold">把日志贴到免费诊断日讨论区</a>，我亲自陪你一起看。</p>';
     issuesList.appendChild(hook);
 
+    // 信任对比卡片（嵌入结果页：让用户自己得出"我也需要修复"）
+    const cmp = document.createElement('div');
+    cmp.className = 'mt-4 p-4 rounded-xl bg-gradient-to-r from-red-500/10 to-amber-500/10 border border-amber-500/30';
+    cmp.innerHTML = `
+      <p class="text-sm text-slate-200 leading-relaxed">
+        📌 <b class="text-white">张三的 Agent</b>：崩溃时 Token 消耗是修复后的 <b class="text-red-400">17 倍</b>，根因=缺少幂等守卫+重试无上限，修复仅 2 小时。<br>
+        📌 <b class="text-white">robingutsche</b>：launchd keepalive 死循环，熬了 3 晚，被拆成 3 个独立 bug 永久归档。<br>
+        <span class="text-slate-400 text-xs">如果你的项目也有类似隐患，<a href="https://ark-6ek.pages.dev/selfcheck" target="_blank" class="text-blue-400 hover:underline">先做 3 分钟自检清单 →</a></span>
+      </p>`;
+    issuesList.appendChild(cmp);
+
     resultsSection.classList.remove('hidden');
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
