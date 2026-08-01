@@ -52,6 +52,9 @@ export async function onRequestGet(context) {
         const anon = String(f['匿名标识'] || f['anon_id'] || '');
         const channel = String(f['来源渠道'] || f['channel'] || 'direct');
         const isReal = anon.startsWith('a_') && !anon.startsWith('anon_test');
+        // 过滤内部测试/巡检流量：demo_/cron-check/a_test/preflight/a_check/diagnose_test/test
+        const SKIP_PREFIX = ['demo_','cron-check','a_test','preflight','a_check','diagnose_test','test'];
+        if (SKIP_PREFIX.some(p => anon.startsWith(p)) || ['test','preflight','diagnose_test'].includes(channel)) continue;
         if (type === 'page_view' || type === 'view') {
           agg.page_views += 1;
           if (isReal && !seen.has(anon)) { seen.add(anon); agg.real_visitors += 1; }
