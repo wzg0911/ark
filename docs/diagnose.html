@@ -71,35 +71,40 @@
     <!-- ====== 二、主工具区（免费诊断入口） ====== -->
     <div class="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl border border-slate-700">
 
-        <div class="mb-5">
-            <label for="projectPath" class="block text-sm font-medium text-slate-300 mb-2">
-                📂 Agent 项目路径
-            </label>
-            <input
-                type="text"
-                id="projectPath"
-                placeholder="例如：/home/Hermes/项目/产品/"
-                class="w-full px-4 py-3.5 bg-slate-700/60 border border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-slate-400 text-base transition"
-            >
-            <p class="text-xs text-slate-500 mt-1.5">
-                💡 <span class="text-slate-400">免费实时演示</span> — 直接点「开始诊断」即可看 ARK 如何定位 3 类崩溃隐患（也可粘贴你的项目路径看针对性演示）
+        <div class="mb-3 p-4 bg-slate-800/70 border border-amber-500/30 rounded-xl">
+            <p class="text-sm text-slate-300 leading-relaxed">
+                🛠️ <span class="text-amber-300 font-semibold">《Agent 崩溃风险自检清单》即将上线</span> —— 3 分钟，按「幂等边界 / 状态生命周期 / 重试风暴」三大模式，自测你的 Agent 会不会在半夜崩。<br>
+                <span class="text-slate-400 text-xs">基于 OpenClaw #113434 / #114234 / #114255 等真实生产崩溃案例提炼。上线后第一时间通知你：</span>
             </p>
+            <div class="mt-3 flex flex-col sm:flex-row gap-2">
+                <input
+                    type="email"
+                    id="waitlistEmail"
+                    placeholder="你的邮箱"
+                    class="flex-1 px-4 py-3 bg-slate-700/60 border border-slate-600 rounded-xl focus:ring-2 focus:ring-amber-500 text-white placeholder-slate-400 text-base transition"
+                >
+                <button
+                    id="waitlistBtn"
+                    onclick="joinWaitlist()"
+                    class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg whitespace-nowrap"
+                >
+                    通知我上线 🔔
+                </button>
+            </div>
+            <p id="waitlistMsg" class="text-xs text-green-400 mt-2 hidden"></p>
         </div>
 
         <div class="flex flex-col sm:flex-row gap-3 mb-3">
+            <a href="https://github.com/wzg0911/ark" target="_blank" rel="noopener"
+               onclick="try{arkEvent('oss_cta')}catch(e){}"
+               class="flex-1 inline-flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 px-6 rounded-xl border border-slate-500 shadow transition text-lg whitespace-nowrap">
+                🆓 免费开源扫描器
+            </a>
             <button
-                id="diagnoseBtn"
-                onclick="startDiagnosis()"
-                class="flex-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-600 hover:from-blue-600 hover:via-cyan-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-lg hover:shadow-xl text-lg relative"
+                onclick="scrollToTrust()"
+                class="flex-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-600 hover:from-blue-600 hover:via-cyan-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-lg hover:shadow-xl text-lg"
             >
-                <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">免费</span>
-                🔍 开始诊断——30秒出结果
-            </button>
-            <button
-                onclick="openClaimModal()"
-                class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-xl transition duration-200 shadow-lg hover:shadow-xl text-lg pro-gold"
-            >
-                ⚡ ¥49 一键修复全部问题
+                👀 看真实崩溃案例
             </button>
         </div>
 
@@ -427,29 +432,25 @@
 </div>
 
 <script>
-// ====== 诊断逻辑 ======
-async function startDiagnosis() {
-    arkEvent('diagnosis_start');
-    let projectPath = document.getElementById('projectPath').value.trim();
-    if (!projectPath) { projectPath = '/home/your-agent/产品/'; /* 未填路径→用占位项目，降低门槛，确保访客立即看到真实案例展览 */ }
-
-    document.getElementById('loadingState').classList.remove('hidden');
-    document.getElementById('resultsSection').classList.add('hidden');
-    document.getElementById('errorState').classList.add('hidden');
-    document.getElementById('diagnoseBtn').disabled = true;
-    document.getElementById('diagnoseBtn').textContent = '⏳ 诊断中…';
-
+// ====== 预约自检清单 ======
+async function joinWaitlist() {
+    const email = document.getElementById('waitlistEmail').value.trim();
+    const msg = document.getElementById('waitlistMsg');
+    const btn = document.getElementById('waitlistBtn');
+    if (!email) { msg.textContent = '请先填写邮箱'; msg.className = 'text-xs text-red-400 mt-2'; msg.classList.remove('hidden'); return; }
+    btn.disabled = true; btn.textContent = '登记中…';
     try {
-        await new Promise(r => setTimeout(r, 2500));
-        // 触发真实诊断案例展览（displayResults 内部渲染真实报告，不再生成假数据）
-        displayResults({ status: 'success', issues: [] });
-    } catch (error) {
-        showError('诊断失败，请检查路径是否正确后重试。');
-    } finally {
-        document.getElementById('loadingState').classList.add('hidden');
-        document.getElementById('diagnoseBtn').disabled = false;
-        document.getElementById('diagnoseBtn').textContent = '🔍 开始诊断——30秒出结果';
-    }
+        const res = await fetch('/api/waitlist', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
+        const d = await res.json();
+        if (d.success) { msg.textContent = d.message; msg.className = 'text-xs text-green-400 mt-2'; msg.classList.remove('hidden'); document.getElementById('waitlistEmail').value=''; }
+        else { msg.textContent = d.error || '登记失败'; msg.className = 'text-xs text-red-400 mt-2'; msg.classList.remove('hidden'); }
+    } catch(e) { msg.textContent='网络错误，请稍后重试'; msg.className='text-xs text-red-400 mt-2'; msg.classList.remove('hidden'); }
+    finally { btn.disabled = false; btn.textContent = '通知我上线 🔔'; }
+}
+
+function scrollToTrust() {
+    const el = document.getElementById('resultsSection');
+    if (el) { displayResults({ status:'success', issues:[] }); el.scrollIntoView({behavior:'smooth'}); }
 }
 
 function displayResults(data) {
