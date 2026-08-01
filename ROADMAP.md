@@ -114,6 +114,9 @@
 - [x] **技术品牌阵地入口打通（08-01 09:35）** —— 巡航发现 `proof-of-state-trap.html` 虽已上线（200 OK）但全站**零入链**（孤岛页），实际曝光为 0；已从 README、落地页 hero 区、blog index 三处建立入口；同时修复落地页测试计数漂移（248/251 → 300/303）与语言数错误（2 → 3）✅
 - [x] **处方回流第 3 例（v0.8.3 属性访问不变式）** —— 诊断 `langchain-exa#39167`（`getattr(x,"y")` 两参伪守护 + 真值当存在性）后自审，命中 ARK 自身 `getattr(response,'llm_output',{}).get(...)` 同型缺陷（缺席已守、空值未守）；新增 `ark.attrs`（`attr`/`attr_mapping`/`attr_text`/`is_present`/`prune_absent`），确立「可选属性读取必为全函数：缺席或 None 皆归哨兵，绝不误删 falsy」不变式；修复 crewai/langchain 相对导入越界 + langchain 注解 PEP563，300/303 全绿（3 skipped）（08-01 01:28）✅
 
+- [x] **诊断报告库对外打通（08-01 15:45）** —— 巡航发现三处结构性缺陷并修复：（a）**#39167 诊断报告缺失**——处方已回流产品（v0.8.3）、repro 已实跑验证、ROADMAP 已记里程碑，唯独对外报告从未产出（做了 100 分对外露出 0 分），已补发并确立 **F10 新族「可选属性读取的半函数守护」**；（b）**23 份报告全站零入链**——最厚的信任证据资产无索引页、首页零入链，新建 `docs/reports/index.html` 报告库并从首页/品牌页/README/blog 四处建入口；（c）**可达性检查脚本化** `scripts/check_reachability.py`（从首页 BFS 传递可达判定，非单级入链计数；负向测试已验证能捕获回归）✅
+- [ ] 🔴 **新发现：Cloudflare Pages SPA fallback 导致历次巡航「线上全 200」为假绿** —— `/nonsense-xyz` 等任意不存在路径均返回 200 + index.html 正文，HTTP 探测在该托管配置下**不具备存在性证明能力**。待评估：配 404 页 / `_routes.json`，或巡航改用内容指纹校验而非状态码
+
 ### Week 3+: Scaling (规划中)
 - [ ] 免费诊断邀请（V2EX/Reddit/DEV.to）
 - [ ] Show HN 发布
