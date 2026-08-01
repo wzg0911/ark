@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain-exa#39167</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; white-space: pre; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/39167" class="text-blue-400 hover:underline">langchain-ai/langchain#39167</a>
+            · langchain-exa `_get_metadata()` 的伪守护与真值删除
+            · 2026-08-01 · 第 10 份诊断（W32）
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🔴</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">langchain_exa/retrievers.py::_get_metadata()</code>
+                    只有七行，却同时装着<strong class="text-red-400">两个方向相反的缺陷</strong>：
+                    它用 <code class="bg-slate-700 px-1 rounded text-sm">getattr(result, "summary")</code>——<strong>两参数、无默认值</strong>——
+                    这在语义上<strong class="text-red-400">精确等价于 <code class="bg-slate-700 px-1 rounded text-sm">result.summary</code></strong>，
+                    读起来像防御，行为上零防御，属性缺席即 <code class="bg-slate-700 px-1 rounded text-sm">AttributeError</code>；
+                    同时它用<strong class="text-red-400">真值判断代替存在性判断</strong>，把 <code class="bg-slate-700 px-1 rounded text-sm">[]</code> / <code class="bg-slate-700 px-1 rounded text-sm">""</code> / <code class="bg-slate-700 px-1 rounded text-sm">0.0</code> 静默删除。
+                </p>
+                <span class="badge mt-1 bg-red-500/20 text-red-400">F10 族首例 · 可选属性读取的半函数守护</span>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400 ml-1">同一函数内两套相反的 null 策略，相隔六行</span>
+                <span class="badge mt-1 bg-green-500/20 text-green-400 ml-1">ARK 实机离线复现 ✅ 8 臂对照</span>
+                <span class="badge mt-1 bg-purple-500/20 text-purple-400 ml-1">🔁 处方已回流 ARK 自身（v0.8.3）</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">langchain-exa 1.1.0 · 所有 ExaSearchRetriever / Exa 工具调用路径</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ open（2026-07-31 10:58 UTC）· 无 assignee · labels: bug/exa/external · <strong>3 人竞领</strong></p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ <code class="bg-slate-700 px-1 rounded">ark.attrs</code> 属性访问不变式（v0.8.3）</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位（P2 Probe）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-3">读取一个「可选属性」有<strong>两个彼此独立的失败模式</strong>，而几乎所有手写守护都只覆盖其中一个：</p>
+        <table class="w-full text-sm text-slate-300 mb-3">
+            <thead><tr class="text-slate-500 border-b border-slate-700 text-left">
+                <th class="py-2">失败模式</th><th class="py-2">触发条件</th><th class="py-2">后果</th>
+            </tr></thead>
+            <tbody>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2"><strong>ABSENCE（缺席）</strong></td>
+                    <td class="py-2">属性不存在于对象上</td>
+                    <td class="py-2 text-red-400">AttributeError，当场崩溃</td>
+                </tr>
+                <tr>
+                    <td class="py-2"><strong>NULLITY（空值）</strong></td>
+                    <td class="py-2">属性存在但值为 <code class="bg-slate-700 px-1 rounded">None</code></td>
+                    <td class="py-2 text-orange-400">下游 TypeError，崩在离根因很远的地方</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="code-block mt-3 text-slate-300"># langchain_exa/retrievers.py::_get_metadata
+metadata = {
+    "title": result.title, "url": result.url, "id": result.id,
+    "score": result.score, "published_date": result.published_date,
+    "author": result.author,          # ← 必填块：falsy 值一律保留
+}
+if getattr(result, "highlights"):     # ← 缺陷1：两参 getattr，等于 result.highlights
+    metadata["highlights"] = result.highlights
+if getattr(result, "highlight_scores"):
+    metadata["highlight_scores"] = result.highlight_scores
+if getattr(result, "summary"):        # ← 缺陷2：真值当存在性，[] / "" / 0.0 被删
+    metadata["summary"] = result.summary</div>
+        <ol class="text-sm text-slate-300 space-y-2 list-decimal list-inside mt-3">
+            <li><strong>缺陷 1 · 装饰性防御。</strong><code class="bg-slate-700 px-1 rounded">getattr(x, "y")</code> 不带第三参数时<strong>就是 <code class="bg-slate-700 px-1 rounded">x.y</code></strong>。作者写下了 Python 里「容忍缺席」的通用惯用法，却漏掉了提供这份容忍的那个参数。<strong class="text-red-400">第三个参数才是守护本身</strong>；</li>
+            <li><strong>缺陷 2 · 真值冒充存在性。</strong>即使属性存在，<code class="bg-slate-700 px-1 rounded">if &lt;value&gt;:</code> 也会丢掉 <code class="bg-slate-700 px-1 rounded">[]</code>、<code class="bg-slate-700 px-1 rounded">""</code>、<code class="bg-slate-700 px-1 rounded">0.0</code>。于是「Exa 搜过了，没有 highlights」与「从没请求过 highlights」<strong>坍缩成同一个输出</strong>——键都不存在，下游<strong class="text-red-400">永久失去区分能力</strong>；</li>
+            <li><strong>同函数内的策略自相矛盾。</strong>上方 dict 字面量无条件保留 <code class="bg-slate-700 px-1 rounded">title=None</code>、<code class="bg-slate-700 px-1 rounded">score=0.0</code>、<code class="bg-slate-700 px-1 rounded">author=None</code>；下方六行却把同样 falsy 的可选值删掉。<strong>两套相反的 null 策略，共存于一个七行函数</strong>；</li>
+            <li><strong>这不是 mock 才有的幻觉。</strong>报告人用了 <code class="bg-slate-700 px-1 rounded">MagicMock(spec=...)</code>，但 langchain-exa 1.1.0 自己声明 <code class="bg-slate-700 px-1 rounded">exa-py&gt;=1.0.8,&lt;2.0.0</code>，而 exa_py 1.0.8 的 <code class="bg-slate-700 px-1 rounded">Result</code> <strong class="text-red-400">根本没有 summary 字段</strong>——<code class="bg-slate-700 px-1 rounded">pip install langchain-exa "exa-py==1.0.8"</code>（依赖声明本身授权的解析结果）就能让真实库对象崩溃，<strong>无需任何 mock</strong>；</li>
+            <li><strong>类型注解掩盖了风险面。</strong><code class="bg-slate-700 px-1 rounded">_get_metadata</code> 注解为 <code class="bg-slate-700 px-1 rounded">result: Any</code>，实际只对 <code class="bg-slate-700 px-1 rounded">Result</code> 安全。而 <code class="bg-slate-700 px-1 rounded">search_and_contents()</code> 的重载<strong>声明</strong>会返回 <code class="bg-slate-700 px-1 rounded">ResultWithText</code> / <code class="bg-slate-700 px-1 rounded">ResultWithTextAndHighlights</code>——它们恰恰缺这些字段；<code class="bg-slate-700 px-1 rounded">Result.subpages</code> 的元素类型 <code class="bg-slate-700 px-1 rounded">_Result</code> 四个字段全缺。</li>
+        </ol>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-indigo-400">ARK 离线确定性复现（无 API key、无网络）：</strong>
+            <strong>8 臂对照</strong>逐个锁死结论——
+            B（<code class="bg-slate-700 px-1 rounded">ResultWithText</code>，官方声明的返回类型）、C（<code class="bg-slate-700 px-1 rounded">_Result</code>，subpages 元素类型）、D（有 highlights 缺 summary）<strong>全部 AttributeError</strong>；
+            D 特别证明<strong>崩溃是按属性发生，不是按类</strong>——前两个守护通过了，第三个炸了；
+            E 直接给出 <code class="bg-slate-700 px-1 rounded">getattr/2</code> 与 <code class="bg-slate-700 px-1 rounded">getattr/3</code> 的语义差；
+            F 显示 3 个 present-but-falsy 值被静默删除；G 对照必填块 falsy 值全部存活；
+            H 用真实 <code class="bg-slate-700 px-1 rounded">exa-py==1.0.8</code> 对象复现崩溃，<strong>零 mock</strong>。<br>
+            脚本：<code class="bg-slate-700 px-1 rounded">scripts/repros/repro_39167_exa_fake_getattr_guard.py</code> · 实跑验证记录见 <code class="bg-slate-700 px-1 rounded">scripts/repros/VERIFICATION.md</code></p>
+        </div>
+        <div class="code-block mt-3 text-slate-300">#  arm                                          verdict
+A  Result(optionals=None)                       control（完整 exa_py）/ DEFECT（旧版 in-range pin）
+B  ResultWithText          官方声明返回类型      AttributeError
+C  _Result                 subpages 元素类型     AttributeError
+D  ResultWithTextAndHighlights 有 highlights 缺 summary   AttributeError（按属性，非按类）
+E  getattr(x,'y') vs getattr(x,'y',None)        raised=True / None  → 第三参数才是守护
+F  highlights=[] · highlight_scores=[] · summary=""       3 个全部 DROPPED
+G  必填块 score=0.0 title=None author=None      全部 KEPT（策略相反）
+H  真实 exa-py==1.0.8 的 Result（无 mock）       AttributeError</div>
+    </div>
+
+    <!-- ====== 区块3：后果与叙事 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">💥</span>
+            <h2 class="text-lg font-semibold text-white">后果分析</h2>
+        </div>
+        <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside">
+            <li><strong>崩溃发生在检索链路最外层：</strong>RAG 应用里 retriever 是入口组件，<code class="bg-slate-700 px-1 rounded">_get_metadata</code> 崩了整条链就断了。而触发条件是「Exa 这次没返回 summary」——一个<strong>由远端服务决定、调用方无法控制</strong>的偶发条件；</li>
+            <li><strong>「防御性代码」是最危险的一类假象：</strong>代码审查者看到 <code class="bg-slate-700 px-1 rounded">getattr</code> 会自动认为这里已经处理过缺席。<strong class="text-red-400">看起来被守护的代码，比明显没守护的代码更难被发现</strong>——因为它主动关闭了审查者的怀疑；</li>
+            <li><strong>真值删除造成不可恢复的信息损失：</strong>「搜索了但没结果」与「没搜索」在下游是两个完全不同的决策依据。前者应当停止重试，后者应当发起请求。合并之后，<strong>任何下游逻辑都无法再把它们拆开</strong>；</li>
+            <li><strong>版本区间放大风险面：</strong>依赖声明 <code class="bg-slate-700 px-1 rounded">exa-py&gt;=1.0.8,&lt;2.0.0</code> 横跨了「有 summary」与「无 summary」两个时代。<strong>包自己授权的解析结果就能让自己崩溃</strong>——这是依赖区间与属性假设脱钩的典型；</li>
+            <li><strong>三人同日竞领，印证问题的普遍可识别性：</strong>issue 发布当天即有 Mahnoor-Zaffar、abhilashpuli98、alisatwat3 三名贡献者独立分析并提出修复，<strong>三方方案与 ARK 处方方向一致</strong>（改用 <code class="bg-slate-700 px-1 rounded">getattr(result, attr, None)</code>）。这是本季度<strong>第 3 次</strong>「ARK 诊断 → 社区多人竞领」模式复现（前两次：#39106、#39113）。</li>
+        </ul>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-orange-400">值得注意的分歧点：</strong>
+            三名贡献者的方案都聚焦缺陷 1（补上 <code class="bg-slate-700 px-1 rounded">None</code> 默认值），
+            alisatwat3 明确表示要「preserving the existing behavior of omitting empty values」——
+            <strong>即有意保留缺陷 2</strong>。这意味着上游修复后，<code class="bg-slate-700 px-1 rounded">highlights=[]</code> 被静默删除的信息损失<strong class="text-red-400">依然存在</strong>。
+            ARK 的处方覆盖两半，这正是「打补丁」与「立不变式」的分野。</p>
+        </div>
+    </div>
+
+    <!-- ====== 区块4：ARK 处方 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">💊</span>
+            <h2 class="text-lg font-semibold text-white">ARK 处方（P3 Prescribe）</h2>
+        </div>
+        <table class="w-full text-sm text-slate-300">
+            <thead><tr class="text-slate-500 border-b border-slate-700 text-left">
+                <th class="py-2">层</th><th class="py-2">组件</th><th class="py-2">机制</th>
+            </tr></thead>
+            <tbody>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">上游修复建议</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">_get_metadata()</code></td>
+                    <td class="py-2">两处都要改：① <code class="bg-slate-700 px-1 rounded">getattr(result, attr, None)</code> 补默认值；② <code class="bg-slate-700 px-1 rounded">if value is not None:</code> 取代真值判断，让 <code class="bg-slate-700 px-1 rounded">[]</code> 与「未请求」可区分。<strong>只改第一处等于修一半</strong></td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">ARK 防线 1</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">ark.attrs.attr()</code></td>
+                    <td class="py-2">可选属性读取必为<strong>全函数</strong>：缺席与 <code class="bg-slate-700 px-1 rounded">None</code> 皆归一到显式哨兵，<strong>绝不误删 falsy</strong>。两个失败模式一次覆盖，不给「只守一半」留出空间</td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">ARK 防线 2</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">is_present()</code> / <code class="bg-slate-700 px-1 rounded">prune_absent()</code></td>
+                    <td class="py-2">把「存在性」与「真值」在 API 层面强制分离：存在性判断唯一入口是 <code class="bg-slate-700 px-1 rounded">is not None</code>，删除动作必须显式调用 <code class="bg-slate-700 px-1 rounded">prune_absent()</code>，杜绝 <code class="bg-slate-700 px-1 rounded">if x:</code> 的隐式语义漂移</td>
+                </tr>
+                <tr>
+                    <td class="py-2">ARK 防线 3</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">attr_mapping()</code> / <code class="bg-slate-700 px-1 rounded">attr_text()</code></td>
+                    <td class="py-2">跨类型的安全投影：对 <code class="bg-slate-700 px-1 rounded">Any</code> 注解的外来对象，声明期望形状后按形状读取，把「注解 Any、实际只对一个类安全」的隐患暴露在调用点</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-indigo-400">为什么 ARK 的方案不是「同一个补丁再打一遍」：</strong>
+            上游修复是<strong>逐点式</strong>的——这次把三个 <code class="bg-slate-700 px-1 rounded">getattr</code> 补上默认值，
+            下一个可选字段、下一个 provider 适配器仍要靠开发者记得。
+            ARK 的属性访问不变式是<strong>结构式</strong>的：只要走 <code class="bg-slate-700 px-1 rounded">ark.attrs</code>，
+            <strong>「缺席」与「空值」在类型层面就不可能只覆盖一半</strong>。
+            这与 F9 族的结论完全同构：逐点修补追不上组合面，唯有单点强制可收敛。</p>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：处方回流 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔁</span>
+            <h2 class="text-lg font-semibold text-white">处方回流自身代码库（第 3 次 · 2026-08-01）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-3">
+            按本例处方对 ARK 自审，<strong class="text-red-400">当场命中同型缺陷</strong>：
+        </p>
+        <div class="code-block text-slate-300"># ARK 自身（修复前）· src/ark/langchain.py
+getattr(response, 'llm_output', {}).get(...)
+#        ↑ 覆盖 ABSENCE ✅        ↑ 但 llm_output 的声明默认值就是 None
+#        当属性存在且为 None 时，默认值 {} 永不触发，.get() 在下一帧炸开
+
+# langchain-exa（缺陷源）
+getattr(result, "summary")
+#        ↑ 两参，ABSENCE 未覆盖 ❌</div>
+        <p class="text-sm text-slate-300 mt-3">
+            <strong class="text-orange-400">形状相同，缺的是相反的那一半。</strong>
+            langchain-exa 漏掉 ABSENCE，ARK 漏掉 NULLITY——
+            而 <code class="bg-slate-700 px-1 rounded">LLMResult.llm_output</code> 的<strong>声明默认值恰恰就是 <code class="bg-slate-700 px-1 rounded">None</code></strong>，
+            意味着 ARK 这条路径在最常见的情况下失效。两段代码<strong>乍看都像被守护了</strong>。
+        </p>
+        <p class="text-sm text-slate-300 mt-3">
+            <strong>已修复为 v0.8.3 属性访问不变式：</strong>新增 <code class="bg-slate-700 px-1 rounded">ark.attrs</code> 模块
+            （<code class="bg-slate-700 px-1 rounded">attr</code> / <code class="bg-slate-700 px-1 rounded">attr_mapping</code> / <code class="bg-slate-700 px-1 rounded">attr_text</code> / <code class="bg-slate-700 px-1 rounded">is_present</code> / <code class="bg-slate-700 px-1 rounded">prune_absent</code>），
+            确立不变式：<strong class="text-green-400">「可选属性读取必为全函数：缺席或 None 皆归哨兵，绝不误删 falsy」</strong>。
+            连带修复 crewai/langchain 相对导入越界与 langchain 注解 PEP563 问题。
+            新增 <code class="bg-slate-700 px-1 rounded">tests/test_v0_8_3_attr_access_invariant.py</code>，
+            回归 <strong>300 passed / 3 skipped 全绿</strong>。
+        </p>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-purple-400">连续第 3 次回流命中（v0.8.1 → v0.8.2 → v0.8.3）。</strong>
+            三次的共同结构是：<strong>我们诊断出的缺陷模式，在我们自己的代码里也存在一份变体</strong>。
+            这既是对「缺陷族是真实模式而非个案叙事」的最强证据，也说明
+            <strong class="text-indigo-400">诊断能力与产品能力是同一件事的两面</strong>——
+            能识别它，才能在自己身上找到它；能在自己身上修掉它，处方才不是空头支票。</p>
+        </div>
+    </div>
+
+    <!-- ====== 区块6：族谱 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🧬</span>
+            <h2 class="text-lg font-semibold text-white">缺陷族谱 · F10 可选属性读取的半函数守护（新族）</h2>
+        </div>
+        <table class="w-full text-sm text-slate-300">
+            <thead><tr class="text-slate-500 border-b border-slate-700 text-left">
+                <th class="py-2">载体</th><th class="py-2">覆盖了</th><th class="py-2">漏掉了</th><th class="py-2">表象</th>
+            </tr></thead>
+            <tbody>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">langchain-exa#39167</td>
+                    <td class="py-2 text-slate-500">—</td>
+                    <td class="py-2 text-red-400">ABSENCE（两参 getattr）</td>
+                    <td class="py-2">写着 getattr，读起来像防御</td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">langchain-exa#39167（第二重）</td>
+                    <td class="py-2">ABSENCE 后仍存在</td>
+                    <td class="py-2 text-red-400">真值 ≠ 存在性</td>
+                    <td class="py-2">falsy 值静默蒸发</td>
+                </tr>
+                <tr>
+                    <td class="py-2 text-purple-400"><strong>ARK 自身（回流命中）</strong></td>
+                    <td class="py-2 text-green-400">ABSENCE ✅</td>
+                    <td class="py-2 text-red-400">NULLITY（默认值永不触发）</td>
+                    <td class="py-2">三参 getattr，看起来完全正确</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="text-sm text-slate-400 mt-3">
+            <strong>F10 与既有族的关系：</strong>它与 F8「无声删除」共享「静默丢失信息」的后果，
+            但根因完全不同——F8 是<strong>契约层</strong>的结构不守恒（Schema 过滤未留痕），
+            F10 是<strong>语言层</strong>的守护半覆盖（<code class="bg-slate-700 px-1 rounded">getattr</code> 惯用法的两个陷阱）。
+            F10 的独特性在于：<strong class="text-red-400">它伪装成已修复的代码</strong>。
+            F1–F9 的缺陷在代码里长得像缺陷，F10 长得像修复——
+            这使它在 code review 中的存活率显著更高，也使「靠人眼审查」这条防线在此族上系统性失效。
+        </p>
+    </div>
+
+    <!-- ====== 页脚 ====== -->
+    <div class="text-center text-xs text-slate-600 mt-6">
+        <p>ARK — Agent Reliability Kit · <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a></p>
+        <p class="mt-1">4P Framework: Pinpoint → Probe → Prescribe → Publish · 生成于 2026-08-01 15:45 CST</p>
+        <p class="mt-1">
+            <a href="../index.html" class="text-blue-400 hover:underline">ARK 首页</a> ·
+            <a href="../selfcheck.html" class="text-blue-400 hover:underline">Agent 崩溃风险自检清单</a> ·
+            <a href="../proof-of-state-trap.html" class="text-blue-400 hover:underline">技术品牌页</a>
+        </p>
+    </div>
+
+</div>
+</body>
+</html>

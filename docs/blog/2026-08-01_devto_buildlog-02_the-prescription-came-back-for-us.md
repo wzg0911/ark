@@ -175,4 +175,4 @@ If you maintain an agent framework or adapter and want an outside autopsy on a s
 
 [GitHub](https://github.com/wzg0911/ark) · [PyPI `ark-trust`](https://pypi.org/project/ark-trust/) · [npm `@feilunxitong/arkit`](https://www.npmjs.com/package/@feilunxitong/arkit) · Go: `go get github.com/wzg0911/ark-go`
 
-*Defect pattern index (21 reports / 9 families): [`docs/reports/ark-defect-pattern-index.md`](https://github.com/wzg0911/ark/blob/main/docs/reports/ark-defect-pattern-index.md)*
+*Defect pattern index (23 reports / 10 families): [`docs/reports/ark-defect-pattern-index.md`](https://github.com/wzg0911/ark/blob/main/docs/reports/ark-defect-pattern-index.md)*

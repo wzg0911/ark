@@ -174,6 +174,21 @@ The invariant: **proof-of-state must be bound to the incarnation.** PID alive �
 
 ---
 
+## 🔬 Diagnostic Report Library — 23 real defects, 10 families
+
+We don't invent examples. Every week we take **real open issues** from LangChain / LangGraph / CrewAI, run them through the 4P framework (Pinpoint → Probe → Prescribe → Publish), and publish the autopsy — each with an **offline deterministic reproduction script** that needs no API key and no network.
+
+**📚 Browse all reports → [ark-6ek.pages.dev/reports/](https://ark-6ek.pages.dev/reports/)**
+**🧬 Start with the pattern index → [`docs/reports/ark-defect-pattern-index.md`](docs/reports/ark-defect-pattern-index.md)** — 23 reports collapsed into 10 defect families. Read the patterns, not the incidents.
+
+What the index shows that individual reports cannot:
+
+- **「Mutable state tampered in place」 has recurred 3 times**, **「silent failure」 5 times** — these are systemic anti-patterns, not isolated bugs.
+- **1 same-day upstream close**: [#39100](https://ark-6ek.pages.dev/reports/ark-report-39100-20260728.html) was diagnosed and merged upstream (PR #39101) the same day, with a fix matching the ARK prescription.
+- **3 prescription reflows into ARK itself** (v0.8.1 / v0.8.2 / v0.8.3): each time we diagnosed an upstream defect, we found the same shape in our own code and fixed it. Diagnostic capability and product capability turn out to be the same thing.
+
+---
+
 ## ⭐ Star History
 
 <p align="center">

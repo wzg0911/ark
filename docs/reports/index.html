@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告库 · 23 份真实缺陷剖析</title>
+    <meta name="description" content="ARK 对 LangChain / LangGraph / CrewAI 真实 issue 的逐周诊断报告，23 份报告收敛为 10 个缺陷族，每份含离线确定性复现。">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 14px; }
+        .row { border-bottom: 1px solid #1e1e2e; transition: background .12s; }
+        .row:hover { background: #16162a; }
+        .badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:9999px; font-size:11px; font-weight:600; }
+    </style>
+</head>
+<body>
+<div class="container mx-auto max-w-5xl px-4 py-8">
+
+    <div class="text-center mb-8">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 诊断报告库
+        </h1>
+        <p class="text-sm text-slate-400 mt-3 max-w-2xl mx-auto">
+            我们没有编造用例。以下每一份报告都针对 LangChain / LangGraph / CrewAI 里
+            <strong class="text-slate-200">真实存在的 issue</strong>，
+            按 4P 框架（Pinpoint → Probe → Prescribe → Publish）逐条剖析，
+            并附<strong class="text-slate-200">可离线运行的确定性复现脚本</strong>。
+        </p>
+        <div class="flex flex-wrap justify-center gap-2 mt-4 text-xs">
+            <span class="badge bg-blue-500/20 text-blue-300">23 份报告</span>
+            <span class="badge bg-purple-500/20 text-purple-300">10 个缺陷族</span>
+            <span class="badge bg-green-500/20 text-green-300">8 份实跑验证复现</span>
+            <span class="badge bg-orange-500/20 text-orange-300">1 例当日上游合并</span>
+            <span class="badge bg-pink-500/20 text-pink-300">3 次处方回流自身</span>
+        </div>
+    </div>
+
+    <!-- 导航 -->
+    <div class="card p-5 mb-6">
+        <h2 class="text-base font-semibold text-white mb-3">📚 先从这里开始</h2>
+        <div class="grid md:grid-cols-2 gap-3 text-sm">
+            <a href="ark-defect-pattern-index.md" class="block bg-slate-800/50 rounded-lg p-3 hover:bg-slate-700/50">
+                <p class="text-blue-400 font-semibold">🧬 缺陷模式索引（推荐入口）</p>
+                <p class="text-slate-400 text-xs mt-1">23 份报告归并为 10 个缺陷族的单一可导航索引 —— 看模式，而不是看个案</p>
+            </a>
+            <a href="../proof-of-state-trap.html" class="block bg-slate-800/50 rounded-lg p-3 hover:bg-slate-700/50">
+                <p class="text-yellow-400 font-semibold">📐 Proof-of-State 陷阱（技术品牌页）</p>
+                <p class="text-slate-400 text-xs mt-1">四例看似无关的生产事故，同一个根因 —— 持续更新的方法论阵地</p>
+            </a>
+            <a href="../selfcheck.html" class="block bg-slate-800/50 rounded-lg p-3 hover:bg-slate-700/50">
+                <p class="text-green-400 font-semibold">📋 Agent 崩溃风险自检清单</p>
+                <p class="text-slate-400 text-xs mt-1">15 题 · 3 个缺陷族 · 纯浏览器本地运行，无需贴日志</p>
+            </a>
+            <a href="../index.html" class="block bg-slate-800/50 rounded-lg p-3 hover:bg-slate-700/50">
+                <p class="text-slate-300 font-semibold">🏠 ARK 首页</p>
+                <p class="text-slate-400 text-xs mt-1">Agent Reliability Kit —— 让 Agent 可被信任的基础设施</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- 周报 -->
+    <div class="card p-5 mb-6">
+        <h2 class="text-base font-semibold text-white mb-3">🗓 诊断周报</h2>
+        <div class="flex flex-wrap gap-2 text-sm">
+            <a href="ark-diagnostic-weekly-2026-W29.md" class="bg-slate-800/60 px-3 py-1.5 rounded-lg text-blue-400 hover:bg-slate-700/60">W29</a>
+            <a href="ark-diagnostic-weekly-2026-W30.md" class="bg-slate-800/60 px-3 py-1.5 rounded-lg text-blue-400 hover:bg-slate-700/60">W30</a>
+            <a href="ark-diagnostic-weekly-2026-W31.md" class="bg-slate-800/60 px-3 py-1.5 rounded-lg text-blue-400 hover:bg-slate-700/60">W31</a>
+            <a href="ark-diagnostic-weekly-2026-W32.md" class="bg-slate-800/60 px-3 py-1.5 rounded-lg text-blue-400 hover:bg-slate-700/60">W32（中期汇编）</a>
+        </div>
+    </div>
+
+    <!-- 报告列表 -->
+    <div class="card p-5 mb-6">
+        <h2 class="text-base font-semibold text-white mb-1">📋 全部诊断报告（按时间倒序）</h2>
+        <p class="text-xs text-slate-500 mb-4">族标记对应缺陷模式索引中的 F1–F10</p>
+
+        <div class="text-sm">
+            <!-- W32 -->
+            <p class="text-xs text-slate-500 uppercase tracking-wide mt-2 mb-2">W32 · 2026-07-28 ~ 08-03</p>
+
+            <a href="ark-report-39167-20260801.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain-exa#39167</span> · `_get_metadata()` 的伪守护与真值删除</p>
+                        <p class="text-slate-500 text-xs mt-1">七行内两个反向缺陷：两参 getattr 零防御 + 真值当存在性静默删除 falsy</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-red-500/20 text-red-400">F10 首例</span>
+                        <p class="text-slate-600 text-xs mt-1">08-01</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="ark-report-39163-20260731.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain-core#39163</span> · 任务取消把 run 永久留在 pending</p>
+                        <p class="text-slate-500 text-xs mt-1">CancelledError 属 BaseException，绕过全部终态回调 —— 失败伪装成「什么都没发生」</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-orange-500/20 text-orange-400">F3 第 5 例</span>
+                        <p class="text-slate-600 text-xs mt-1">07-31</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="ark-report-39152-20260731.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain-core#39152</span> · dict prompt 的标量静默丢弃</p>
+                        <p class="text-slate-500 text-xs mt-1">F8 族新亚型「无声删除」·  6 臂对照离线复现</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-orange-500/20 text-orange-400">F8</span>
+                        <p class="text-slate-600 text-xs mt-1">07-31</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="ark-report-39113-20260729.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain-openai#39113</span> · 合成 lc_ id 泄漏到 Responses API</p>
+                        <p class="text-slate-500 text-xs mt-1">与 #39100 构成跨 provider 精确镜像：各自「做对了三分之二」</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-orange-500/20 text-orange-400">F9</span>
+                        <p class="text-slate-600 text-xs mt-1">07-29</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="ark-report-39106-20260728.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#39106</span> · list_keys 越过边界</p>
+                        <p class="text-slate-500 text-xs mt-1">批次时间基准漂移导致的非确定性一致性缺陷</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-orange-500/20 text-orange-400">F7</span>
+                        <p class="text-slate-600 text-xs mt-1">07-28</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="ark-report-39100-20260728.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain-anthropic#39100</span> · system block id 泄漏到 wire 协议</p>
+                        <p class="text-slate-500 text-xs mt-1">🏁 诊断当天即被 maintainer 合并修复（PR #39101），方案与 ARK 处方一致</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-green-500/20 text-green-400">✅ 上游已修</span>
+                        <p class="text-slate-600 text-xs mt-1">07-28</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="ark-report-39099-20260728.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain-core#39099</span> · 前向引用未解析 → 工具静默变零参数</p>
+                        <p class="text-slate-500 text-xs mt-1">advertised ≠ enforced schema，12/13 工具空参数数月无人察觉</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-orange-500/20 text-orange-400">F3</span>
+                        <p class="text-slate-600 text-xs mt-1">07-28</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="ark-report-39087-20260728.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain-core#39087</span> · 批次时间基准漂移</p>
+                        <p class="text-slate-500 text-xs mt-1">F7 族首例 · 非确定性一致性</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-orange-500/20 text-orange-400">F7</span>
+                        <p class="text-slate-600 text-xs mt-1">07-28</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="ark-report-39052-20260728.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain-qdrant#39052</span> · MMR lambda_mult 语义反转</p>
+                        <p class="text-slate-500 text-xs mt-1">0.0 ↔ 1.0 行为互换 —— 永不抛异常、永远返回合法值、却与用户意图精确相反</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-orange-500/20 text-orange-400">F8</span>
+                        <p class="text-slate-600 text-xs mt-1">07-28</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="ark-report-39047-20260728.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain-core#39047</span> · 官方推荐的 key encoder 100% 崩溃</p>
+                        <p class="text-slate-500 text-xs mt-1">sha256/sha512/blake2b 全部触发 "not a valid UUID" —— 库自身的弃用建议引向硬崩溃</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-orange-500/20 text-orange-400">F8</span>
+                        <p class="text-slate-600 text-xs mt-1">07-28</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="ark-report-39039-20260724.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#39039</span> · 流式静默丢弃 response.failed 事件</p>
+                        <p class="text-slate-500 text-xs mt-1">失败流与成功流无法区分</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="badge bg-orange-500/20 text-orange-400">F3</span>
+                        <p class="text-slate-600 text-xs mt-1">07-24</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- W31 及更早 -->
+            <p class="text-xs text-slate-500 uppercase tracking-wide mt-5 mb-2">W29 – W31</p>
+
+            <a href="ark-report-38989-20260724.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#38989</span> · usage callback 异常退出后累加器泄漏</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F2</span><p class="text-slate-600 text-xs mt-1">07-24</p></div>
+                </div>
+            </a>
+            <a href="ark-report-38904-20260726.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#38904</span> · 测试掩盖 / 断言失效</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F4</span><p class="text-slate-600 text-xs mt-1">07-26</p></div>
+                </div>
+            </a>
+            <a href="ark-report-38893-20260724.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#38893</span> · 不可重试异常被吞成正常 AIMessage</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F3</span><p class="text-slate-600 text-xs mt-1">07-24</p></div>
+                </div>
+            </a>
+            <a href="ark-report-38892-20260724.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#38892</span> · 合法空流误判失败，备胎静默替换</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F3</span><p class="text-slate-600 text-xs mt-1">07-24</p></div>
+                </div>
+            </a>
+            <a href="ark-report-38840-20260726.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#38840</span> · Perplexity extra_body 参数永久沉淀</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F2</span><p class="text-slate-600 text-xs mt-1">07-26</p></div>
+                </div>
+            </a>
+            <a href="ark-report-38779-20260725.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#38779</span> · Anthropic tool_choice 原地篡改实例状态</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F2</span><p class="text-slate-600 text-xs mt-1">07-25</p></div>
+                </div>
+            </a>
+            <a href="ark-report-38708-20260721.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#38708</span> · 等价并行 tool_call 不去重 → N 倍成本</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F1</span><p class="text-slate-600 text-xs mt-1">07-21</p></div>
+                </div>
+            </a>
+            <a href="ark-report-38667-20260724.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#38667</span> · KeyError DoS</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F5</span><p class="text-slate-600 text-xs mt-1">07-24</p></div>
+                </div>
+            </a>
+            <a href="ark-report-35475-20260723.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#35475</span> · 测试即契约失效</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F4</span><p class="text-slate-600 text-xs mt-1">07-23</p></div>
+                </div>
+            </a>
+            <a href="ark-report-38843-20260715.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#38843</span> · 畸形输入 / DoS</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F5</span><p class="text-slate-600 text-xs mt-1">07-15</p></div>
+                </div>
+            </a>
+            <a href="ark-report-34974-20260715.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langchain#34974</span> · 高并发下重复调用同一工具</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F1</span><p class="text-slate-600 text-xs mt-1">07-15</p></div>
+                </div>
+            </a>
+            <a href="ark-report-6731-20260715.html" class="row block py-3 px-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div><p class="text-slate-200"><span class="text-purple-400 font-mono text-xs">langgraph#6731</span> · 无限循环 / 递归耗尽</p></div>
+                    <div class="text-right shrink-0"><span class="badge bg-orange-500/20 text-orange-400">F6</span><p class="text-slate-600 text-xs mt-1">07-15</p></div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 复现脚本 -->
+    <div class="card p-5 mb-6">
+        <h2 class="text-base font-semibold text-white mb-2">🔬 离线确定性复现脚本</h2>
+        <p class="text-sm text-slate-400 mb-3">
+            8 份复现脚本已<strong class="text-green-400">全部实跑验证</strong>：隔离 venv 装齐依赖逐一跑通，
+            7 例复现诊断缺陷、1 例（#39100）印证上游修复已落地。<strong>无需 API key，无需网络。</strong>
+        </p>
+        <a href="https://github.com/wzg0911/ark/tree/main/scripts/repros" class="text-blue-400 hover:underline text-sm">
+            → 查看 scripts/repros/ 与验证记录 VERIFICATION.md
+        </a>
+    </div>
+
+    <div class="text-center text-xs text-slate-600 mt-8">
+        <p>ARK — Agent Reliability Kit · <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a></p>
+        <p class="mt-1">4P Framework: Pinpoint → Probe → Prescribe → Publish · 更新于 2026-08-01</p>
+    </div>
+
+</div>
+</body>
+</html>

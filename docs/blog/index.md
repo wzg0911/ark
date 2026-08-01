@@ -14,6 +14,10 @@ Thoughts on AI agent reliability, production patterns, and building trustworthy 
 
 > 15 questions across the three defect families we see most (idempotency boundaries, state lifecycle, retry storms). Each question is backed by a real diagnosed case. Runs entirely in your browser — nothing is uploaded.
 
+### [Diagnostic Report Library](https://ark-6ek.pages.dev/reports/)
+
+> All 23 diagnostic reports in one place, collapsed into 10 defect families. Every report targets a **real open issue** in LangChain / LangGraph / CrewAI and ships with an offline deterministic reproduction script — no API key, no network. Start with the [defect pattern index](https://github.com/wzg0911/ark/blob/main/docs/reports/ark-defect-pattern-index.md) to read the patterns instead of the incidents.
+
 ---
 
 ## [2026-08-01 · Build Log #2: The Prescription Came Back For Us](2026-08-01_devto_buildlog-02_the-prescription-came-back-for-us.md)
