@@ -4,14 +4,15 @@
  * 复用 CF Dashboard 已配置的飞书环境变量（FEISHU_APP_ID / FEISHU_APP_SECRET / FEISHU_BITABLE / FEISHU_TABLE）。
  *
  * 返回（与 growth-tracker 消费字段对齐，并扩展）：
- *   { ok, page_views, diagnosis_starts, claim_attempts, claim_success, pay_intents, customers, real_visitors, channels }
+ *   { ok, page_views, diagnosis_starts, claim_attempts, claim_success, pay_intents, customers, real_visitors, channels, pages }
+ * 2026-08-02：新增 pages 维度（按「页面」字段聚合 page_view），回答"报告库到底有没有人读"。
  */
 export async function onRequestGet(context) {
   const { env } = context;
   const cors = { 'Access-Control-Allow-Origin': '*' };
   const zero = {
     page_views: 0, diagnosis_starts: 0, claim_attempts: 0, claim_success: 0,
-    pay_intents: 0, customers: 0, real_visitors: 0, channels: {}
+    pay_intents: 0, customers: 0, real_visitors: 0, channels: {}, pages: {}
   };
 
   const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_BITABLE, FEISHU_TABLE } = env;
@@ -57,6 +58,9 @@ export async function onRequestGet(context) {
         if (SKIP_PREFIX.some(p => anon.startsWith(p)) || ['test','preflight','diagnose_test'].includes(channel)) continue;
         if (type === 'page_view' || type === 'view') {
           agg.page_views += 1;
+          // 页面归因维度（track.js 写入「页面」字段，上限 80 字符）
+          const page = String(f['页面'] || 'unknown').slice(0, 80);
+          agg.pages[page] = (agg.pages[page] || 0) + 1;
           if (isReal && !seen.has(anon)) { seen.add(anon); agg.real_visitors += 1; }
         } else if (type === 'diagnosis_start') {
           agg.diagnosis_starts += 1;
