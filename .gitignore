@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.eggs/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.venv/
+venv/
+env/
+*.bin
+# Cruise reports (contain security audit trails, not for public repo)
+ark-cruise_*.md
+cruise_summary_*.md
+# Memory logs
+memory/
+
+# Node.js
+node_modules/
+*.tsbuildinfo

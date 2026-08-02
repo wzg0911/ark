@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain#34974</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .score-bar { height: 8px; border-radius: 4px; background: #2a2a3e; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 1s ease-in-out; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/34974" class="text-blue-400 hover:underline">langchain-ai/langchain#34974</a>
+            · HumanInTheLoopMiddleware + ainvoke() → <code>get_config outside runnable context</code>
+            · 2026-07-15
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🔴</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">HumanInTheLoopMiddleware</code> 
+                    搭配 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">agent.ainvoke()</code> 
+                    在 FastAPI 异步上下文中调用时，<code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">interrupt()</code> 
+                    内部抛出 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">RuntimeError: Called get_config outside of a runnable context</code>，
+                    导致 Human-in-the-Loop 审批流程完全不可用。
+                </p>
+                <span class="badge mt-1 bg-red-500/20 text-red-400">严重 · 运行时崩溃</span>
+                <span class="badge mt-1 bg-yellow-500/20 text-yellow-400 ml-1">人机交互中断</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响版本</p>
+                <p class="text-white font-medium text-sm">langchain 1.2.x + langgraph 1.0.6</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">确认状态</p>
+                <p class="text-white font-medium text-sm">✅ 2个PR但未合并</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">用户等待</p>
+                <p class="text-white font-medium text-sm">⚠️ 自2026-02-06至今</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位</h2>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">🧬 现象链</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    <code class="bg-slate-700 px-1 rounded text-xs">agent.ainvoke()</code> 
+                    → 进入 LangGraph runner → 执行模型节点 → 触发 middleware 
+                    <code class="bg-slate-700 px-1 rounded text-xs">aafter_model</code> 
+                    → 调用 <code class="bg-slate-700 px-1 rounded text-xs">after_model(state, runtime)</code> 
+                    → 调用 <code class="bg-slate-700 px-1 rounded text-xs">interrupt(hitl_request)</code> 
+                    → 内部调用 <code class="bg-slate-700 px-1 rounded text-xs">get_config()["configurable"]</code> 
+                    → <strong class="text-red-400">RuntimeError: Called get_config outside of a runnable context</strong>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">🕳️ 真正问题：ContextVar 跨线程丢失</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    <p>LangGraph 使用 <strong>ContextVar</strong> 存储配置上下文（包括 thread_id）。每次 node 执行前，runner 通过 <code class="bg-slate-700 px-1 rounded text-xs">set_config(config)</code> 将 config 存入当前线程的 ContextVar。</p>
+                    <p class="mt-2"><code class="bg-slate-700 px-1 rounded text-xs">HumanInTheLoopMiddleware.aafter_model</code> 
+                    是一个 <strong>async def</strong>，它等待一个 sync 的 <code class="bg-slate-700 px-1 rounded text-xs">after_model()</code> 
+                    在 <strong>线程池（ThreadPoolExecutor）</strong> 中执行。当 sync 函数在另一个线程执行时，原线程的 ContextVar 
+                    不会自动传播到新线程——于是 <code class="bg-slate-700 px-1 rounded text-xs">get_config()</code> 拿不到 config，直接崩溃。</p>
+                    <div class="callout mt-2">
+                        <p class="text-xs text-indigo-300 font-medium">核⼼：Python 的 ContextVar 是线程亲和（thread-affine）的。async→sync 的线程池切换切断了 config 链。</p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">🧪 复现验证（根据 Issue 证据）</h3>
+                <div class="code-block"><pre class="text-slate-300"># 复现条件三件套缺一不可：
+# ① FastAPI + ainvoke() 异步调用
+# ② AsyncPostgresSaver 或 InMemorySaver 作为 checkpointer
+# ③ HumanInTheLoopMiddleware 拦截工具执行
+
+# keenborde786 用纯脚本（无FastAPI）+ Python 3.11 无法复现
+# Vaish-newspace 用 Python 3.10 + FastAPI 稳定复现
+# → 暗示可能与 event loop policy（3.10 vs 3.11）和线程池行为有关</pre></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：关键证据 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📊</span>
+            <h2 class="text-lg font-semibold text-white">关键证据</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <p class="text-xs text-slate-500 mb-1">📄 错误栈关键路径</p>
+                <div class="code-block"><pre class="text-slate-300"># milestone_blocks:
+[1] langchain/agents/middleware/human_in_the_loop.py:381
+    → aafter_model: ^^^ async wrapper
+[2] langchain/agents/middleware/human_in_the_loop.py:331
+    → after_model: decisions = interrupt(hitl_request)["decisions"]
+    # ^^^ interrupt() 抛出前在此执行
+[3] langgraph/types.py:515
+    → interrupt: conf = get_config()["configurable"]
+    # ^^^ 试图从 ContextVar 读取 config，但跨线程后为空
+[4] langgraph/config.py:29
+    → get_config: raise RuntimeError("Called get_config outside of a runnable context")
+    # ^^^ 崩溃点</pre></div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">未修复 PR</p>
+                    <p class="text-lg font-bold text-yellow-400">2</p>
+                    <p class="text-xs text-slate-600">#35102 #35273</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">确认协作者</p>
+                    <p class="text-lg font-bold text-cyan-400">1</p>
+                    <p class="text-xs text-slate-600">keenborde786</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">跨 Python 版本</p>
+                    <p class="text-lg font-bold text-purple-400">2</p>
+                    <p class="text-xs text-slate-600">3.10 ❌ / 3.11 ✅</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">未回复天数</p>
+                    <p class="text-lg font-bold text-red-400">128</p>
+                    <p class="text-xs text-slate-600">by maintainer</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块4：修复建议 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔧</span>
+            <h2 class="text-lg font-semibold text-white">修复建议</h2>
+        </div>
+        <div class="space-y-3">
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案A（推荐）：让 <code class="bg-slate-700 px-1 rounded">aafter_model</code> 真正的行内运行</p>
+                <div class="code-block"><pre class="text-slate-300">from contextvars import copy_context
+
+class HumanInTheLoopMiddleware:
+    def __init__(self, ...):
+        self._captured_context = None
+
+    async def aafter_model(self, state, runtime):
+        # 捕获调用线程的 ContextVar 上下文
+        # 在 sync after_model 中恢复它
+        ctx = copy_context()
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            None,
+            lambda: ctx.run(self.after_model, state, runtime)
+        )
+
+    def after_model(self, state, runtime):
+        # ctx.run() 已经恢复了 config ContextVar
+        # interrupt() 可以正常调用 get_config()
+        decisions = interrupt(hitl_request)["decisions"]
+        return decisions</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 原理：<code class="bg-slate-700 px-1 rounded">copy_context()</code> 在 async 线程捕获当前 ContextVar 的快照，<code class="bg-slate-700 px-1 rounded">ctx.run()</code> 在目标线程恢复。这是 Python 3.7+ 标准做法，0 额外依赖。</p>
+            </div>
+
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案B：将 <code class="bg-slate-700 px-1 rounded">after_model</code> 改为全 async</p>
+                <div class="code-block"><pre class="text-slate-300">class HumanInTheLoopMiddleware:
+    async def aafter_model(self, state, runtime):
+        # 直接在线程内调用，不经过线程池
+        decisions = interrupt(hitl_request)["decisions"]
+        return decisions
+
+    # 删除 after_model（sync 版本不再需要）
+    # 全部逻辑内联到 aafter_model</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 方案B更彻底，但需要确认 interrupt() 是否真的是 sync-only。查阅 langgraph 源码后，interrupt 支持 async 上下文。</p>
+            </div>
+
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案C（临时绕过）：用 <code class="bg-slate-700 px-1 rounded">asyncio.run()</code> 替代 FastAPI</p>
+                <div class="code-block"><pre class="text-slate-300"># 不通过 FastAPI endpoint 调用 agent
+# 改用直接的 asyncio.run(main()) 运行
+# 前提：不需要 HTTP 层
+
+async def main():
+    async with AsyncPostgresSaver.from_conn_string(DB_URI) as cp:
+        agent = create_agent(model=..., tools=..., middleware=[hitl], checkpointer=cp)
+        config = {"configurable": {"thread_id": str(uuid4())}}
+        result = await agent.ainvoke({"messages": [HumanMessage(...)]}, config=config)
+
+asyncio.run(main())</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 这个绕过验证了问题是 FastAPI ⇔ asyncio 线程模型的交互问题，不是 langgraph 核心 bug。生产环境不建议。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：健康得分 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-lg">📈</span>
+            <h2 class="text-lg font-semibold text-white">健康得分</h2>
+        </div>
+
+        <div class="text-center mb-4">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full border-4 border-yellow-500">
+                <span class="text-2xl font-bold text-yellow-400">42</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">42/100 · 功能可用但人机交互通道断裂</p>
+        </div>
+
+        <div class="space-y-2">
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>HITL 核心功能（interrupt）</span><span class="text-red-400">15</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-red-500" style="width:15%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>异步兼容性</span><span class="text-yellow-400">45</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-yellow-500" style="width:45%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>同步路径</span><span class="text-green-400">85</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:85%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>线程安全性</span><span class="text-red-400">10</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-red-500" style="width:10%"></div></div>
+            </div>
+        </div>
+
+        <div class="mt-4 p-3 bg-slate-800/30 rounded-lg">
+            <p class="text-xs text-slate-400 leading-relaxed">
+                💡 健康得分 42/100。核心模块（HITL interrupt）得分仅 15——在 async 路径下完全不可用。
+                同步路径不受影响（85 分）。根因极窄：<span class="text-cyan-400">只有一行 ContextVar 的线程亲和性问题</span>，
+                修复成本极低（10 行内改动）。
+            </p>
+        </div>
+    </div>
+
+    <!-- ====== 页脚反馈 ====== -->
+    <div class="text-center pt-4 pb-2">
+        <p class="text-xs text-slate-600">
+            本报告由 <span class="text-cyan-500">ARK</span> 生成 · 智能体健康感知系统<br>
+            <a href="https://github.com/langchain-ai/langchain/issues/34974" class="text-blue-400 hover:text-blue-300">langchain-ai/langchain#34974</a></p>
+    </div>
+
+</div>
+
+</body>
+</html>

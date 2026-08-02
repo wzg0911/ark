@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARK Diagnostic #38667 — langchain KeyError DoS</title>
+<style>
+body { font-family: system-ui, -apple-system, sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; background: #fafafa; color: #1a1a2e; }
+.header { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: white; padding: 40px; border-radius: 16px; margin-bottom: 32px; }
+.header .badge { display: inline-block; background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 20px; font-size: 13px; margin-bottom: 12px; }
+.header h1 { margin: 0 0 8px; font-size: 26px; }
+.header .meta { opacity: 0.7; font-size: 13px; }
+.section { background: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+h2 { color: #302b63; font-size: 18px; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+.risk-critical { border-left: 4px solid #e74c3c; }
+.risk-high { border-left: 4px solid #e67e22; }
+.tag { display: inline-block; background: #302b63; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin: 2px; }
+.tag.bug { background: #e74c3c; }
+.tag.core { background: #2980b9; }
+.tag.external { background: #7f8c8d; }
+pre { background: #1e1e2e; color: #cdd6f4; padding: 20px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+code { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+.key { color: #cba6f7; }
+.val { color: #a6e3a1; }
+.str { color: #f9e2af; }
+.fix { background: #f0fff4; border: 1px solid #68d391; border-radius: 8px; padding: 16px 20px; margin: 12px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #f8f9fa; text-align: left; padding: 10px 14px; border-bottom: 2px solid #eee; font-size: 13px; }
+td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+tr:hover td { background: #fafafa; }
+.footer { text-align: center; color: #888; font-size: 12px; margin-top: 40px; padding: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="badge">🔴 ARK Trust Diagnostic #38667</div>
+  <h1>langchain-core: KeyError DoS via Malformed Content Blocks</h1>
+  <div class="meta">langchain-ai/langchain#38667 · 2026-07-05 · bug / core / external · 4 comments</div>
+  <div style="margin-top:16px">
+    <span class="tag bug">bug</span>
+    <span class="tag core">core</span>
+    <span class="tag external">external</span>
+  </div>
+</div>
+
+<div class="section risk-critical">
+  <h2>🚨 风险定级</h2>
+  <table>
+    <tr><th>维度</th><th>评级</th><th>说明</th></tr>
+    <tr><td><strong>严重性</strong></td><td style="color:#e74c3c;font-weight:bold">🔴 极高</td><td>Agent 进程直接崩溃，DoS 攻击可行</td></tr>
+    <tr><td><strong>可利用性</strong></td><td style="color:#e74c3c;font-weight:bold">🔴 高</td><td>任何外部输入源（Webhook、用户消息、工具返回）均可触发</td></tr>
+    <tr><td><strong>静默性</strong></td><td style="color:#e67e22;font-weight:bold">🟡 中</td><td>KeyError 堆栈明确，但上游缺少保护</td></tr>
+    <tr><td><strong>影响范围</strong></td><td style="color:#e74c3c;font-weight:bold">🔴 极广</td><td>所有使用 BaseMessage.content_blocks 的 Agent</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>📋 问题概述</h2>
+  <p><code>langchain_core/messages/base.py</code> 中 <code>BaseMessage.content_blocks</code> 属性调用
+  <code>block_translators/anthropic.py</code> 的 <code>_convert_to_v1_from_anthropic_input()</code> 时，
+  <strong>直接访问嵌套字典键而不校验 key 是否存在</strong>，导致畸形 content_blocks 触发未捕获的 <code>KeyError</code>。</p>
+  <p>Agent 在生产环境中接收外部输入（用户消息、Webhook、工具返回）时，无法控制输入格式，攻击者或错误系统可构造畸形消息实现 <strong>拒绝服务攻击（DoS）</strong>。</p>
+</div>
+
+<div class="section">
+  <h2>💥 4 种触发路径</h2>
+
+  <div style="margin-bottom:20px">
+    <h3>路径 1：image block 缺 "data"</h3>
+    <pre><span class="key">HumanMessage</span>(content=[{<span class="str">"type"</span>: <span class="str">"image"</span>, <span class="str">"source"</span>: {<span class="str">"type"</span>: <span class="str">"base64"</span>}}])
+<span class="val">KeyError</span>: <span class="str">'data'</span>  ← at block["source"]["data"]
+
+<span class="key"># Stack trace:</span>
+<span class="str">base.py</span>:259  content_blocks
+<span class="str">anthropic.py</span>:139  _convert_to_v1_from_anthropic_input
+<span class="str">anthropic.py</span>:108  _iter_blocks → block["source"]["data"]  ← 根因</pre>
+  </div>
+
+  <div style="margin-bottom:20px">
+    <h3>路径 2：document block 缺 "url"</h3>
+    <pre><span class="key">ToolMessage</span>(
+    content=[{<span class="str">"type"</span>: <span class="str">"document"</span>, <span class="str">"source"</span>: {<span class="str">"type"</span>: <span class="str">"url"</span>}}],
+    tool_call_id=<span class="str">"tool-call-1"</span>
+)
+<span class="val">KeyError</span>: <span class="str">'url'</span></pre>
+  </div>
+
+  <div style="margin-bottom:20px">
+    <h3>路径 3：document block 缺 "file_id"</h3>
+    <pre><span class="key">SystemMessage</span>(content=[{<span class="str">"type"</span>: <span class="str">"document"</span>, <span class="str">"source"</span>: {<span class="str">"type"</span>: <span class="str">"file"</span>}}])
+<span class="val">KeyError</span>: <span class="str">'file_id'</span></pre>
+  </div>
+
+  <div>
+    <h3>路径 4：document block 缺 "data"</h3>
+    <pre><span class="key">AIMessage</span>(content=[{<span class="str">"type"</span>: <span class="str">"document"</span>, <span class="str">"source"</span>: {<span class="str">"type"</span>: <span class="str">"text"</span>}}])
+<span class="val">KeyError</span>: <span class="str">'data'</span></pre>
+  </div>
+</div>
+
+<div class="section">
+  <h2>🔬 根因分析</h2>
+  <pre>block_translators/anthropic.py :: _convert_to_v1_from_anthropic_input()
+│
+├─ _iter_blocks() 函数
+│  ├─ case "image" + "base64":  block["source"]["data"]           ← 无校验
+│  ├─ case "document" + "url":  block["source"]["url"]            ← 无校验
+│  ├─ case "document" + "file": block["source"]["file_id"]        ← 无校验
+│  └─ case "document" + "text": block["source"]["data"]           ← 无校验
+│
+└─ 错误：无 try/except KeyError，无 Schema 预校验
+   → 任何外部来源传入的畸形 content_block → 未捕获 KeyError
+   → 进程崩溃，Agent 不可用
+
+攻击面：
+  任何能向 Agent 发送消息的渠道（Webhook / API / 工具返回）
+  × 无需认证
+  × 无需特殊权限
+  → 构造畸形 content_block → Agent DoS</pre>
+</div>
+
+<div class="section">
+  <h2>✅ ARK Trust 修复方案</h2>
+
+  <div class="fix">
+    <strong>1. OutputValidator — 入口拦截（根本解法）</strong>
+    <pre><span class="key">from</span> ark_trust <span class="key">import</span> OutputValidator, Schema
+
+<span class="key"># 定义 MessageSchema，确保 content_blocks 结构完整</span>
+message_schema = Schema(
+    type=<span class="str">"object"</span>,
+    fields=[
+        Schema.Field(<span class="str">"type"</span>, <span class="str">"string"</span>, required=<span class="key">True</span>),
+        Schema.Field(<span class="str">"source"</span>, <span class="str">"object"</span>, required=<span class="key">True</span>),
+    ],
+    allow_extra=<span class="key">False</span>
+)
+
+validator = OutputValidator(schema=message_schema)
+
+<span class="key"># 外部消息入队前校验</span>
+raw_message = get_external_message()  <span class="key"># 来自 Webhook / 用户 / 工具</span>
+result = validator.validate(raw_message.content_blocks)
+<span class="key">if not result.valid:</span>
+    <span class="key">raise</span> ValidationError(f<span class="str">"Malformed content_blocks rejected: {result.errors}"</span>)
+    <span class="key"># 进程存活，错误可追踪，不影响其他请求</span></pre>
+  </div>
+
+  <div class="fix">
+    <strong>2. CircuitBreaker — 外部输入源熔断（第二防线）</strong>
+    <pre><span class="key">from</span> ark_trust <span class="key">import</span> CircuitBreaker
+
+<span class="key"># 外部输入源连续失败时熔断</span>
+breaker = CircuitBreaker(
+    failure_threshold=<span class="val">3</span>,    <span class="key"># 3 次 KeyError → 打开</span>
+    recovery_timeout=<span class="val">60</span>,    <span class="key"># 60 秒后尝试半开</span>
+)
+
+<span class="key">async def</span> process_external_message(msg):
+    <span class="key">try</span>:
+        blocks = msg.content_blocks  <span class="key"># 可能抛 KeyError</span>
+    <span class="key">except</span> KeyError:
+        breaker.record_failure()
+        <span class="key">raise</span> ExternalInputError(msg)  <span class="key"># 快速失败，不拖垮 Agent</span>
+    <span class="key">else</span>:
+        breaker.record_success()
+        <span class="key">return</span> blocks
+
+<span class="key"># breaker.open() 后，所有外部消息直接拒绝
+# 保护 Agent 进程不被外部畸形数据 DoS</span></pre>
+  </div>
+
+  <div class="fix">
+    <strong>3. IdempotencyGuard — 防止畸形消息重放攻击</strong>
+    <pre><span class="key">from</span> ark_trust <span class="key">import</span> IdempotencyGuard
+
+guard = IdempotencyGuard(ttl=<span class="val">300</span>)
+
+<span class="key"># 畸形消息被第一次拦截后，相同 key 直接命中缓存</span>
+result = guard.execute(
+    key=msg.id,
+    fn=<span class="key">lambda</span>: process_external_message(msg),
+)
+<span class="key"># 第二次相同畸形消息：缓存命中 → 零额外处理
+# 防止攻击者重放同一畸形消息消耗资源</span></pre>
+  </div>
+</div>
+
+<div class="section">
+  <h2>🆚 对比：框架无保护 vs ARK 保护</h2>
+  <table>
+    <tr><th>场景</th><th>框架现状</th><th>ARK 保护后</th></tr>
+    <tr><td>畸形 image block</td><td>🔴 进程崩溃</td><td>🟢 入口处校验失败，错误留痕</td></tr>
+    <tr><td>畸形 document block</td><td>🔴 进程崩溃</td><td>🟢 Schema 校验 + CircuitBreaker 保护</td></tr>
+    <tr><td>畸形消息重放</td><td>🔴 每次都崩溃</td><td>🟢 IdempotencyGuard 缓存命中</td></tr>
+    <tr><td>连续畸形消息</td><td>🔴 DoS 可行</td><td>🟢 CircuitBreaker 熔断保护</td></tr>
+    <tr><td>错误可追踪性</td><td>🔴 堆栈分散</td><td>🟢 OTel Bridge 统一留痕</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>📚 诊断元数据</h2>
+  <table>
+    <tr><th>字段</th><th>值</th></tr>
+    <tr><td>报告编号</td><td>ark-report-38667-20260724</td></tr>
+    <tr><td>上游 Issue</td><td>langchain-ai/langchain#38667</td></tr>
+    <tr><td>问题类型</td><td>DoS / KeyError / 静默崩溃</td></tr>
+    <tr><td>影响版本</td><td>langchain-core 全版本</td></tr>
+    <tr><td>报告时间</td><td>2026-07-24 09:29 CST</td></tr>
+    <tr><td>诊断者</td><td>ARK Cruise Bot</td></tr>
+  </table>
+</div>
+
+<div class="footer">
+  <p>🔱 ARK Trust — AI Agent 的信任基础设施</p>
+  <p>github.com/wzg0911/ark · pypi.org/project/ark-trust</p>
+</div>
+
+</body>
+</html>

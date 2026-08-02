@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain-core#39087</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .score-bar { height: 8px; border-radius: 4px; background: #2a2a3e; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 1s ease-in-out; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/39087" class="text-blue-400 hover:underline">langchain-ai/langchain#39087</a>
+            · InMemoryRecordManager 批次内逐文档取时间戳——同批次时间基准漂移导致清理遗漏
+            · 2026-07-28
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🟠</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">InMemoryRecordManager.update()</code> 在
+                    <strong class="text-orange-400">for 循环内逐文档调用 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">get_time()</code></strong>，
+                    同一批次的文档拿到<strong class="text-orange-400">各不相同的时间戳</strong>。
+                    索引器在开始时快照 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">index_start_dt</code> 作为清理分界线；
+                    当批次尾部文档的 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">updated_at</code> 越过该分界线时，
+                    <strong class="text-red-400">cleanup="full" 静默漏删陈旧文档</strong>（issue 报告 num_deleted 在 800~900 间漂移，预期 1000）。
+                </p>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400">数据一致性 · 静默漏删</span>
+                <span class="badge mt-1 bg-yellow-500/20 text-yellow-400 ml-1">平台/负载相关 · 非确定性触发</span>
+                <span class="badge mt-1 bg-blue-500/20 text-blue-400 ml-1">ARK 实机部分复现（诚实结论见下）</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">langchain-core indexing API 全部清理模式</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ open · bug/core 标签 · 多人认领修复</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ OutputValidator 不变式 + OTel 留痕</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位</h2>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">🧬 现象链</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    <code class="bg-slate-700 px-1 rounded text-xs">index(docs, ..., cleanup="full")</code> →
+                    索引器快照 <code class="bg-slate-700 px-1 rounded text-xs">index_start_dt</code> →
+                    <code class="bg-slate-700 px-1 rounded text-xs">update()</code> 循环内每个 key 单独取 <code class="bg-slate-700 px-1 rounded text-xs">get_time()</code> →
+                    大批次尾部文档 <code class="bg-slate-700 px-1 rounded text-xs">updated_at &gt; index_start_dt</code> →
+                    清理阶段按 <code class="bg-slate-700 px-1 rounded text-xs">before=index_start_dt</code> 查询陈旧文档时<strong class="text-red-400">漏掉这些"时间穿越"记录</strong> →
+                    <code class="bg-slate-700 px-1 rounded text-xs">num_deleted</code> 静默少于预期，向量库残留脏文档
+                </div>
+            </div>
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">⚙️ 根因</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    <code class="bg-slate-700 px-1 rounded text-xs">langchain_core/indexing/base.py · InMemoryRecordManager.update()</code>：
+                    <strong class="text-orange-400">时间基准应是批次级属性，却被实现成文档级属性</strong>。
+                    循环内每次 <code class="bg-slate-700 px-1 rounded text-xs">get_time()</code> 都读一次系统时钟，
+                    同批次记录时间戳单调递增而非批次一致；与索引器"开始时刻快照分界线"的隐含假设冲突。
+                    本质是<strong class="text-red-400">批次操作缺乏原子时间基准 → 清理谓词的不变式（同批次记录同侧于分界线）被破坏</strong>。
+                </div>
+            </div>
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">🔬 ARK 实机验证（诚实披露）</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    我们在 langchain-core 1.4.8 / Python 3.12 / macOS 上实测：
+                    <strong class="text-green-400">✅ 反模式属实</strong>——批次内 100 个 key 时间戳漂移约 0.1ms（逐文档取时间被源码证实）；
+                    <strong class="text-yellow-400">⚠️ 但 issue 声称的 num_deleted=800~900 漂移，本机 5/5 次复现均为 1000</strong>——
+                    缺陷触发依赖平台时钟精度与系统负载（时间戳漂移量是否跨过 index_start_dt 是概率事件）。
+                    结论：<strong>代码级缺陷确定存在，行为级触发是非确定性的</strong>——这正是此类 bug 最危险之处：
+                    测试环境永远绿灯，生产高负载下随机漏删。
+                </div>
+            </div>
+            <div class="callout text-sm text-slate-300 leading-relaxed">
+                💡 <strong class="text-cyan-400">本质：</strong>这是典型的
+                <strong>"非确定性数据一致性缺陷"</strong>——错误结果（漏删）与正确结果外观完全一致，没有异常、没有日志，
+                只有一个数字悄悄不对。任何依赖"人眼盯 num_deleted"的流程都守不住它；
+                只有把<strong>「预期删除数 = 实际删除数」固化为运行时不变式校验</strong>，才能让它 1 秒现形。
+                这正是 ARK <code class="bg-slate-700 px-1 rounded text-xs">OutputValidator</code> 的守备范围。
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：关键证据 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📊</span>
+            <h2 class="text-lg font-semibold text-white">关键证据</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <p class="text-xs text-slate-500 mb-1">📄 根因代码路径（issue 定位 + ARK 源码核实）</p>
+                <div class="code-block">
+<pre class="text-slate-300"># InMemoryRecordManager.update()  — langchain_core/indexing/base.py
+for key, group_id in zip(keys, group_ids):
+    if time_at_least and self.get_time() &lt; time_at_least:   # ❌ 循环内取时钟 #1
+        raise AssertionError(...)
+    self.records[key] = {
+        "group_id": group_id,
+        "updated_at": self.get_time(),                       # ❌ 循环内取时钟 #2
+    }
+# → 同批次 N 个文档拿到 N 个递增时间戳，批次时间基准不存在</pre>
+                </div>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 mb-1">📄 ARK 实机测量（2026-07-27，langchain-core 1.4.8 / py3.12 / macOS）</p>
+                <div class="code-block">
+<pre class="text-slate-300">批次内时间戳漂移（100 keys/批）：  ~0.1ms（首尾差，实测确认非批次一致）✅
+issue 复现脚本 5 次运行结果：      num_deleted = 1000 / 1000 / 1000 / 1000 / 1000
+issue 声称结果：                   num_deleted = 800~900（波动）
+判定：反模式属实（代码级确定），触发依赖时钟精度/负载（行为级概率性）⚠️</pre>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">失败可见性</p>
+                    <p class="text-lg font-bold text-red-400">静默（数字悄悄错）</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">触发确定性</p>
+                    <p class="text-lg font-bold text-yellow-400">非确定（平台相关）</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">后果</p>
+                    <p class="text-lg font-bold text-orange-400">RAG 脏文档残留</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块4：修复建议 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔧</span>
+            <h2 class="text-lg font-semibold text-white">ARK 一键修复</h2>
+        </div>
+        <div class="space-y-3">
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案A（推荐）：OutputValidator 守住"清理完整性不变式"</p>
+                <div class="code-block"><pre class="text-slate-300">from ark import OutputValidator
+
+# 不变式：cleanup="full" 时，删除数必须等于「旧集合 − 新集合」
+schema = {
+    "type": "object",
+    "fields": {
+        "num_added":   {"type": "integer", "min": 0},
+        "num_deleted": {"type": "integer", "min": expected_deleted,
+                                            "max": expected_deleted},
+    },
+    "required": ["num_added", "num_deleted"],
+}
+validator = OutputValidator(schema)
+
+result = index(docs, record_manager, vector_store, cleanup="full")
+validator.validate(result)   # 漏删 → 立即 ValidationError，而非静默残留</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 非确定性缺陷的克星不是"多测几次"，而是<strong>把预期固化为运行时校验</strong>——生产哪次触发，哪次现形。</p>
+            </div>
+
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案B：框架侧修复（与社区 PR 方向一致）</p>
+                <div class="code-block"><pre class="text-slate-300"># 批次时间基准：循环前取一次，全批次共用
+current_time = self.get_time()          # ✅ 批次级快照
+if time_at_least and current_time &lt; time_at_least:
+    raise AssertionError(...)           # ✅ 守卫移出循环（批次级检查）
+for key, group_id in zip(keys, group_ids):
+    self.records[key] = {"group_id": group_id, "updated_at": current_time}</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 issue 下已有多位贡献者认领（PR #39090 方向相同）。ARK 立场：即便框架修复合入，<strong>不变式校验仍应保留</strong>——SQL/Postgres RecordManager 等其他实现同样可能存在时间基准问题。</p>
+            </div>
+
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案C：OTel 留痕让"概率性漏删"可审计</p>
+                <div class="code-block"><pre class="text-slate-300">import ark
+ark.auto_init()
+
+# 每次索引清理的 num_deleted 校验结果
+# → ark.validation.pass / ark.validation.fail 事件
+# → OTLP/JSON → Langfuse / Jaeger / Tempo
+# 「上周三凌晨那次漏删」从此可回溯、有证据</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 非确定性缺陷的第二克星是<strong>留痕</strong>：漂移何时发生、幅度多大，观测栈里有名有姓。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：健康得分 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-lg">📈</span>
+            <h2 class="text-lg font-semibold text-white">健康得分</h2>
+        </div>
+
+        <div class="text-center mb-4">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full border-4 border-orange-500">
+                <span class="text-2xl font-bold text-orange-400">55</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">55/100 · 功能正确，但一致性保障依赖时钟精度这一不可控因素</p>
+        </div>
+
+        <div class="space-y-2">
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>稳定性</span><span class="text-yellow-400">65</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-yellow-500" style="width:65%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>效率</span><span class="text-green-400">75</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:75%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>正确性（一致性）</span><span class="text-orange-400">40</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-orange-500" style="width:40%"></div></div>
+            </div>
+        </div>
+
+        <div class="mt-4 p-3 bg-slate-800/30 rounded-lg">
+            <p class="text-xs text-slate-400 leading-relaxed">
+                💡 健康得分 55/100。<strong>一致性仅 40</strong>——清理完整性取决于"批次执行速度是否跑赢时钟漂移"，
+                这在测试机上几乎总是成立、在高负载生产上随机失守。接入 ARK
+                <code class="bg-slate-700 px-1 rounded">OutputValidator</code>（清理完整性不变式）后，
+                漏删在边界 1 秒可见，一致性分可回到 <strong class="text-green-400">90+</strong>。
+            </p>
+        </div>
+    </div>
+
+    <!-- ====== 页脚反馈 ====== -->
+    <div class="text-center pt-4 pb-2">
+        <p class="text-xs text-slate-600">
+            本报告由 <span class="text-cyan-500">ARK</span> 生成 · 智能体健康感知系统<br>
+            <a href="https://github.com/langchain-ai/langchain/issues/39087" class="text-blue-400 hover:text-blue-300">langchain-ai/langchain#39087</a>
+            · 锚定自真实 Issue（open · bug/core · ARK 实机部分复现，验证过程如实披露）</p>
+    </div>
+
+</div>
+
+</body>
+</html>

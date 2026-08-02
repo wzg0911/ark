@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain-anthropic#39100</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; white-space: pre; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/39100" class="text-blue-400 hover:underline">langchain-ai/langchain#39100</a>
+            · ChatAnthropic system 块 id 原样透传导致 400
+            · 2026-07-28 · W32 诊断 5/5
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🔴</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    LangChain v1 标准内容块 API <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">create_text_block()</code>
+                    会给每个块铸造一个 <code class="bg-slate-700 px-1 rounded text-sm">id</code>（形如 <code class="bg-slate-700 px-1 rounded text-sm">lc_&lt;uuid4&gt;</code>）。
+                    <code class="bg-slate-700 px-1 rounded text-sm">langchain_anthropic._format_messages()</code>
+                    对 human/assistant 文本块做了字段收窄（只保留 Anthropic 接受的键），
+                    <strong class="text-red-400">但 system 分支把块原样透传</strong>——<code class="bg-slate-700 px-1 rounded text-sm">lc_</code> id 直达 Anthropic API，
+                    换回 <code class="bg-slate-700 px-1 rounded text-sm">400 "system.0.id: Extra inputs are not permitted"</code>。
+                    同一路径也被 <code class="bg-slate-700 px-1 rounded text-sm">get_num_tokens_from_messages()</code> 复用，token 计数同样失败。
+                </p>
+                <span class="badge mt-1 bg-red-500/20 text-red-400">框架自铸元数据泄漏到 wire 协议</span>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400 ml-1">同一函数内双重标准（role 收窄 / system 透传）</span>
+                <span class="badge mt-1 bg-green-500/20 text-green-400 ml-1">ARK 实机离线复现 ✅（无需 API key）</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">langchain-anthropic 1.5.2 · 所有用 v1 content_blocks 构造 SystemMessage 的用户</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ open · 2 位贡献者认领 · 修复方向共识（system 块套用同一收窄逻辑）</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ OutputValidator 出站 payload 契约 + OTel 字段级留痕</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位（P2 Probe）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-3">缺陷是「同一函数内的不对称清洗」——出站边界只对一半的消息角色执行契约：</p>
+        <ol class="text-sm text-slate-300 space-y-2 list-decimal list-inside">
+            <li><code class="bg-slate-700 px-1 rounded">create_text_block()</code>（langchain-core v1 标准内容块）默认给块铸造 <code class="bg-slate-700 px-1 rounded">id="lc_&lt;uuid4&gt;"</code>——这是 LangChain 内部的溯源元数据，<strong class="text-white">不属于任何 provider 的 wire 协议</strong></li>
+            <li><code class="bg-slate-700 px-1 rounded">_format_messages()</code>（<code class="bg-slate-700 px-1 rounded">langchain_anthropic/chat_models.py</code>）对 human/assistant 的 dict 文本块收窄到 Anthropic 接受的字段（type/text/cache_control/citations）</li>
+            <li><strong class="text-red-400">system 分支缺失同样的收窄</strong>：dict 块原样进入 payload 的 <code class="bg-slate-700 px-1 rounded">system</code> 字段</li>
+            <li>Anthropic API 对 system 块执行严格 schema 校验（Extra inputs are not permitted）→ 400；<code class="bg-slate-700 px-1 rounded">get_num_tokens_from_messages()</code> 复用同一 formatted payload → token 计数同样 400</li>
+        </ol>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-white">结构性观察：</strong>
+            这是「框架自铸元数据 → 泄漏到出站协议」的典型样本。v1 内容块把 id 设计为一等公民（用于溯源/去重），
+            意味着<strong class="text-white">每个 provider 适配器的每个消息角色分支</strong>都必须显式过滤，漏掉任何一个分支就是 400 或静默行为差异。
+            越是「推荐的新 API」（v1 content_blocks + create_text_block 正是官方迁移方向），越先踩中——与 #39047 的「官方指引即陷阱」同构。</p>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：ARK 实机验证 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🧪</span>
+            <h2 class="text-lg font-semibold text-white">ARK 实机验证（2026-07-28 · langchain-anthropic 1.5.2 / langchain-core 1.5.1 / anthropic 0.120.0 / Python 3.11）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">ARK 采用<strong class="text-white">离线确定性验证</strong>：不打真实 API，直接检视 <code class="bg-slate-700 px-1 rounded">_format_messages()</code> 产出的出站 payload，同批消息同时覆盖 system / human / assistant 三个角色，证明不对称清洗：</p>
+        <div class="code-block text-slate-300">create_text_block() minted id: 'lc_cd83ecad-14c9-472b-8437-e198d59bfade'
+
+formatted SYSTEM payload（原样直达 Anthropic）:
+  [{"type": "text", "text": "...", "id": "lc_cd83ecad-..."}]   ← id 仍在
+
+formatted human/assistant messages:
+  [{"type": "text", "text": "Say hi."}]                        ← id 已被剥离
+  [{"type": "text", "text": "hi"}]                             ← id 已被剥离
+
+system text block still carries `id`      : True
+human/assistant text block carries `id`   : False
+
+VERDICT: REPRODUCED — system 块透传 lc_ id，role 块收窄；
+Anthropic 严格校验 system 块 → 400 "system.0.id: Extra inputs are not permitted"</div>
+        <p class="text-xs text-slate-500 mt-2">验证强度说明：离线检视出站 payload 比打真实 API 更强——它把根因钉死在 langchain-anthropic 的格式化层（而非网络/账号/模型版本），且完全确定性、可在 CI 中回归。复现脚本：<code class="bg-slate-700 px-1 rounded">scripts/repros/repro_39100_system_block_id_leak.py</code>。</p>
+    </div>
+
+    <!-- ====== 区块4：ARK 映射 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🛡️</span>
+            <h2 class="text-lg font-semibold text-white">ARK Trust Layer 如何拦截（P3 Prescribe）</h2>
+        </div>
+        <div class="space-y-3 text-sm text-slate-300">
+            <div class="callout">
+                <p><strong class="text-white">① OutputValidator · 出站 payload 契约（发送前）</strong><br>
+                对每个 provider 声明 wire schema 白名单（Anthropic system 块只接受 type/text/cache_control/citations）。
+                ARK 在 HTTP 请求发出前对最终 payload 做 schema 对账，<code class="bg-slate-700 px-1 rounded">lc_</code> id 在<strong class="text-white">出站边界</strong>被拦截并指明来源块，
+                而非让用户面对一个看似「Anthropic 侧」的 400。</p>
+            </div>
+            <div class="callout">
+                <p><strong class="text-white">② InputGuard · 内部元数据标记</strong><br>
+                框架自铸字段（<code class="bg-slate-700 px-1 rounded">lc_</code> 前缀 id、内部溯源键）在进入适配层前统一打上 internal 标记；
+                任何 internal 字段出现在出站 payload 即为契约违规——把「每个适配器每个分支都要记得过滤」的 N×M 人工纪律，
+                收敛为<strong class="text-white">单点自动强制</strong>。</p>
+            </div>
+            <div class="callout">
+                <p><strong class="text-white">③ OTel 留痕</strong><br>
+                请求 span 记录 <code class="bg-slate-700 px-1 rounded">block_source(create_text_block) → formatter(system 分支) → rejected_field(id)</code> 链路。
+                「为什么 SystemMessage 会 400 而 HumanMessage 不会」从翻源码对比分支，变成 trace 上一眼可见的字段级差异。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：缺陷族归档 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📚</span>
+            <h2 class="text-lg font-semibold text-white">缺陷模式索引归档（P4 Publish）</h2>
+        </div>
+        <p class="text-sm text-slate-300">
+            新设 <strong class="text-orange-400">F9 · 出站契约不对称 / 内部元数据泄漏到 wire 协议</strong>（首例）。
+            与 F2（内部状态泄漏到后续请求）互为镜像：F2 泄漏的是<strong class="text-white">时间维度</strong>（本次参数污染下次调用），
+            F9 泄漏的是<strong class="text-white">层级维度</strong>（框架内部元数据穿透到 provider 协议层）。
+            共性根因都是「边界上缺一道强制清洗」，且都随分支/适配器数量线性放大遗漏概率。
+            与 #39047 共享「官方推荐路径先崩」的传播叙事：v1 content_blocks 正是 LangChain 力推的标准化方向。
+        </p>
+    </div>
+
+    <!-- ====== 页脚 ====== -->
+    <div class="text-center text-xs text-slate-600 mt-6">
+        <p>ARK — Agent Reliability Kit · <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a></p>
+        <p class="mt-1">诊断方法论：4P Framework（Pinpoint → Probe → Prescribe → Publish）· 所有结论基于实机验证，复现与未复现均如实披露</p>
+        <p class="mt-1">生成时间：2026-07-28 15:38 CST · W32 诊断报告 5/5（本周诊断目标达成）</p>
+    </div>
+
+</div>
+</body>
+</html>

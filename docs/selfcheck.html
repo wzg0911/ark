@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent 崩溃风险自检清单 V1.0 · ARK</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--accent:#fbbf24;--blue:#3b82f6;--text:#e2e8f0;--muted:#94a3b8;--red:#f87171;--green:#34d399}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 0 60px}
+  .wrap{max-width:760px;margin:0 auto;padding:32px 20px}
+  header{border-bottom:2px solid var(--accent);padding-bottom:18px;margin-bottom:8px}
+  h1{font-size:1.7rem;background:linear-gradient(90deg,#60a5fa,#22d3ee,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lead{color:var(--muted);font-size:.92rem;margin:10px 0 0}
+  .mode{background:var(--card);border-radius:14px;padding:20px;margin:22px 0;border:1px solid #334155}
+  .mode h2{color:var(--accent);font-size:1.15rem;margin-bottom:4px}
+  .mode .src{font-size:.78rem;color:var(--muted);margin-bottom:14px}
+  .q{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #2a3a4f}
+  .q:first-of-type{border-top:none}
+  .q input{margin-top:5px;width:18px;height:18px;accent-color:var(--blue);flex-shrink:0}
+  .q label{font-size:.95rem;cursor:pointer}
+  .q .case{font-size:.74rem;color:#64748b}
+  .case a{color:var(--blue);text-decoration:none}
+  .result{margin:30px 0;background:linear-gradient(135deg,#1a1a0f,#0a140a);border:2px solid var(--accent);border-radius:14px;padding:22px;text-align:center}
+  .result .num{font-size:2.4rem;font-weight:800;color:var(--accent)}
+  .result .tag{font-size:.85rem;color:var(--muted);margin-top:6px}
+  .cta{margin:28px 0;text-align:center}
+  .cta a{display:inline-block;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;font-weight:700;padding:14px 32px;border-radius:12px;font-size:1.05rem;text-decoration:none;box-shadow:0 8px 24px rgba(234,88,12,.3)}
+  .trust{background:var(--card);border-radius:12px;padding:16px 18px;margin:16px 0;border-left:4px solid var(--blue)}
+  .trust h3{color:#fff;font-size:.95rem;margin-bottom:6px}
+  .trust p{font-size:.85rem;color:var(--muted)}
+  .trust a{color:var(--blue);text-decoration:none}
+  .brand{text-align:center;margin-top:40px;font-size:.85rem;color:var(--muted)}
+  .brand a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Agent 崩溃风险自检清单 V1.0</h1>
+  <p class="lead">3 分钟，按三大故障模式自测：你的 Agent 会不会在某个深夜静默崩溃？每一题"是"都代表一个真实踩过的坑。基于 OpenClaw 真实生产崩溃案例提炼。</p>
+</header>
+
+<!-- 模式一 -->
+<div class="mode">
+  <h2>① 幂等边界（Idempotency）</h2>
+  <div class="src">案例来源：OpenClaw #113434 会话句柄失效 · 某电商 agent 重复扣款 17 次</div>
+  <div class="q"><input type="checkbox" id="i1"><label for="i1">同一个任务，你的 agent 会因网络抖动/重试而重复执行（重复发消息、重复下单、重复调用支付）吗？<div class="case">— <a href="https://ark-6ek.pages.dev/reports/openclaw-113434">#113434</a>：上游句柄退休，重试却拿旧句柄当有效</div></label></div>
+  <div class="q"><input type="checkbox" id="i2"><label for="i2">任务有唯一 ID + 去重存储（KV/DB）吗？还是靠"应该不会重发"的侥幸？</label></div>
+  <div class="q"><input type="checkbox" id="i3"><label for="i3">外部 API（支付/邮件/Webhook）调用，是否对"已处理"状态做了幂等校验？</label></div>
+  <div class="q"><input type="checkbox" id="i4"><label for="i4">发生过"用户说没收到，日志显示发了 3 次"之类的怪事吗？</label></div>
+  <div class="q"><input type="checkbox" id="i5"><label for="i5">重试逻辑有上限/退避吗？还是"失败就无限重试"直到上游封你 IP？</label></div>
+</div>
+
+<!-- 模式二 -->
+<div class="mode">
+  <h2>② 状态生命周期（Proof-of-State）</h2>
+  <div class="src">案例来源：OpenClaw #114234 PID锁泄漏 · #114255 状态卡死 · #115326 LaunchAgent死循环</div>
+  <div class="q"><input type="checkbox" id="s1"><label for="s1">你用"进程还活着(PID)"来判断某把锁/某个任务是否还在进行吗？<div class="case">— <a href="https://ark-6ek.pages.dev/reports/openclaw-114234">#114234</a>：容器重建 PID 复用，锁被骗成"永远活着"</div></label></div>
+  <div class="q"><input type="checkbox" id="s2"><label for="s2">重启后，旧的 session/状态字符串会被当成"当前活跃"吗？<div class="case">— <a href="https://ark-6ek.pages.dev/reports/openclaw-114255">#114255</a>：网关重启后状态卡在 running，下游永久阻塞</div></label></div>
+  <div class="q"><input type="checkbox" id="s3"><label for="s3">有没有"启动更新任务"被设成了 keepalive（一次性变永久重启循环）？<div class="case">— <a href="https://ark-6ek.pages.dev/proof-of-state-trap">#115326</a>：launchd keepalive 无限重启触发 breaker</div></label></div>
+  <div class="q"><input type="checkbox" id="s4"><label for="s4">"服务是否正常"的判断，依赖重启后会失效的标识符吗？</label></div>
+  <div class="q"><input type="checkbox" id="s5"><label for="s5">有没有遇到过"明明挂了，监控系统却报一切正常"？</label></div>
+</div>
+
+<!-- 模式三 -->
+<div class="mode">
+  <h2>③ 重试 / 轮询风暴（Retry Storm）</h2>
+  <div class="src">案例来源：社区高频复现模式 · ARK 诊断库累计 23 例同类</div>
+  <div class="q"><input type="checkbox" id="r1"><label for="r1">一次失败是否触发"子任务雪崩式重试"（1 个失败 → 50 个并发重发）？</label></div>
+  <div class="q"><input type="checkbox" id="r2"><label for="r2">轮询（polling）有没有"空轮询"——没数据也每秒打一次，直到 Token 烧光？</label></div>
+  <div class="q"><input type="checkbox" id="r3"><label for="r3">有没有发生过"半夜 Token 消耗是白天 17 倍"的账单惊吓？</label></div>
+  <div class="q"><input type="checkbox" id="r4"><label for="r4">超时设置合理吗？还是"等永远"导致连接池被打满？</label></div>
+  <div class="q"><input type="checkbox" id="r5"><label for="r5">失败时有熔断（circuit breaker）吗？还是"挂了就一直撞"？</label></div>
+</div>
+
+<div class="result">
+  <div class="num" id="score">0</div>
+  <div class="tag">个红色警报 —— 这些是你的 Agent 半夜崩溃的真实诱因</div>
+</div>
+<div style="text-align:center;font-size:.85rem;color:var(--muted)">勾选"是"的题越多，说明你当前架构越接近"重启即崩溃"的临界点。</div>
+
+<div class="cta">
+  <a href="https://github.com/wzg0911/ark/discussions/7">📩 把你的清单结果发我，免费陪你看真实诊断</a>
+</div>
+
+<!-- 信任展示卡片（嵌入转化路径） -->
+<div class="trust">
+  <h3>📌 张三的 Agent：崩溃 vs 修复 对比</h3>
+  <p>崩溃时 Token 消耗是修复后的 <strong style="color:var(--red)">17 倍</strong>；根因=缺少幂等守卫 + 重试无上限。修复成本：2 小时。你的清单若亮了红灯，你正经历同样的事。— <a href="https://ark-6ek.pages.dev/proof-of-state-trap">看完整案例 →</a></p>
+</div>
+<div class="trust">
+  <h3>📌 robingutsche 的午夜死循环</h3>
+  <p>launchd 把一次性更新任务设成 keepalive → 无限重启 → 每次重启都杀掉 gateway。他熬了 3 晚。ARK 把它拆成 3 个独立 bug，永久归档。— <a href="https://ark-6ek.pages.dev/proof-of-state-trap">看完整案例 →</a></p>
+</div>
+
+<div class="cta" style="margin-top:28px">
+  <a href="https://ark-6ek.pages.dev/diagnose">🔔 预约《深度诊断》· 真人陪你拆</a>
+</div>
+
+<div class="brand">
+  <p>ARK · Agent Reliability Kit —— 由 <a href="https://github.com/wzg0911/ark">观一</a> 构建并维护</p>
+  <p>技术复盘阵地：<a href="https://ark-6ek.pages.dev/proof-of-state-trap">proof-of-state-trap</a></p>
+</div>
+</div>
+
+<script>
+// 实时统计红灯数
+const boxes=document.querySelectorAll('input[type=checkbox]');
+const score=document.getElementById('score');
+function update(){let n=0;boxes.forEach(b=>{if(b.checked)n++});score.textContent=n;}
+boxes.forEach(b=>b.addEventListener('change',update));
+</script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain#38893</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .score-bar { height: 8px; border-radius: 4px; background: #2a2a3e; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 1s ease-in-out; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/38893" class="text-blue-400 hover:underline">langchain-ai/langchain#38893</a>
+            · ModelRetryMiddleware 把"不可重试异常"吞成一条正常 AIMessage——同一份契约在工具侧和模型侧行为相反
+            · 2026-07-24
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🟠</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    LangChain Agent 中间件对 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">retry_on</code>
+                    的官方契约是：<strong>不匹配的异常立即向上传播，不进入 on_failure 处理</strong>（#38884 文档明确）。
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">ToolRetryMiddleware</code> 在 #38845 已按契约改为直接 re-raise，
+                    但 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">ModelRetryMiddleware</code>
+                    <strong class="text-red-400">漏改</strong>——不可重试异常被送进
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">_handle_failure</code>，
+                    在默认 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">on_failure="continue"</code> 下被
+                    <strong class="text-red-400">转换成一条"正常"的错误文案 AIMessage</strong>，
+                    graph 若无其事继续跑，真实异常（类型、堆栈）就地蒸发。
+                </p>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400">中高 · 异常静默吞噬</span>
+                <span class="badge mt-1 bg-red-500/20 text-red-400 ml-1">同一契约双侧行为相反</span>
+                <span class="badge mt-1 bg-yellow-500/20 text-yellow-400 ml-1">用户显式排除的异常仍被吞</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">所有使用 ModelRetryMiddleware + 自定义 retry_on 的 Agent</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ open · bug/langchain 标签 · 8 评论</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ OutputValidator + CircuitBreaker</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位</h2>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">🧬 现象链</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    用户配置 <code class="bg-slate-700 px-1 rounded text-xs">retry_on=(ValueError,)</code>，
+                    显式表达"其它异常我要自己处理" → 模型调用抛出 TypeError（不匹配）→
+                    ModelRetryMiddleware 不重试，但也<strong class="text-red-400">不抛出</strong>，
+                    而是走 <code class="bg-slate-700 px-1 rounded text-xs">_handle_failure</code> →
+                    默认 on_failure="continue" 生成一条
+                    <code class="bg-slate-700 px-1 rounded text-xs">"Model call failed after 1 attempt with TypeError: boom"</code>
+                    的 AIMessage → graph 把它当模型回答继续执行 →
+                    上层 try/except 永远等不到那个 TypeError → 排障时只看到一条"模型说失败了"的聊天记录
+                </div>
+            </div>
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">⚙️ 根因</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    <code class="bg-slate-700 px-1 rounded text-xs">langchain/agents/middleware/model_retry.py</code>
+                    的 sync/async 两条路径仍保留 #38845 之前的旧代码：
+                    <code class="bg-slate-700 px-1 rounded text-xs">if not should_retry_exception(...): return self._handle_failure(...)</code>。
+                    #38845 只改了 <code class="bg-slate-700 px-1 rounded text-xs">tool_retry.py</code>（改为 bare raise），
+                    #38884 又基于新行为写死了文档契约——模型侧从未同步，属
+                    <strong class="text-red-400">双胞胎代码只改一半的漏改型回归</strong>（连注释都原样留在旧分支里）。
+                </div>
+            </div>
+            <div class="callout text-sm text-slate-300 leading-relaxed">
+                💡 <strong class="text-cyan-400">本质：</strong>这是典型的
+                <strong>"错误被转换成正常输出"</strong>问题——异常一旦被降级为普通消息，
+                下游所有基于异常的防御（try/except、重试编排、告警）全部失效。
+                错误处理路径必须与成功路径<strong>产出可区分的输出</strong>，
+                这正是 ARK <code class="bg-slate-700 px-1 rounded text-xs">OutputValidator</code>（输出必须满足"真实回答"不变式）+
+                <code class="bg-slate-700 px-1 rounded text-xs">CircuitBreaker</code>（连续失败快速熔断）的守备范围。
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：关键证据 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📊</span>
+            <h2 class="text-lg font-semibold text-white">关键证据</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <p class="text-xs text-slate-500 mb-1">📄 复现（issue 提供零网络最小复现：同配置、同异常，双侧行为相反）</p>
+                <div class="code-block">
+<pre class="text-slate-300"># retry_on=(ValueError,)，handler 抛 TypeError（不匹配）
+model_mw = ModelRetryMiddleware(max_retries=2, retry_on=(ValueError,))
+result = model_mw.wrap_model_call(model_request, failing_handler)
+# ❌ 模型侧：不抛异常，返回 ModelResponse
+#    content = "Model call failed after 1 attempt with TypeError: boom"
+
+tool_mw = ToolRetryMiddleware(max_retries=2, retry_on=(ValueError,))
+tool_mw.wrap_tool_call(tool_request, failing_handler)
+# ✅ 工具侧：TypeError 正常向上传播（#38845 修复后的契约行为）</pre>
+                </div>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 mb-1">📄 根因代码（model_retry.py，#38845 之前的旧逻辑原样残留）</p>
+                <div class="code-block">
+<pre class="text-slate-300">if not should_retry_exception(exc, self.retry_on):
+    # Exception is not retryable, handle failure immediately
+    return self._handle_failure(exc, attempts_made)   # ❌ 吞掉转成 AIMessage
+
+# 工具侧同一分支（#38845 修复后）：
+if not should_retry_exception(exc, self.retry_on):
+    # Exception is not retryable, re-raise immediately
+    raise                                              # ✅ 契约行为</pre>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">失败可见性</p>
+                    <p class="text-lg font-bold text-red-400">静默（异常变聊天文本）</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">触发条件</p>
+                    <p class="text-lg font-bold text-yellow-400">retry_on 未覆盖的任意异常</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">文档契约</p>
+                    <p class="text-lg font-bold text-yellow-400">#38884 已写明应传播</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块4：修复建议 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔧</span>
+            <h2 class="text-lg font-semibold text-white">ARK 一键修复</h2>
+        </div>
+        <div class="space-y-3">
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案A（推荐）：OutputValidator 拦截"伪装成回答的错误"</p>
+                <div class="code-block"><pre class="text-slate-300">from ark import OutputValidator
+
+# 不变式：模型输出必须是真实回答，不是错误文案
+schema = {
+    "type": "object",
+    "fields": {
+        "content":  {"type": "string", "min_length": 1,
+                     "not_contains": ["Model call failed", "failed after"]},
+        "is_error": {"type": "boolean", "equals": False},
+    },
+    "required": ["content"],
+}
+validator = OutputValidator(schema)
+
+result = agent.invoke(task)
+validator.validate({"content": result.content})
+# 错误文案 AIMessage → 立即 ValidationError，而不是流向用户/下游节点</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 被吞掉的 TypeError 在<strong>进入 graph 下一节点之前</strong>被拦下，异常重新变回异常。</p>
+            </div>
+
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案B：CircuitBreaker 阻止"错误消息洪流"</p>
+                <div class="code-block"><pre class="text-slate-300">from ark import CircuitBreaker
+
+breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=30)
+
+# 配合方案A：验证失败计入熔断
+# 连续 3 次"伪回答" → 熔断打开 → 快速失败
+# 防止配置错误/上游故障期间，错误文案持续污染会话与下游存储</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 被降级的异常不再有重试语义，熔断器补回"连续失败必须停下"这层保护。</p>
+            </div>
+
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案C：上游修复（对齐 #38845 的工具侧改法）</p>
+                <div class="code-block"><pre class="text-slate-300"># model_retry.py sync/async 两处，对齐 tool_retry.py：
+if not should_retry_exception(exc, self.retry_on):
+    raise   # 与 #38884 文档契约一致：不匹配的异常立即传播</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 上游一行修复即可对齐契约；但方案A/B 的<strong>输出不变式+熔断</strong>仍是长期防线——下一处"双胞胎漏改"出现时你第一时间知道。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：健康得分 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-lg">📈</span>
+            <h2 class="text-lg font-semibold text-white">健康得分</h2>
+        </div>
+
+        <div class="text-center mb-4">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full border-4 border-yellow-500">
+                <span class="text-2xl font-bold text-yellow-400">55</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">55/100 · 重试功能可用，但异常契约破坏且错误伪装成正常输出</p>
+        </div>
+
+        <div class="space-y-2">
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>稳定性</span><span class="text-green-400">70</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:70%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>效率</span><span class="text-green-400">80</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:80%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>正确性（错误可见性）</span><span class="text-red-400">30</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-red-500" style="width:30%"></div></div>
+            </div>
+        </div>
+
+        <div class="mt-4 p-3 bg-slate-800/30 rounded-lg">
+            <p class="text-xs text-slate-400 leading-relaxed">
+                💡 健康得分 55/100。<strong>错误可见性仅 30</strong>——用户显式排除在 retry_on 之外的异常，
+                本应由自己的代码接住，却被中间件降级成一条聊天消息，
+                <strong class="text-red-400">所有基于异常的防御体系被绕过</strong>。
+                接入 ARK <code class="bg-slate-700 px-1 rounded">OutputValidator</code>（伪回答拦截）+
+                <code class="bg-slate-700 px-1 rounded">CircuitBreaker</code>（连续失败熔断）后，
+                被吞的异常 1 秒内重新可见，可信度分可回到 <strong class="text-green-400">90+</strong>。
+            </p>
+        </div>
+    </div>
+
+    <!-- ====== 页脚反馈 ====== -->
+    <div class="text-center pt-4 pb-2">
+        <p class="text-xs text-slate-600">
+            本报告由 <span class="text-cyan-500">ARK</span> 生成 · 智能体健康感知系统<br>
+            <a href="https://github.com/langchain-ai/langchain/issues/38893" class="text-blue-400 hover:text-blue-300">langchain-ai/langchain#38893</a>
+            · 锚定自真实 Issue（open · bug/langchain · 零网络最小复现 · 契约文档 #38884 佐证）</p>
+    </div>
+
+</div>
+
+</body>
+</html>

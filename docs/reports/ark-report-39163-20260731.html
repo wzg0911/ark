@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain-core#39163</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; white-space: pre; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/39163" class="text-blue-400 hover:underline">langchain-ai/langchain#39163</a>
+            · trace_as_chain_group 在任务取消时把 run 永久留在 pending
+            · 2026-07-31 · W32 诊断 8/5（超额）
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🔴</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">atrace_as_chain_group()</code> /
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">trace_as_chain_group()</code>
+                    的上下文管理器只 <code class="bg-slate-700 px-1 rounded text-sm">except Exception</code>。
+                    而 <code class="bg-slate-700 px-1 rounded text-sm">asyncio.CancelledError</code> 与
+                    <code class="bg-slate-700 px-1 rounded text-sm">KeyboardInterrupt</code> 直接继承
+                    <code class="bg-slate-700 px-1 rounded text-sm">BaseException</code>——
+                    <strong class="text-red-400">于是任务取消同时绕过 <code class="bg-slate-700 px-1 rounded text-sm">on_chain_error()</code> 和 <code class="bg-slate-700 px-1 rounded text-sm">on_chain_end()</code></strong>。
+                    已 start 的 run 永远拿不到终态事件，在 LangSmith 里无限 pending。
+                    ASGI / WebSocket 应用中<strong>客户端断连即取消请求任务</strong>，这是生产环境的日常事件，不是边缘情况。
+                </p>
+                <span class="badge mt-1 bg-red-500/20 text-red-400">F3 族第 5 例 · 新亚型：失败伪装成「什么都没发生」</span>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400 ml-1">同模块内 runnable 辅助函数已 catch BaseException（内部不一致）</span>
+                <span class="badge mt-1 bg-green-500/20 text-green-400 ml-1">ARK 实机离线复现 ✅ 4/4</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">langchain-core 1.5.3 · 所有使用 chain group 追踪的 async 服务（FastAPI/WebSocket/流式接口）</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ open（2026-07-31 00:45 UTC 提交）· 无 assignee · labels: bug/core/external</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ Trace 终态不变式 + CircuitBreaker 取消语义归一</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位（P2 Probe）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-3">缺陷是「异常基类选窄了」，但真正的教训是<strong>可观测性组件自身没有终态保证</strong>：</p>
+        <ol class="text-sm text-slate-300 space-y-2 list-decimal list-inside">
+            <li>两个上下文管理器（<code class="bg-slate-700 px-1 rounded">trace_as_chain_group</code> / <code class="bg-slate-700 px-1 rounded">atrace_as_chain_group</code>）用 <code class="bg-slate-700 px-1 rounded">except Exception as e:</code> 包裹 body；</li>
+            <li>但它们调用的 group manager <code class="bg-slate-700 px-1 rounded">on_chain_error()</code> <strong>签名本身接受 <code class="bg-slate-700 px-1 rounded">BaseException</code></strong>——能力具备，入口卡死；</li>
+            <li>更关键：<strong>同一个 <code class="bg-slate-700 px-1 rounded">manager.py</code> 文件里的 runnable 回调辅助函数已经 catch <code class="bg-slate-700 px-1 rounded">BaseException</code></strong>——同模块内两种写法并存，属于纪律漂移而非设计取舍；</li>
+            <li>结果：run 只有 <code class="bg-slate-700 px-1 rounded">on_chain_start</code>，没有任何终态回调。异常本身正常向上抛（不吞异常），所以<strong>调用方毫无感知</strong>——排障时只看到 LangSmith 里一堆挂起的 trace。</li>
+        </ol>
+        <div class="code-block mt-3 text-slate-300"># langchain_core/callbacks/manager.py
+@asynccontextmanager
+async def atrace_as_chain_group(...):
+    ...
+    try:
+        yield run_manager
+    except Exception as e:              # ← CancelledError 是 BaseException，漏网
+        await run_manager.on_chain_error(e)
+        raise
+    else:
+        await run_manager.on_chain_end({})
+
+# 同文件内 runnable 辅助函数（对照组，写法正确）：
+    except BaseException as e:
+        ...</div>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-indigo-400">ARK 离线确定性复现（无 API key、无网络）：</strong>
+            装入记录型 CallbackHandler 统计终态事件数，<strong>四例对照</strong>锁死根因——
+            A（async + CancelledError）与 C（sync + KeyboardInterrupt）均为 <code class="bg-slate-700 px-1 rounded">started=1, ended=0, errors=0</code> → run 孤儿化；
+            B/D 对照组（普通 <code class="bg-slate-700 px-1 rounded">ValueError</code>）终态回调正常触发 <code class="bg-slate-700 px-1 rounded">errors=1</code>，证明回调管线本身完好。
+            <strong class="text-green-400">4/4 与预测完全一致。</strong><br>
+            脚本：<code class="bg-slate-700 px-1 rounded">scripts/repros/repro_39163_cancelled_leaves_run_pending.py</code> · 验证于 langchain-core 1.5.3</p>
+        </div>
+        <div class="code-block mt-3 text-slate-300">#  case                              counts                          verdict
+A  async  · asyncio.CancelledError   started=1 ended=0 errors=0      BUG: run left PENDING
+B  async  · ValueError    (control)  started=1 ended=0 errors=1      OK (terminal fired)
+C  sync   · KeyboardInterrupt        started=1 ended=0 errors=0      BUG: run left PENDING
+D  sync   · ValueError    (control)  started=1 ended=0 errors=1      OK (terminal fired)</div>
+    </div>
+
+    <!-- ====== 区块3：后果与叙事 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">💥</span>
+            <h2 class="text-lg font-semibold text-white">后果分析</h2>
+        </div>
+        <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside">
+            <li><strong>可观测性在最需要它的时刻失明：</strong>用户中途断开、超时取消、Ctrl-C 停服——这些恰恰是最该被记录的异常路径，却是唯一不留痕的路径。「取消」在遥测里等价于「还在跑」；</li>
+            <li><strong>成本与延迟统计被系统性污染：</strong>永不闭合的 span 会把 p99 延迟拉成无穷大，或被后端超时清理成假数据。基于 trace 的成本归因、SLA 报表全部失真；</li>
+            <li><strong>WebSocket / 流式场景是重灾区：</strong>断连取消是常态而非异常，取消率越高的服务（=交互最重的服务）遥测污染越严重，形成「越关键越不可信」的反向相关；</li>
+            <li><strong>F3 族第 5 例，且是新亚型：</strong>前 4 例（#39039/#38892/#38893/#39099）是「失败伪装成成功」，本例是<strong>「失败伪装成什么都没发生」</strong>——连一个错误信号都不产生。前者至少有假数据可查，后者只留下一个永远开着的洞；</li>
+            <li><strong>它发生在 observability 组件自己身上：</strong>这是最讽刺也最有说服力的一点——负责「记录一切」的模块，自己没有终态不变式。用来发现问题的工具本身漏掉了整整一类问题。</li>
+        </ul>
+    </div>
+
+    <!-- ====== 区块4：ARK 处方 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">💊</span>
+            <h2 class="text-lg font-semibold text-white">ARK 处方（P3 Prescribe）</h2>
+        </div>
+        <table class="w-full text-sm text-slate-300">
+            <thead><tr class="text-slate-500 border-b border-slate-700 text-left">
+                <th class="py-2">层</th><th class="py-2">组件</th><th class="py-2">机制</th>
+            </tr></thead>
+            <tbody>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">上游修复建议</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">manager.py</code> 两个 chain group CM</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">except Exception</code> → <code class="bg-slate-700 px-1 rounded">except BaseException</code>，调用既有 error handler 后原样 <code class="bg-slate-700 px-1 rounded">raise</code>；回归用例覆盖 sync 的 <code class="bg-slate-700 px-1 rounded">KeyboardInterrupt</code> 与 async 的 <code class="bg-slate-700 px-1 rounded">CancelledError</code></td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">ARK 防线 1</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">Trace</code> 终态不变式</td>
+                    <td class="py-2">每个 start 的 span 必须恰好到达一个终态（end | error）。span 析构/上下文退出时若无终态，自动补发 <code class="bg-slate-700 px-1 rounded">ark.span.orphaned</code>——<strong>不依赖开发者选对异常基类</strong></td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">ARK 防线 2</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">CircuitBreaker</code></td>
+                    <td class="py-2">取消语义归一：把 <code class="bg-slate-700 px-1 rounded">CancelledError</code> 记为独立终态 <code class="bg-slate-700 px-1 rounded">cancelled</code>（不计入失败率、但计入终态），避免「取消风暴」既不触发熔断也不留痕</td>
+                </tr>
+                <tr>
+                    <td class="py-2">ARK 防线 3</td>
+                    <td class="py-2">OTel 留痕</td>
+                    <td class="py-2">新增 <code class="bg-slate-700 px-1 rounded">ark.trace.terminal_missing</code> 事件，把「静默孤儿 span」升级为可告警指标，接入现有 Langfuse/Jaeger 栈</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-indigo-400">为什么 ARK 的方案不是「同一个补丁再打一遍」：</strong>
+            上游修复是<strong>枚举式</strong>的——修好这两个 CM，下一个新增的上下文管理器仍可能写 <code class="bg-slate-700 px-1 rounded">except Exception</code>（同文件内已有两种写法并存即为证据）。
+            ARK 的终态不变式是<strong>结构式</strong>的：不管谁写、写错什么异常基类，只要 span 退出时没有终态就会被捕获。
+            这正是「靠人自觉」与「运行时强制」的分野。</p>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：族谱 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🧬</span>
+            <h2 class="text-lg font-semibold text-white">缺陷族谱 · F3 静默失败（第 5 例 · 新亚型）</h2>
+        </div>
+        <table class="w-full text-sm text-slate-300">
+            <thead><tr class="text-slate-500 border-b border-slate-700 text-left">
+                <th class="py-2">Issue</th><th class="py-2">亚型</th><th class="py-2">静默的是什么</th><th class="py-2">可查痕迹</th>
+            </tr></thead>
+            <tbody>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">#39039</td><td class="py-2">运行时失败被吞</td><td class="py-2">流式 <code class="bg-slate-700 px-1 rounded">response.failed</code> 事件被丢弃</td><td class="py-2 text-orange-400">假成功流</td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">#38892</td><td class="py-2">运行时失败被吞</td><td class="py-2">合法空流误判失败，备胎静默替换</td><td class="py-2 text-orange-400">污染数据</td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">#38893</td><td class="py-2">运行时失败被吞</td><td class="py-2">不可重试异常吞成正常 AIMessage</td><td class="py-2 text-orange-400">假 AIMessage</td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">#39099</td><td class="py-2">构建时降级被吞</td><td class="py-2">schema 构建失败折叠成空 schema</td><td class="py-2 text-orange-400">空参数工具</td>
+                </tr>
+                <tr>
+                    <td class="py-2">#39163</td><td class="py-2 text-red-400"><strong>终态事件缺失</strong>（新）</td><td class="py-2">BaseException 绕过全部终态回调</td><td class="py-2 text-red-400"><strong>无任何痕迹</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="text-sm text-slate-400 mt-3">前四例的共性是「边界上假装成功」，本例把 F3 族推到了极端：<strong>连「假装」都没有，直接不发生</strong>。
+        从可靠性工程视角看，这比假成功更危险——假成功至少在数据里留下矛盾可供事后审计，而缺失的终态事件在任何报表里都表现为「这个请求还在处理中」，与真实的长任务无法区分。
+        ARK 的应对因此也不同：前四例靠 <code class="bg-slate-700 px-1 rounded">OutputValidator</code> 校验<strong>终态的内容</strong>，本例必须靠 <code class="bg-slate-700 px-1 rounded">Trace</code> 校验<strong>终态的存在性</strong>。</p>
+    </div>
+
+    <!-- ====== 页脚 ====== -->
+    <div class="text-center text-xs text-slate-600 mt-6">
+        <p>ARK — Agent Reliability Kit · <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a></p>
+        <p class="mt-1">4P Framework: Pinpoint → Probe → Prescribe → Publish · 生成于 2026-07-31 09:40 CST</p>
+    </div>
+
+</div>
+</body>
+</html>

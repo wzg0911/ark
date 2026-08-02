@@ -1,0 +1,30 @@
+{
+  "name": "docker.container_run",
+  "version": "1.0.0",
+  "author": "community",
+  "category": "general",
+  "tags": ["docker", "container", "run"],
+  "description": "Docker container run schema",
+  "fields": {
+    "image": {
+      "type": "str",
+      "required": true,
+      "description": "Docker image name"
+    },
+    "command": {
+      "type": "str",
+      "required": false,
+      "description": "Command to run inside container"
+    },
+    "env": {
+      "type": "dict",
+      "required": false,
+      "description": "Environment variables"
+    },
+    "ports": {
+      "type": "dict",
+      "required": false,
+      "description": "Port mappings (host:container)"
+    }
+  }
+}

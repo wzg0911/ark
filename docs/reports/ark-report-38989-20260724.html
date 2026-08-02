@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain#38989</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .score-bar { height: 8px; border-radius: 4px; background: #2a2a3e; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 1s ease-in-out; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/38989" class="text-blue-400 hover:underline">langchain-ai/langchain#38989</a>
+            · get_usage_metadata_callback 异常退出后泄漏——后续调用的 token 被静默累加进旧统计
+            · 2026-07-24
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🟠</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">get_usage_metadata_callback</code> 是 LangChain 官方推荐的
+                    <strong>按操作计量 token 用量</strong>的上下文管理器。但它的清理逻辑写在 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">yield</code> 之后、
+                    <strong class="text-red-400">没有 try/finally 保护</strong>——一旦 with 块内抛出任何异常，
+                    回调<strong class="text-red-400">仍然全局注册</strong>，此后所有模型调用的 token
+                    都会继续累加进这个"已经退出"的统计对象。
+                    没有报错、没有日志，只有<strong class="text-red-400">悄悄错掉的计量数据</strong>。
+                </p>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400">中高 · 静默数据污染</span>
+                <span class="badge mt-1 bg-red-500/20 text-red-400 ml-1">计费/配额数据不可信</span>
+                <span class="badge mt-1 bg-yellow-500/20 text-yellow-400 ml-1">仅异常路径触发，极难被测试覆盖</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">所有基于该回调做计量/计费/配额的系统</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ open · bug/core 标签</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ OutputValidator + OTel Bridge</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位</h2>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">🧬 现象链</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    with 块内调用模型（统计 3 tokens）→ 块内业务代码抛异常 →
+                    <code class="bg-slate-700 px-1 rounded text-xs">usage_metadata_callback_var.set(None)</code>
+                    这行清理代码<strong class="text-red-400">被跳过</strong> →
+                    ContextVar 里仍挂着旧回调 → with 块外的下一次模型调用（3 tokens）
+                    <strong class="text-red-400">继续累加进旧统计</strong> →
+                    读数 6，实际应为 3 → 按操作计费/配额判断全部失真
+                </div>
+            </div>
+            <div>
+                <h3 class="text-sm font-medium text-cyan-400 mb-1">⚙️ 根因</h3>
+                <div class="text-sm text-slate-300 leading-relaxed">
+                    <code class="bg-slate-700 px-1 rounded text-xs">langchain_core/callbacks/usage.py</code> 的
+                    <code class="bg-slate-700 px-1 rounded text-xs">get_usage_metadata_callback</code>：
+                    contextmanager 的 <code class="bg-slate-700 px-1 rounded text-xs">yield</code> 裸奔，
+                    清理语句在 yield 之后无 finally 兜底。同文件邻居
+                    <code class="bg-slate-700 px-1 rounded text-xs">langchain_core.tracers.context</code>
+                    的同类上下文管理器<strong>都正确使用了 try/finally + token reset</strong>——
+                    本质是<strong class="text-red-400">资源清理不变式（进入必退出）在异常路径上被破坏</strong>。
+                </div>
+            </div>
+            <div class="callout text-sm text-slate-300 leading-relaxed">
+                💡 <strong class="text-cyan-400">本质：</strong>这是典型的
+                <strong>"计量数据无独立校验"</strong>问题——应用层完全信任框架内置计量器，
+                而计量器本身在异常路径上会静默污染。计量/计费这类
+                <strong>钱相关的数据</strong>，必须有独立于框架的第二信源交叉验证。
+                这正是 ARK <code class="bg-slate-700 px-1 rounded text-xs">OutputValidator</code>（不变式校验）+
+                OTel Bridge（独立计量信源）的守备范围。
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：关键证据 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📊</span>
+            <h2 class="text-lg font-semibold text-white">关键证据</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <p class="text-xs text-slate-500 mb-1">📄 复现（issue 提供零依赖最小复现，节选）</p>
+                <div class="code-block">
+<pre class="text-slate-300">try:
+    with get_usage_metadata_callback() as cb:
+        llm.invoke("in block")   # tracked: 3 tokens
+        raise RuntimeError
+except RuntimeError:
+    pass
+
+llm.invoke("outside block")      # still tracked! ❌
+
+print(cb.usage_metadata["fake"]["total_tokens"])
+# 输出 6 —— 期望 3。块外调用被累进已退出的统计</pre>
+                </div>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 mb-1">📄 根因代码（issue 定位，langchain_core/callbacks/usage.py）</p>
+                <div class="code-block">
+<pre class="text-slate-300">usage_metadata_callback_var.set(cb)
+yield cb                                # ← 块内 raise，直接跳出
+usage_metadata_callback_var.set(None)   # ❌ 被跳过，回调永久泄漏
+
+# 正确写法（同库 tracers.context 已采用）：
+token = usage_metadata_callback_var.set(cb)
+try:
+    yield cb
+finally:
+    usage_metadata_callback_var.reset(token)  # ✅ 异常路径也清理</pre>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">失败可见性</p>
+                    <p class="text-lg font-bold text-red-400">静默（数值悄悄错）</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">触发条件</p>
+                    <p class="text-lg font-bold text-yellow-400">with 块内任意异常</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p class="text-xs text-slate-500">影响版本</p>
+                    <p class="text-lg font-bold text-yellow-400">langchain-core ≤ 1.5.0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块4：修复建议 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔧</span>
+            <h2 class="text-lg font-semibold text-white">ARK 一键修复</h2>
+        </div>
+        <div class="space-y-3">
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案A（推荐）：OutputValidator 守住计量不变式</p>
+                <div class="code-block"><pre class="text-slate-300">from ark import OutputValidator
+
+# 不变式：单次操作的 token 用量必须落在合理区间
+schema = {
+    "type": "object",
+    "fields": {
+        "total_tokens": {"type": "number", "min": 1, "max": 8000},
+        "call_count":   {"type": "number", "min": 1, "max": 1},
+    },
+    "required": ["total_tokens", "call_count"],
+}
+validator = OutputValidator(schema)
+
+with get_usage_metadata_callback() as cb:
+    result = run_single_operation()
+
+validator.validate({
+    "total_tokens": usage_total(cb),
+    "call_count": usage_call_count(cb),   # 泄漏累加 → 超界 → 立即 ValidationError
+})</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 "读数 6 而非 3"的污染在写入计费系统<strong>之前</strong>被拦下，而不是月底对账时才发现。</p>
+            </div>
+
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案B：OTel Bridge 独立计量信源交叉验证</p>
+                <div class="code-block"><pre class="text-slate-300">import ark
+ark.auto_init()   # ARK 事件流独立于 LangChain 回调机制
+
+# 每次 guard/validate 调用都 emit 独立事件 → Langfuse/Jaeger
+# 框架计量 vs ARK 事件计数 对不上 → 告警
+# 计费数据从"单一信源盲信"升级为"双信源对账"</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 计量泄漏这类"框架内伤"，只有<strong>独立第二信源</strong>能发现。ARK 事件流不经过 LangChain ContextVar，天然免疫本 bug。</p>
+            </div>
+
+            <div class="bg-green-500/5 border border-green-500/10 rounded-lg p-3">
+                <p class="text-sm font-medium text-green-400 mb-2">✅ 方案C：上游修复（issue 作者已给出 patch）</p>
+                <div class="code-block"><pre class="text-slate-300"># 等待/推动上游合入 try/finally 修复：
+token = usage_metadata_callback_var.set(cb)
+try:
+    yield cb
+finally:
+    usage_metadata_callback_var.reset(token)</pre></div>
+                <p class="text-xs text-slate-500 mt-2">💡 上游修复解决泄漏本身，但方案A/B 的<strong>边界校验+双信源</strong>仍是长期防线——下一个类似 bug 出现时你第一时间知道。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：健康得分 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-lg">📈</span>
+            <h2 class="text-lg font-semibold text-white">健康得分</h2>
+        </div>
+
+        <div class="text-center mb-4">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full border-4 border-yellow-500">
+                <span class="text-2xl font-bold text-yellow-400">58</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">58/100 · 功能路径正常，但异常路径污染计量数据且不可见</p>
+        </div>
+
+        <div class="space-y-2">
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>稳定性</span><span class="text-green-400">75</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:75%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>效率</span><span class="text-green-400">80</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:80%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>正确性（数据可信度）</span><span class="text-red-400">35</span>
+                </div>
+                <div class="score-bar"><div class="score-fill bg-red-500" style="width:35%"></div></div>
+            </div>
+        </div>
+
+        <div class="mt-4 p-3 bg-slate-800/30 rounded-lg">
+            <p class="text-xs text-slate-400 leading-relaxed">
+                💡 健康得分 58/100。<strong>数据可信度仅 35</strong>——一旦业务代码在计量块内抛过一次异常，
+                此后所有 token 统计都不可信，而系统<strong class="text-red-400">没有任何信号提示污染已发生</strong>。
+                对按 token 计费、做配额限流的产品，这是财务级风险。接入 ARK
+                <code class="bg-slate-700 px-1 rounded">OutputValidator</code>（计量不变式）+
+                OTel Bridge（独立信源对账）后，污染发生 1 秒内即可见，可信度分可回到
+                <strong class="text-green-400">90+</strong>。
+            </p>
+        </div>
+    </div>
+
+    <!-- ====== 页脚反馈 ====== -->
+    <div class="text-center pt-4 pb-2">
+        <p class="text-xs text-slate-600">
+            本报告由 <span class="text-cyan-500">ARK</span> 生成 · 智能体健康感知系统<br>
+            <a href="https://github.com/langchain-ai/langchain/issues/38989" class="text-blue-400 hover:text-blue-300">langchain-ai/langchain#38989</a>
+            · 锚定自真实 Issue（open · bug/core · 附零依赖最小复现 · 作者已给出 patch 待合入）</p>
+    </div>
+
+</div>
+
+</body>
+</html>

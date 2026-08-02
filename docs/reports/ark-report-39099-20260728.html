@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain-core#39099</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; white-space: pre; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/39099" class="text-blue-400 hover:underline">langchain-ai/langchain#39099</a>
+            · args_schema 不完整时工具静默以「零参数」暴露给模型
+            · 2026-07-28 · W32 诊断 2/5
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🔴</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    当工具参数类型图里存在<strong class="text-orange-400">不可解析的前向引用</strong>（如嵌套 Pydantic 模型引用了装饰时尚未定义的类），
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">langchain-core</code> 不报错、不告警，而是把工具
+                    <strong class="text-red-400">以「零参数」schema 静默递交给模型</strong>：
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">{"properties": {}, "type": "object"}</code>。
+                    模型据此发起空参数调用，随后在校验层爆出 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">ValidationError</code> ——
+                    <strong class="text-red-400">对外宣称的 schema 与实际校验的 schema 互相矛盾</strong>。
+                    issue 报告者披露：一个模块 13 个工具中 12 个受影响，<strong class="text-orange-400">数月无人察觉</strong>。
+                </p>
+                <span class="badge mt-1 bg-red-500/20 text-red-400">契约不一致 · advertised ≠ enforced</span>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400 ml-1">静默降级 · 零日志零异常</span>
+                <span class="badge mt-1 bg-green-500/20 text-green-400 ml-1">ARK 实机完全复现 ✅</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">langchain-core 0.3.29 → 1.5.1 · Python 3.10-3.13 · LangGraph InjectedState 高发</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ open · bug/core 标签 · 已有贡献者认领</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ InputGuard schema 完整性门禁</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位（P2 Probe）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-3">失效链共四级，每一级单独看都"合理"，串起来就是静默灾难：</p>
+        <ol class="text-sm text-slate-300 space-y-2 list-decimal list-inside">
+            <li>嵌套模型含未解析前向引用 → Pydantic 标记 <code class="bg-slate-700 px-1 rounded">__pydantic_complete__ = False</code>（不抛错，合法中间态）</li>
+            <li>不完整模型使 <code class="bg-slate-700 px-1 rounded">inspect.signature()</code> 退化为 <code class="bg-slate-700 px-1 rounded">(**data: Any)</code></li>
+            <li><code class="bg-slate-700 px-1 rounded">get_all_basemodel_annotations()</code> 因此返回空字典 <code class="bg-slate-700 px-1 rounded">{}</code></li>
+            <li><code class="bg-slate-700 px-1 rounded">tool_call_schema</code> 把「schema 无法解析」误读为「该工具没有参数」→ 空 schema 递交模型</li>
+        </ol>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-white">不一致性是核心：</strong>同样的错误若直接出现在工具签名一级，
+            <code class="bg-slate-700 px-1 rounded">create_schema_from_function</code> 会立刻抛
+            <code class="bg-slate-700 px-1 rounded">NameError</code>（硬错误）；嵌套一层后，同一错误变成零参数静默降级。
+            开发者被上层的硬错误训练出「写错会立刻炸」的预期，恰恰因此更难怀疑到这里。</p>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：ARK 实机验证 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🧪</span>
+            <h2 class="text-lg font-semibold text-white">ARK 实机验证（2026-07-28 · langchain-core 1.5.1 / pydantic 2.13 / Python 3.11）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-2">issue 提供的最小复现在 ARK 验证环境<strong class="text-green-400">逐项完全复现（5/5）</strong>：</p>
+        <div class="code-block text-slate-300">pydantic_complete: False          ← schema 明知不完整
+args: []                          ← 工具对外宣称零参数
+openai_tool params: {"properties": {}, "type": "object"}   ← 空 schema 递交模型
+invoke({}) → ValidationError: real_arg / container Field required  ← 校验层却要求全部参数
+对照组（签名一级同错误）→ NameError: name 'RowX' is not defined     ← 上一层是硬错误</div>
+        <p class="text-xs text-slate-500 mt-2">与 #39087（部分复现、诚实披露）不同，本例为确定性缺陷：任何版本、任何平台、100% 触发。危险性不在概率，而在零信号——没有任何日志、警告或异常提示 schema 已降级。</p>
+    </div>
+
+    <!-- ====== 区块4：ARK 映射 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🛡️</span>
+            <h2 class="text-lg font-semibold text-white">ARK Trust Layer 如何拦截（P3 Prescribe）</h2>
+        </div>
+        <div class="space-y-3 text-sm text-slate-300">
+            <div class="callout">
+                <p><strong class="text-white">① InputGuard · schema 完整性门禁（注册时）</strong><br>
+                工具注册进 ARK 时强制断言：<code class="bg-slate-700 px-1 rounded">__pydantic_complete__ == True</code> 且
+                「函数签名参数数 == 对外 schema 参数数」。任何一条不满足即拒绝注册并报错——把静默降级变回硬错误，恢复框架在上一层本就有的行为。</p>
+            </div>
+            <div class="callout">
+                <p><strong class="text-white">② OutputValidator · 契约一致性不变式（运行时）</strong><br>
+                不变式：<em>advertised schema ⊇ enforced schema</em>。模型按对外 schema 生成的合法调用，必须能通过实际校验。
+                校验失败但调用符合对外 schema 时，判定为「工具契约自相矛盾」而非「模型幻觉」——错误归因直接改变排障方向。</p>
+            </div>
+            <div class="callout">
+                <p><strong class="text-white">③ OTel 留痕</strong><br>
+                每个工具注册时记录 schema 指纹（参数名/类型哈希）。12/13 个工具空参数这类批量异常，在可观测面板上一眼可见，而非数月潜伏。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块5：缺陷族归档 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📚</span>
+            <h2 class="text-lg font-semibold text-white">缺陷模式索引归档（P4 Publish）</h2>
+        </div>
+        <p class="text-sm text-slate-300">
+            归入 <strong class="text-orange-400">F3 · 静默失败 / 失败伪装成功</strong>（第 4 例）。
+            本例把该族从「运行时失败被吞」扩展到「<strong class="text-white">构建时降级被吞</strong>」：schema 构建失败不是运行时异常，
+            而是被静默折叠成一个语义完全不同的合法值（空 schema）。同族前例：#39039（失败流事件被丢）、#38892（空流误判失败）、#38893（不可重试异常被吞成 AIMessage）。
+        </p>
+    </div>
+
+    <!-- ====== 页脚 ====== -->
+    <div class="text-center text-xs text-slate-600 mt-6">
+        <p>ARK — Agent Reliability Kit · <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a></p>
+        <p class="mt-1">诊断方法论：4P Framework（Pinpoint → Probe → Prescribe → Publish）· 所有结论基于实机验证，复现与未复现均如实披露</p>
+        <p class="mt-1">生成时间：2026-07-28 09:35 CST · W32 诊断报告 2/5</p>
+    </div>
+
+</div>
+</body>
+</html>

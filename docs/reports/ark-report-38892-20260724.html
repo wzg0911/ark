@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain#38892</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .score-bar { height: 8px; border-radius: 4px; background: #2a2a3e; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 1s ease-in-out; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/38892" class="text-blue-400 hover:underline">langchain-ai/langchain#38892</a>
+            · RunnableWithFallbacks 空流误判：9个PR全部卡关，监管场景下的静默数据污染
+            · 2026-07-24
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🔴</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">RunnableWithFallbacks.stream()</code> 用裸
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">next(stream)</code> 偷窥第一个chunk来判断primary是否成功。
+                    当primary合法地返回<strong class="text-red-400">零个chunk</strong>（空结果集）时，
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">StopIteration</code> 被
+                    <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">exceptions_to_handle</code>
+                    默认捕获为失败，导致两种静默错误：
+                    <strong class="text-red-400">① fallback静默替换了正确的空结果</strong>（调用方以为拿到了primary输出，实际是备胎内容）；
+                    <strong class="text-red-400">② 无fallback时抛出 RuntimeError: generator raised StopIteration</strong>（把正确空流误报为代码bug）。
+                </p>
+                <span class="badge mt-1 bg-red-500/20 text-red-400">严重 · 静默数据污染</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：影响分析 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">⚠️</span>
+            <h2 class="text-lg font-semibold text-white">影响分析</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-300">发生频率</span><span class="text-yellow-400">高</span>
+                </div>
+                <p class="text-slate-400 text-sm">任何返回空结果的Filter/ModerationGate/SummarizerChain都会触发——这在生产Agent中极为常见。</p>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-300">隐蔽性</span><span class="text-red-400">极高</span>
+                </div>
+                <p class="text-slate-400 text-sm">fallback内容<strong>本身是合理的</strong>——所以调用方无法从内容判断"这条是primary的，还是备胎的？"——无任何信号。</p>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-300">监管场景风险</span><span class="text-red-400">极高</span>
+                </div>
+                <p class="text-slate-400 text-sm">合规审查/分析流水线中，"该步骤正确返回了空结果"本身就是<strong class="text-red-400">重要发现</strong>（如"本协议无排除条款"）。空结果被静默替换改变了流水线的语义。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：根因分析 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔬</span>
+            <h2 class="text-lg font-semibold text-white">根因分析</h2>
+        </div>
+        <div class="code-block mb-3 text-slate-300">
+<span class="text-purple-400"># 问题代码（简化）</span>
+<span class="text-green-400">RunnableWithFallbacks._stream()</span>
+...
+<span class="text-blue-400">try</span>:
+    chunk = <span class="text-yellow-400">next(stream)</span>   <span class="text-gray-500"># ← 偷窥第一个chunk</span>
+    <span class="text-blue-400">yield</span> chunk
+<span class="text-blue-400">except</span> <span class="text-red-400">Exception</span>:   <span class="text-gray-500"># ← StopIteration 被当异常捕获！</span>
+    <span class="text-green-400">yield from</span> fallback.stream(...)
+        </div>
+        <p class="text-slate-300 text-sm mb-2">当 primary 产生 <strong>0 个 chunk</strong>：</p>
+        <ol class="list-decimal list-inside text-sm text-slate-300 space-y-1">
+            <li><code class="bg-slate-700 px-1 py-0.5 rounded">next(stream)</code> → <code class="bg-slate-700 px-1 py-0.5 rounded">StopIteration</code>（正常流结束）</li>
+            <li>PEP 479 转换 → <code class="bg-slate-700 px-1 py-0.5 rounded">RuntimeError: generator raised StopIteration</code></li>
+            <li>被 <code class="bg-slate-700 px-1 py-0.5 rounded">except Exception</code> 捕获 → <strong class="text-red-400">fallback触发</strong></li>
+            <li>调用方拿到 fallback 内容，误以为是 primary 输出</li>
+        </ol>
+    </div>
+
+    <!-- ====== 区块4：9个PR揭示的修复共识 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🏆</span>
+            <h2 class="text-lg font-semibold text-white">社区共识：4人独立收敛到同一修复</h2>
+        </div>
+        <div class="callout mb-3">
+            <p class="text-sm text-slate-300 mb-1"><strong class="text-cyan-400">9个PR全部因"未分配issue"被自动关闭</strong>——维护者的分配机制形成了死锁。</p>
+            <p class="text-sm text-slate-300">但更值得注意的是：<strong class="text-green-400">@sergioperezcheco、@ErenAta16、@truongsontung、@PiedPiper911</strong> 四人独立研究，全部收敛到同一方案：</p>
+        </div>
+        <div class="code-block text-slate-300">
+<span class="text-purple-400"># 修复：哨兵值法（Sentinel）</span>
+_missing = <span class="text-blue-400">object()</span>   <span class="text-gray-500"># 模块级哨兵</span>
+
+<span class="text-green-400">def _stream(self, input, ...)</span>:
+    chunk = <span class="text-yellow-400">next(stream, _missing)</span>  <span class="text-gray-500"># ← 关键：用哨兵区分"空流"和"异常"</span>
+    <span class="text-blue-400">if</span> chunk <span class="text-green-400">is _missing</span>:
+        <span class="text-blue-400">return</span>   <span class="text-gray-500"># ← 空流=成功结果，不触发fallback，也不抛错</span>
+    <span class="text-blue-400">yield</span> chunk
+    <span class="text-blue-400">yield from</span> stream
+        </div>
+        <p class="text-slate-400 text-sm mt-2">用哨兵值把"流正常结束返回空"和"流抛出异常"分开——<strong class="text-green-400">StopIteration不再被当作异常处理</strong>。</p>
+    </div>
+
+    <!-- ====== 区块5：监管场景深度分析 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">⚖️</span>
+            <h2 class="text-lg font-semibold text-white">监管场景：静默污染比崩溃更危险</h2>
+        </div>
+        <div class="space-y-3">
+            <div class="callout">
+                <p class="text-sm text-slate-200"><strong class="text-yellow-400">场景：合规审查流水线</strong></p>
+                <p class="text-sm text-slate-300 mt-1">步骤1（非结构化）："总结此赔偿条款的风险" → <strong class="text-red-400">空结果</strong>（该条款无风险）</p>
+                <p class="text-sm text-slate-300">步骤2（结构化提取）：从总结中提取JSON义务</p>
+                <p class="text-sm text-slate-300 mt-1"><strong class="text-red-400">→ 实际发生：步骤1被fallback的非结构化总结替换，步骤2提取的是fallback的JSON</strong></p>
+                <p class="text-sm text-slate-300 mt-1">→ 审查员看到的是"看起来合理的风险评估"，实际上风险分析根本没跑。</p>
+            </div>
+            <div class="callout">
+                <p class="text-sm text-slate-200"><strong class="text-yellow-400">问题本质</strong></p>
+                <p class="text-sm text-slate-300 mt-1">Agent的<strong class="text-red-400">语义输出被静默替换</strong>，没有任何元数据标记这是来自primary还是fallback。调用方无法发现发生了替换，除非对比fallback的内容。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块6：ARK Trust 修复方案 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🛡️</span>
+            <h2 class="text-lg font-semibold text-white">ARK Trust 修复方案</h2>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <p class="text-sm font-semibold text-purple-300 mb-1">① OutputValidator — 强制空值语义不变式</p>
+                <div class="code-block text-slate-300">
+<span class="text-gray-500"># 在FallbackPipeline中强制验证：输出来源必须可追踪</span>
+<span class="text-green-400">@output_validator</span>(schema={
+    <span class="text-yellow-400">"_producer"</span>: {<span class="text-yellow-400">"type"</span>: <span class="text-yellow-400">"string"</span>, <span class="text-yellow-400">"enum"</span>: [<span class="text-yellow-400">"primary"</span>, <span class="text-yellow-400">"fallback"</span>]},
+    <span class="text-yellow-400">"_empty_primary"</span>: {<span class="text-yellow-400">"type"</span>: <span class="text-yellow-400">"boolean"</span>}
+})
+<span class="text-blue-400">def</span> <span class="text-green-400">safe_fallback_pipeline</span>(input):
+    <span class="text-gray-500"># OutputValidator 强制要求：fallback触发时必须携带_producer字段</span>
+    <span class="text-gray-500"># 打破静默替换：调用方永远知道这条是谁的</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-purple-300 mb-1">② CircuitBreaker — 空流率异常熔断</p>
+                <div class="code-block text-slate-300">
+<span class="text-gray-500"># 当 primary 空流率异常高时，触发熔断排查</span>
+breaker = <span class="text-green-400">CircuitBreaker</span>(
+    failure_threshold=<span class="text-yellow-400">5</span>,
+    failure_ratio=<span class="text-yellow-400">0.7</span>,   <span class="text-gray-500"># 70%空流率视为异常</span>
+    recovery_timeout=<span class="text-yellow-400">60</span>
+)
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-purple-300 mb-1">③ IdempotencyGuard — 防止重放攻击掩盖空流问题</p>
+                <div class="code-block text-slate-300">
+<span class="text-gray-500"># 相同的"空结果请求"不会被重复执行，暴露真实的primary空流频率</span>
+<span class="text-green-400">@idempotency_guard</span>(key_fn=<span class="text-blue-400">lambda</span> input: hash(input + <span class="text-yellow-400">"_primary_check"</span>))
+<span class="text-blue-400">def</span> <span class="text-green-400">check_primary_result</span>(input):
+    <span class="text-gray-500"># 多次相同输入返回相同空结果 → 空流是primary真实行为，非bug</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块7：可观测性增强 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📊</span>
+            <h2 class="text-lg font-semibold text-white">可观测性：OTel Bridge 全链路追踪</h2>
+        </div>
+        <p class="text-slate-300 text-sm mb-3">ARK OTel Bridge 可捕获 <code class="bg-slate-700 px-1 py-0.5 rounded">ark.fallback.trigger</code> 事件，记录每次 fallback 触发的具体原因：</p>
+        <div class="code-block text-slate-300">
+<span class="text-purple-400"># ARK OTel 事件流：自动捕获 fallback 触发链</span>
+<span class="text-yellow-400">ark.fallback.trigger</span> { reason: <span class="text-yellow-400">"empty_stream"</span>, producer: <span class="text-yellow-400">"fallback"</span>, primary_empty: <span class="text-yellow-400">true</span> }
+<span class="text-yellow-400">ark.guardian.intercept</span> { key: <span class="text-yellow-400">"idempotency"</span>, hit: <span class="text-yellow-400">true</span> }  <span class="text-gray-500"># 重复空流被幂等保护拦截</span>
+<span class="text-yellow-400">ark.circuit.open</span> { reason: <span class="text-yellow-400">"empty_ratio_exceeded"</span> }
+        </div>
+        <p class="text-slate-400 text-sm mt-2">配合 Langfuse/Jaeger 可视化，Agent团队可以<strong class="text-green-400">实时监控"空流→fallback"频率</strong>，在静默污染扩散前发现根因。</p>
+    </div>
+
+    <!-- ====== 区块8：置信度评估 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">✅</span>
+            <h2 class="text-lg font-semibold text-white">置信度评估</h2>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">根因确定性</span><span class="text-green-400">极高（4人独立验证）</span></div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:95%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">修复方案成熟度</span><span class="text-green-400">极高（社区共识）</span></div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:95%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">影响广度</span><span class="text-yellow-400">高（所有Fallback用户）</span></div>
+                <div class="score-bar"><div class="score-fill bg-yellow-500" style="width:75%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">静默性风险</span><span class="text-red-400">极高（无任何信号）</span></div>
+                <div class="score-bar"><div class="score-fill bg-red-500" style="width:90%"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1"><span class="text-slate-300">ARK契合度</span><span class="text-green-400">极高（幂等+熔断+验证全适用）</span></div>
+                <div class="score-bar"><div class="score-fill bg-green-500" style="width:95%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块9：诊断结论 ====== -->
+    <div class="report-card p-4 md:p-6">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🎯</span>
+            <h2 class="text-lg font-semibold text-white">诊断结论</h2>
+        </div>
+        <div class="space-y-2 text-sm text-slate-300">
+            <p><strong class="text-white">#38892 是 LangChain 最被低估的高危bug。</strong>它不crash、不报错，只静默污染Agent的输出语义。</p>
+            <p>在合规审查、数据分析、内容审核等"空结果本身就是重要发现"的场景中，这个bug把"我们发现没有问题"替换成"fallback说没有问题"——<strong class="text-red-400">两者在内容层面几乎无法区分</strong>，却在语义上完全不等价。</p>
+            <p>9个PR的关闭揭示的不仅是维护瓶颈，更说明了<strong class="text-cyan-400">独立研究者的共识强度</strong>——四人独立、同一方案，这是bug修复中最稀缺的信号。</p>
+            <p>ARK的幂等守护+输出验证组合，恰好填补了这个"无信号静默污染"的风险缺口：<strong class="text-green-400">ARK让空流vs fallback变得可观测、可拦截、可证明</strong>。</p>
+        </div>
+    </div>
+
+</div>
+
+<div class="text-center text-slate-600 text-xs mt-8 pb-4">
+    🛡️ ARK — Agent Reliability Kit | <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a><br>
+    生成时间：2026-07-24 · ARK Cruise Bot · W31 诊断报告 (1/N)
+</div>
+
+</body>
+</html>

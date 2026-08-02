@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proof-of-State Trap · ARK 技术复盘阵地</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--accent:#fbbf24;--blue:#3b82f6;--text:#e2e8f0;--muted:#94a3b8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 0 60px}
+  .wrap{max-width:820px;margin:0 auto;padding:32px 20px}
+  header{border-bottom:2px solid var(--accent);padding-bottom:20px;margin-bottom:28px}
+  h1{font-size:2rem;background:linear-gradient(90deg,#60a5fa,#22d3ee,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px}
+  .sub{color:var(--muted);font-size:.95rem}
+  h2{color:var(--accent);margin:32px 0 12px;font-size:1.4rem;border-left:4px solid var(--accent);padding-left:12px}
+  h3{color:#fff;margin:20px 0 8px;font-size:1.1rem}
+  p{margin:10px 0;color:var(--text)}
+  .case{background:var(--card);border-radius:12px;padding:18px 20px;margin:16px 0;border:1px solid #334155}
+  .case .tag{display:inline-block;background:var(--blue);color:#fff;font-size:.75rem;padding:2px 8px;border-radius:6px;margin-bottom:8px}
+  code{background:#0b1220;padding:2px 6px;border-radius:4px;font-family:ui-monospace,monospace;font-size:.85rem;color:#fbbf24}
+  .invariant{background:linear-gradient(135deg,#1a1a0f,#0f1a0a);border:2px solid var(--accent);border-radius:14px;padding:20px;margin:24px 0;font-size:1.05rem}
+  .invariant strong{color:var(--accent)}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .changelog{font-size:.85rem;color:var(--muted);border-top:1px solid #334155;margin-top:40px;padding-top:16px}
+  .brand{text-align:center;margin:40px 0 0;font-size:.9rem;color:var(--muted)}
+  .brand a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>The "Proof-of-State" Trap</h1>
+  <p class="sub">为什么你的 Agent 每次重启后都会死 —— ARK 官方技术复盘阵地 · 由 ARK 构建者 观一 维护</p>
+</header>
+
+<p>过去几周，我（<strong>观一</strong>，AI 智能体可靠性工具包 <a href="https://github.com/wzg0911/ark">ARK</a> 的构建者）解剖了一连串 Agent 在生产环境的崩溃。它们表面上互不相关，实则共享同一个根因。</p>
+
+<p>我把它命名为 <strong>Proof-of-State Trap（状态凭证陷阱）</strong>：<em>任何关于"X 还活着 / 还属于你 / 还是当前实例"的判断，如果依赖一个在重启后失效的标识符，会悄悄变成永久否决。</em></p>
+
+<div class="invariant">
+  <strong>核心不变式：Proof-of-state 必须和 incarnation（实例生命周期）绑死。</strong><br>
+  任何"X 还有效"的断言——PID 还活着 ≠ 锁还有效；session 状态还在 ≠ 进程还活着；配置合法 ≠ 运行时健康——只要没和<strong>当前实例</strong>绑死，重启后就会变成谎言。
+</div>
+
+<h2>四个真实案例（同一家族）</h2>
+
+<div class="case">
+  <span class="tag">#113434 · 会话句柄失效</span>
+  <h3>上游 generation 已退役，客户端却握着旧句柄</h3>
+  <p>服务端已轮换到新句柄，客户端仍持旧句柄 → 诡异 400 / "session invalid"。根因：<strong>状态生命周期在重启前后未对齐</strong>。该诊断随后被上游已合并 PR（#114056 / #114401 / #114478）独立印证。</p>
+  <p><a href="/reports/openclaw-113434">→ 完整报告</a></p>
+</div>
+
+<div class="case">
+  <span class="tag">#114234 · PID 锁泄漏</span>
+  <h3>容器重建后 PID 复用，锁被误判"永久存活"</h3>
+  <p>"锁是否被持有"的检查用 PID 存活性。容器重建后 PID 复用 → 锁看起来永远活着 → 缓存冻结。根因：<strong>锁有效性的凭证是一个重启后会过期的标识符</strong>。</p>
+  <p><a href="/reports/openclaw-114234">→ 完整报告</a></p>
+</div>
+
+<div class="case">
+  <span class="tag">#114255 · 状态生命周期缺失</span>
+  <h3>Gateway 重启后 session 状态卡在 running</h3>
+  <p>重启后 session 状态字符串仍停在 <code>running</code> → 下游判定"还在跑"永久阻塞。根因：<strong>重启前写入的状态被当作当前活跃度</strong>。</p>
+  <p><a href="/reports/openclaw-114255">→ 完整报告</a></p>
+</div>
+
+<div class="case">
+  <span class="tag">#115326 · LaunchAgent 死循环（社区贡献）</span>
+  <h3>一次性更新任务被设 keepalive，永久重启循环</h3>
+  <p>社区开发者 <strong>robingutsche</strong> 追踪到：<code>launchctl submit -l com.openclaw.beta-update-once</code> 被设了 <code>keepalive</code>，更新因 <code>EACCES</code> 失败后 launchd 无限重启，反复杀死 managed gateway 触发 breaker。他还发现 breaker <strong>永不自动清除</strong>，且 <code>status --all</code> 在 channel 实际 not-running 时仍报 OK。</p>
+  <p>我把他的发现拆成三个独立 bug（更新编排 / breaker 永不清空 / status 误报），并整理进 <a href="https://github.com/wzg0911/ark/discussions/5">ARK 深度复盘 #5</a>。这是本次方法论的<strong>中心 piece</strong>。</p>
+</div>
+
+<h2>为什么这事重要</h2>
+<p>生产环境的 Agent 崩溃，<strong>99% 不是模型问题，而是工程链路上的断言失效</strong>。模型没有"先确认一下这个状态是不是还有效"的停顿——它发出 <code>pip install requests-oauth2-helper</code>，工具在同一轮里执行，幻觉到执行的间隙为零。同理，重启后的状态断言也不会"先确认一下"。</p>
+
+<p>这正是我造 <a href="https://github.com/wzg0911/ark">ARK</a> 的原因：把"这个状态声明是否匹配当前实例"做成可自动检查的健康项，而不是让你在凌晨三点自己发现。</p>
+
+<h2>你能做什么</h2>
+<p>如果你的 Agent 半夜崩、重启就好、再崩——这是"家族式缺陷"在敲门。把日志贴到 <a href="https://github.com/wzg0911/ark/discussions/7">ARK 免费诊断日讨论区</a>，我（真人）会陪你一起看，不丢自动生成的假报告。</p>
+<p>不确定自己中没中招？先花 3 分钟做 <a href="https://ark-6ek.pages.dev/selfcheck">Agent 崩溃风险自检清单 →</a>（15 题覆盖幂等边界 / 状态生命周期 / 重试风暴三大族，本页四个案例都在里面）。</p>
+
+<div class="brand">
+  <p>ARK · Agent Reliability Kit —— 由 <a href="https://github.com/wzg0911/ark">观一</a> 构建并维护</p>
+  <p>本页是 ARK 官方技术品牌阵地，每一个新的诊断发现都将更新于此。</p>
+</div>
+
+<div class="changelog">
+  更新日志：<br>
+  2026-07-31 初版：四案例 + 不变式 + robingutsche 贡献归档<br>
+  （本页持续更新，最新诊断将追加到上方案例区）
+</div>
+</div>
+</body>
+</html>

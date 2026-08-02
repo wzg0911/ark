@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARK 诊断报告 · langchain-openai#39113</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <style>
+        body { background: #0a0a0f; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .report-card { background: linear-gradient(135deg, #111118 0%, #16162a 100%); border: 1px solid #2a2a3e; border-radius: 16px; }
+        .code-block { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; overflow-x: auto; white-space: pre; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+        .callout { background: #1a1a2e; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 8px 0; }
+        @media (max-width: 640px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto max-w-4xl px-4 py-6">
+
+    <!-- ====== 元信息 ====== -->
+    <div class="text-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            🛡️ ARK 智能体诊断报告
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+            <a href="https://github.com/langchain-ai/langchain/issues/39113" class="text-blue-400 hover:underline">langchain-ai/langchain#39113</a>
+            · ChatOpenAI (Responses API) 合成 AIMessage 的 lc_ id 泄漏导致 400
+            · 2026-07-29 · W32 诊断 7/5（超额）
+        </p>
+    </div>
+
+    <!-- ====== 区块1：问题摘要 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">📋</span>
+            <h2 class="text-lg font-semibold text-white">问题摘要</h2>
+        </div>
+        <div class="flex items-start gap-2 mb-2">
+            <span class="text-xl">🔴</span>
+            <div>
+                <p class="text-base text-slate-200">
+                    用户用官方推荐的 <code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm">create_text_block()</code>
+                    构造<strong>合成对话历史</strong>（压缩/摘要长对话的常见做法）时，工厂方法会给每个块铸造
+                    <code class="bg-slate-700 px-1 rounded text-sm">lc_&lt;uuid4&gt;</code> 形式的 id。
+                    <code class="bg-slate-700 px-1 rounded text-sm">langchain_openai._construct_responses_api_input()</code>
+                    的 <strong class="text-red-400">assistant 分支把该 id 原样写入出站 <code class="bg-slate-700 px-1 rounded text-sm">input[].id</code></strong>，
+                    而 OpenAI Responses API 只接受服务端签发的 <code class="bg-slate-700 px-1 rounded text-sm">msg_*</code> id——
+                    换回 <code class="bg-slate-700 px-1 rounded text-sm">400 "Invalid 'input[2].id': 'lc_...'. Expected an ID that begins with 'msg'."</code>。
+                    同样的对话发给 Anthropic / Google 均正常，唯独 OpenAI 崩溃。
+                </p>
+                <span class="badge mt-1 bg-red-500/20 text-red-400">框架自铸元数据泄漏到 wire 协议（F9 第2例）</span>
+                <span class="badge mt-1 bg-orange-500/20 text-orange-400 ml-1">与 #39100 跨 provider 镜像（Anthropic system / OpenAI assistant）</span>
+                <span class="badge mt-1 bg-green-500/20 text-green-400 ml-1">ARK 实机离线复现 ✅（无需 API key）</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">影响范围</p>
+                <p class="text-white font-medium text-sm">langchain-openai 1.4.1 · Responses API + v1 content_blocks 构造合成 AIMessage 的所有用户</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">框架现状</p>
+                <p class="text-white font-medium text-sm">⚠️ open（2026-07-28 报告）· 无人认领 · 关联 #39100（同族已修复）</p>
+            </div>
+            <div class="bg-slate-800/50 rounded-lg p-2">
+                <p class="text-slate-500">ARK 方案</p>
+                <p class="text-white font-medium text-sm">✅ OutputValidator 出站 payload 契约 + InputGuard internal 字段标记</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 区块2：根因定位 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🔍</span>
+            <h2 class="text-lg font-semibold text-white">根因定位（P2 Probe）</h2>
+        </div>
+        <p class="text-sm text-slate-300 mb-3">缺陷是「无形状校验的 id 透传」——出站边界把「有 id」当成了「id 合法」：</p>
+        <ol class="text-sm text-slate-300 space-y-2 list-decimal list-inside">
+            <li><code class="bg-slate-700 px-1 rounded">create_text_block()</code> 对无 id 的块自动铸造 <code class="bg-slate-700 px-1 rounded">lc_&lt;uuid4&gt;</code>——v1 内容块把 id 设计为一等公民；</li>
+            <li><code class="bg-slate-700 px-1 rounded">_construct_responses_api_input()</code> 的 assistant 分支读取 <code class="bg-slate-700 px-1 rounded">msg_id = block.get("id")</code>，只要 <code class="bg-slate-700 px-1 rounded">store is not False</code> 就写入 <code class="bg-slate-700 px-1 rounded">new_item["id"] = msg_id</code>——<strong class="text-red-400">没有任何前缀/形状检查</strong>；</li>
+            <li>该 id 的设计意图是回传<strong>服务端签发</strong>的 <code class="bg-slate-700 px-1 rounded">msg_*</code> item id（stored-replay 场景合法且必要），但框架自铸的 <code class="bg-slate-700 px-1 rounded">lc_*</code> id 走同一条路径无差别透传；</li>
+            <li>对比：human/system 消息块的 id 在同一函数中已被丢弃（用户实测「system 和 human 的 id 已被 pop」），<strong>唯独 assistant 分支缺这道清洗</strong>——与 #39100（Anthropic 唯独 system 分支缺清洗）构成精确镜像。</li>
+        </ol>
+        <div class="code-block mt-3 text-slate-300"># langchain_openai/chat_models/base.py · _construct_responses_api_input()
+elif msg["role"] == "assistant":
+    ...
+    msg_id = block.get("id")          # ← lc_ 或 msg_ 一视同仁
+    ...
+    else:
+        new_item: dict = {"type": "message", "content": [new_block], "role": "assistant"}
+        if store is not False:
+            new_item["id"] = msg_id   # ← 无形状校验，lc_ id 直达 wire
+        input_.append(new_item)</div>
+        <div class="callout mt-3">
+            <p class="text-sm text-slate-300"><strong class="text-indigo-400">ARK 离线确定性复现（无需 API key）：</strong>
+            通过 <code class="bg-slate-700 px-1 rounded">ChatOpenAI._get_request_payload()</code> 直接检视出站 payload——
+            默认 <code class="bg-slate-700 px-1 rounded">store=None</code> 时 assistant item 携带 <code class="bg-slate-700 px-1 rounded">"id": "lc_..."</code>（必 400）；
+            <code class="bg-slate-700 px-1 rounded">store=False</code> 时 id 被整体省略（合法）；
+            服务端 <code class="bg-slate-700 px-1 rounded">msg_*</code> id 正常透传（合法）。三态对照锁死根因。
+            脚本：<code class="bg-slate-700 px-1 rounded">scripts/repros/repro_39113_responses_assistant_lc_id_leak.py</code></p>
+        </div>
+    </div>
+
+    <!-- ====== 区块3：后果与叙事 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">💥</span>
+            <h2 class="text-lg font-semibold text-white">后果分析</h2>
+        </div>
+        <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside">
+            <li><strong>官方推荐路径先崩：</strong>「用 create_* 工厂方法获得校验与标准化」是 v1 迁移指引的核心卖点，越守规矩的用户越先触雷（与 #39047、#39100 同一叙事）；</li>
+            <li><strong>跨 provider 不可移植：</strong>同一份合成历史 Anthropic / Google 正常、OpenAI 400——「provider 无关抽象」承诺在出站边界破产；</li>
+            <li><strong>合成历史是高频场景：</strong>对话压缩/摘要、few-shot 注入、多 Agent 转录回放全部依赖手工构造 AIMessage，此路径覆盖面远大于表面；</li>
+            <li><strong>F9 族复发确认系统性：</strong>同一根因（自铸 id 无出站清洗）三个月内在两个 provider 适配器的两个不同角色分支各爆一次，证明「N 适配器 × M 角色分支」的人工纪律必然遗漏。</li>
+        </ul>
+    </div>
+
+    <!-- ====== 区块4：ARK 处方 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">💊</span>
+            <h2 class="text-lg font-semibold text-white">ARK 处方（P3 Prescribe）</h2>
+        </div>
+        <table class="w-full text-sm text-slate-300">
+            <thead><tr class="text-slate-500 border-b border-slate-700 text-left">
+                <th class="py-2">层</th><th class="py-2">组件</th><th class="py-2">机制</th>
+            </tr></thead>
+            <tbody>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">上游修复建议</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">_construct_responses_api_input()</code></td>
+                    <td class="py-2">assistant 分支写 id 前加形状校验：仅 <code class="bg-slate-700 px-1 rounded">msg_id.startswith("msg_")</code>（或非 <code class="bg-slate-700 px-1 rounded">lc_</code> 前缀）时保留，否则省略——与 store=False 路径行为对齐</td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">ARK 防线 1</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">OutputValidator</code></td>
+                    <td class="py-2">对每个 provider 声明 wire schema 白名单（OpenAI Responses：input[].id 必须 ^msg_），发送前对账，违规即拦截+告警</td>
+                </tr>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">ARK 防线 2</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">InputGuard</code></td>
+                    <td class="py-2">框架自铸字段（lc_ 前缀）统一打 internal 标记，任何 internal 字段出现在出站 payload 即契约违规——单点强制取代 N×M 人工纪律</td>
+                </tr>
+                <tr>
+                    <td class="py-2">ARK 防线 3</td>
+                    <td class="py-2">OTel 留痕</td>
+                    <td class="py-2"><code class="bg-slate-700 px-1 rounded">ark.validation.fail</code> 事件记录被拦截字段与来源块，替代「400 后从堆栈反推」的排障路径</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ====== 区块5：族谱 ====== -->
+    <div class="report-card p-4 md:p-6 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🧬</span>
+            <h2 class="text-lg font-semibold text-white">缺陷族谱 · F9 出站契约不对称（第 2 例）</h2>
+        </div>
+        <table class="w-full text-sm text-slate-300">
+            <thead><tr class="text-slate-500 border-b border-slate-700 text-left">
+                <th class="py-2">Issue</th><th class="py-2">适配器</th><th class="py-2">泄漏分支</th><th class="py-2">状态</th>
+            </tr></thead>
+            <tbody>
+                <tr class="border-b border-slate-800">
+                    <td class="py-2">#39100</td><td class="py-2">langchain-anthropic</td><td class="py-2">system（human/assistant 已收窄）</td><td class="py-2 text-green-400">✅ 当日修复（PR #39101）</td>
+                </tr>
+                <tr>
+                    <td class="py-2">#39113</td><td class="py-2">langchain-openai (Responses)</td><td class="py-2">assistant（human/system 已 pop）</td><td class="py-2 text-orange-400">⚠️ open</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="text-sm text-slate-400 mt-3">两例互为镜像：同一个自铸 id、同一类出站边界，泄漏点却在<strong>不同 provider 的互补角色分支</strong>——精确演示了「每个适配器的每个分支都必须记得过滤」这一人工纪律的不可持续性。#39100 的修复（PR #39101）只堵了 Anthropic system 一处，OpenAI assistant 分支原样存活至今，正是 ARK「单点自动强制」主张的最强证据。</p>
+    </div>
+
+    <!-- ====== 页脚 ====== -->
+    <div class="text-center text-xs text-slate-600 mt-6">
+        <p>ARK — Agent Reliability Kit · <a href="https://github.com/wzg0911/ark" class="text-blue-400 hover:underline">github.com/wzg0911/ark</a></p>
+        <p class="mt-1">4P Framework: Pinpoint → Probe → Prescribe → Publish · 生成于 2026-07-29 05:34 CST</p>
+    </div>
+
+</div>
+</body>
+</html>
