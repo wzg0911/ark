@@ -117,6 +117,10 @@
 - [x] **诊断报告库对外打通（08-01 15:45）** —— 巡航发现三处结构性缺陷并修复：（a）**#39167 诊断报告缺失**——处方已回流产品（v0.8.3）、repro 已实跑验证、ROADMAP 已记里程碑，唯独对外报告从未产出（做了 100 分对外露出 0 分），已补发并确立 **F10 新族「可选属性读取的半函数守护」**；（b）**23 份报告全站零入链**——最厚的信任证据资产无索引页、首页零入链，新建 `docs/reports/index.html` 报告库并从首页/品牌页/README/blog 四处建入口；（c）**可达性检查脚本化** `scripts/check_reachability.py`（从首页 BFS 传递可达判定，非单级入链计数；负向测试已验证能捕获回归）✅
 - [ ] 🔴 **新发现：Cloudflare Pages SPA fallback 导致历次巡航「线上全 200」为假绿** —— `/nonsense-xyz` 等任意不存在路径均返回 200 + index.html 正文，HTTP 探测在该托管配置下**不具备存在性证明能力**。待评估：配 404 页 / `_routes.json`，或巡航改用内容指纹校验而非状态码
 
+- [x] **埋点覆盖打通：增长失明修复（08-02 12:58）** —— 巡航对上轮「31 页全可达 ✅」提出下一个问题「这 31 页有几个在上报数据」，答案是 **1 个**：`docs/track.js` 专为采集而写却**零页面引用（死代码）**，首页/自检清单/品牌页/报告库 + 26 份报告页全部零埋点，`/api/stats` 的 `page_views: 86` 几乎全部来自诊断页一处——**上轮刚修好入链的 23 份报告，有没有人看在数据上完全不可知**。与 F3 族「失败伪装成成功」同形：非零数字掩盖了 1/31 的覆盖率，不触发任何告警。已修复：（a）激活 track.js（自动 page_view + 去重守卫 + localStorage 降级）；（b）**新增 `page` 归因维度**（前端 + Function + 飞书字段）——无此维度则只知「有人来」不知「来看什么」；（c）31 页全部接入（30 页引用 + diagnose 内联去重）；（d）新建门禁 `scripts/check_instrumentation.py`（零埋点/死代码/缺归因三查，负向测试已验证能捕获回归）；（e）线上端到端验证：CF 重新部署后 5 页抓取确认引用生效，真实打点写入飞书记录 `recvr79uazXhyb` 页面字段正确 ✅
+
+- [ ] 🔴 **新发现：两套 `/api/track` 并存且契约互不兼容** —— `functions/api/track.js`（根目录，写飞书 Bitable，**线上生效**）与 `ark-pro/functions/api/track.js`（写 CF KV，**未部署**）同名同路径、请求契约不同（`{type,channel,anon_id,page}` vs `{event,meta}`）。判定依据：线上响应形状为 `{ok,code}`，且 ark-pro 独有端点 `/api/selfcheck` 返回 405。风险：改动 ark-pro 版会「看起来在修埋点，实际改的是死代码」——本轮 `docs/track.js` 问题的后端翻版；08-01 `a7e0917` 落地的 claim/selfcheck/waitlist 目前均未生效。待决策：删除 / 合并并部署 / 加显著废弃标记
+
 ### Week 3+: Scaling (规划中)
 - [ ] 免费诊断邀请（V2EX/Reddit/DEV.to）
 - [ ] Show HN 发布
