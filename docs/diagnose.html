@@ -24,14 +24,24 @@
           if (r) return 'referral'; return 'direct';
         } catch (e) { return 'direct'; }
       }
+      function arkPage() {
+        try {
+          var p = (location.pathname || '/').replace(/\.html$/, '').replace(/^\/+/, '');
+          if (p === '' || p === 'index') return 'home';
+          if (p.charAt(p.length - 1) === '/') p += 'index';
+          return p.slice(0, 80);
+        } catch (e) { return 'unknown'; }
+      }
       function arkEvent(type, meta) {
         meta = meta || {};
         try {
           fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: type, channel: arkChannel(), anon_id: arkAnonId(),
+            body: JSON.stringify({ type: type, channel: arkChannel(), anon_id: arkAnonId(), page: arkPage(),
               product: meta.product || 'buy_once', email: meta.email || '' }), keepalive: true }).catch(function(){});
         } catch (e) {}
       }
+      // 去重守卫：与 /track.js 的自动 page_view 共用，防止将来引入 track.js 时双发
+      window.__ARK_PV_SENT__ = true;
       document.addEventListener('DOMContentLoaded', function () { arkEvent('page_view'); });
     </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">

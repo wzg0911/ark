@@ -17,7 +17,7 @@ export async function onRequestPost({ request, env }) {
     return new Response(JSON.stringify({ ok: false, reason: 'invalid_json' }), { status: 400 });
   }
 
-  const { type, channel, anon_id, product, email } = body;
+  const { type, channel, anon_id, product, email, page } = body;
   if (!type) return new Response(JSON.stringify({ ok: false, reason: 'missing_type' }), { status: 400 });
 
   // 取飞书 token（带 5 分钟缓存）
@@ -30,6 +30,9 @@ export async function onRequestPost({ request, env }) {
   };
   if (product) fields['产品类型'] = product;
   if (email) fields['邮箱(文本)'] = email;
+  // 2026-08-02：页面归因维度。没有它，所有 page_view 汇成一个无法拆解的总数，
+  // 只知道「有人来」却不知道「来看什么」，无法判断哪个内容资产真正在吸引人。
+  if (page) fields['页面'] = String(page).slice(0, 80);
 
   try {
     const resp = await fetch(
