@@ -75,12 +75,16 @@
   <div class="q"><input type="checkbox" id="r5"><label for="r5">失败时有熔断（circuit breaker）吗？还是"挂了就一直撞"？</label></div>
 </div>
 
-<div class="result">
+<div class="result" id="resultBox">
   <div class="num" id="score">0</div>
-  <div class="tag">个红色警报 —— 这些是你的 Agent 半夜崩溃的真实诱因</div>
+  <div class="tag" id="scoreTag">个红色警报 —— 勾选"是"的题，都是你 Agent 可能半夜崩溃的真实诱因</div>
+  <div id="verdict" style="margin-top:12px;font-size:1rem;font-weight:600"></div>
 </div>
 <div style="text-align:center;font-size:.85rem;color:var(--muted)">勾选"是"的题越多，说明你当前架构越接近"重启即崩溃"的临界点。</div>
 
+<div class="cta">
+  <button id="submitBtn" style="display:none;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;font-weight:700;padding:14px 32px;border-radius:12px;font-size:1.05rem;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(234,88,12,.3)">✅ 我已勾选完成 · 查看我的崩溃风险</button>
+</div>
 <div class="cta">
   <a href="https://github.com/wzg0911/ark/discussions/7">📩 把你的清单结果发我，免费陪你看真实诊断</a>
 </div>
@@ -106,11 +110,41 @@
 </div>
 
 <script>
-// 实时统计红灯数
+// 实时统计红灯数 + selfcheck_complete 埋点
 const boxes=document.querySelectorAll('input[type=checkbox]');
 const score=document.getElementById('score');
-function update(){let n=0;boxes.forEach(b=>{if(b.checked)n++});score.textContent=n;}
+const tag=document.getElementById('scoreTag');
+const verdict=document.getElementById('verdict');
+const submitBtn=document.getElementById('submitBtn');
+let completed=false;
+
+function level(n){
+  if(n===0)return {color:'var(--green)',text:'🟢 绿灯：你的 Agent 目前状态健康，继续保持' };
+  if(n<=4)return {color:'var(--accent)',text:'🟡 黄灯：有隐患，建议对照下方案例逐条排查' };
+  return {color:'var(--red)',text:'🔴 红灯：高危！你的 Agent 很可能正在（或即将）半夜崩溃' };
+}
+
+function update(){
+  let n=0;boxes.forEach(b=>{if(b.checked)n++});
+  score.textContent=n;
+  const lv=level(n);
+  verdict.style.color=lv.color;
+  verdict.textContent=lv.text;
+  if(n>0){submitBtn.style.display='inline-block';}
+}
 boxes.forEach(b=>b.addEventListener('change',update));
+
+// selfcheck_complete 埋点：用户主动点"查看结果"时上报（带红灯数）
+submitBtn.addEventListener('click',()=>{
+  if(completed)return;
+  completed=true;
+  const red=boxes.length - [].filter.call(boxes,b=>!b.checked).length;
+  try{
+    window.ARK_TRACK && ARK_TRACK.send('selfcheck_complete',{red_count:red});
+  }catch(e){/* 埋点静默失败 */}
+  // 滚动到结果区强化"劈开伤口"记忆
+  document.getElementById('resultBox').scrollIntoView({behavior:'smooth'});
+});
 </script>
 </body>
 </html>
