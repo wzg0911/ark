@@ -11,7 +11,7 @@ export async function onRequestGet(context) {
   const cors = { 'Access-Control-Allow-Origin': '*' };
   const zero = {
     page_views: 0, diagnosis_starts: 0, claim_attempts: 0, claim_success: 0,
-    pay_intents: 0, customers: 0, real_visitors: 0, channels: {}
+    pay_intents: 0, customers: 0, real_visitors: 0, selfchecks: 0, channels: {}
   };
 
   const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_BITABLE, FEISHU_TABLE } = env;
@@ -57,6 +57,9 @@ export async function onRequestGet(context) {
           if (isReal && !seen.has(anon)) { seen.add(anon); agg.real_visitors += 1; }
         } else if (type === 'diagnosis_start' || type === 'diagnose_start') {
           agg.diagnosis_starts += 1;
+        } else if (type === 'selfcheck_complete') {
+          agg.diagnosis_starts += 1;
+          agg.selfchecks += 1;
         } else if (type === 'claim_attempt' || type === 'claim_pending') {
           agg.claim_attempts += 1;
         } else if (type === 'claim_success') {
