@@ -99,7 +99,7 @@
   <p>launchd 把一次性更新任务设成 keepalive → 无限重启 → 每次重启都杀掉 gateway。他熬了 3 晚。ARK 把它拆成 3 个独立 bug，永久归档。— <a href="https://ark-6ek.pages.dev/proof-of-state-trap">看完整案例 →</a></p>
 </div>
 
-<div class="cta" style="margin-top:28px">
+<div class="cta" style="margin-top:28px;display:none" id="diagnoseCta">
   <a href="https://ark-6ek.pages.dev/diagnose">🔔 预约《深度诊断》· 真人陪你拆</a>
 </div>
 
@@ -130,7 +130,7 @@ function update(){
   const lv=level(n);
   verdict.style.color=lv.color;
   verdict.textContent=lv.text;
-  if(n>0){submitBtn.style.display='inline-block';}
+  submitBtn.style.display='inline-block';
 }
 boxes.forEach(b=>b.addEventListener('change',update));
 
@@ -144,6 +144,11 @@ submitBtn.addEventListener('click',()=>{
   }catch(e){/* 埋点静默失败 */}
   // 滚动到结果区强化"劈开伤口"记忆
   document.getElementById('resultBox').scrollIntoView({behavior:'smooth'});
+  // 完成引导：延迟弹出深度诊断 CTA（7 访客断点修复：做完全检的人直接接真人诊断）
+  setTimeout(()=>{
+    const d=document.getElementById('diagnoseCta');
+    if(d){d.style.display='block';d.scrollIntoView({behavior:'smooth',block:'center'});}
+  },1200);
 });
 </script>
 </body>
