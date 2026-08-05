@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /functions/
+Sitemap: https://ark-6ek.pages.dev/sitemap.xml
