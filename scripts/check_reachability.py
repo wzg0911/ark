@@ -43,11 +43,12 @@ DOCS = REPO / "docs"
 # 漏斗上游：用户最可能的入口。非首页页面至少要有一条来自这里的入链。
 UPSTREAM = {"docs/index.html", "README.md"}
 
-# 首页与模板类文件不参与「被指向」检查
+# 首页、模板类、错误页不参与「被指向」检查
 EXEMPT_TARGETS = {
     "docs/index.html",          # 首页自身即入口
     "docs/reports/template.html",  # 模板，非投放页
     "docs/reports/test-001.html",  # 测试夹具
+    "docs/404.html",            # 错误页：无需入链（浏览器/CF 直接可达）
 }
 
 # 超过此距离的页面虽可达，但埋得太深，值得提醒

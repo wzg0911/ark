@@ -47,11 +47,12 @@ REPO = Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
 TRACK_JS = DOCS / "track.js"
 
-# 不参与埋点检查的页面：模板、测试夹具、纯跳转页
+# 不参与埋点检查的页面：模板、测试夹具、纯跳转页、错误页
 EXEMPT = {
     "docs/reports/template.html",   # 模板，非投放页
     "docs/reports/test-001.html",   # 测试夹具
     "docs/pro.html",                # 纯 meta refresh 跳转页
+    "docs/404.html",                # 错误页：故意不埋点，防 404 爬虫/误访污染统计
 }
 
 
