@@ -8,11 +8,16 @@
 
     本轮实测：`/nonsense-xyz-cruise` → HTTP 200 + index.html 正文（假绿实锤）。
 
-判定模型：**内容指纹 + 语义差异**，而非 HTTP 状态码。
+判定模型：**内容指纹 + 语义差异 + 状态码**（2026-08-06 升级）。
 
-    1. 请求目标路径，取响应正文。
-    2. 若正文与首页正文相同（SPA fallback 特征），判定为「不存在/回退」。
-    3. 若正文与首页不同，再校验期望的语义锚点（页面 title 关键词）。
+    历史：Cloudflare Pages SPA fallback 曾让任意不存在路径返回 200+index.html（假绿），
+    本脚本因此引入内容指纹判定。2026-08-06 新增 docs/404.html 根治：不存在路径现返回
+    真实 404 + 专属 404 页。
+
+    当前判定：
+    1. 状态码 404 → 明确不存在（SPA 假绿已根治，状态码重新可信）。
+    2. 状态码非 404 时，若正文与首页正文相同（fallback 特征）→ 判定「回退/疑似不存在」。
+    3. 其余情况校验期望语义锚点（页面 title 关键词）。
        —— 锚点匹配到才算真正「存在」。
 
 用法：
@@ -45,12 +50,28 @@ PAGES: dict[str, str] = {
 
 TIMEOUT = 20
 
+# 负向路径：这些路径必须返回 404（SPA fallback 根治后的存在性反面证明）
+# 任何一条返回 200 都说明 SPA fallback 假绿复发
+NEGATIVE_PATHS = [
+    "/nonsense-xyz-cruise",
+    "/reports/does-not-exist",
+    "/this-page-really-does-not-exist-12345",
+]
+
 
 def fetch(url: str) -> tuple[int, str]:
-    """返回 (status, body)。网络错误抛异常由调用方处理。"""
+    """返回 (status, body)。HTTP 错误状态码也返回（urllib 对 404 会抛 HTTPError，需捕获）。"""
     req = urllib.request.Request(url, headers={"User-Agent": "ark-cruise/1.0"})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return resp.status, resp.read().decode("utf-8", errors="ignore")
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            return resp.status, resp.read().decode("utf-8", errors="ignore")
+    except urllib.error.HTTPError as e:
+        # 404 等错误状态码：读取错误正文（若有），返回真实状态码
+        try:
+            body = e.read().decode("utf-8", errors="ignore")
+        except Exception:  # noqa: BLE001
+            body = ""
+        return e.code, body
 
 
 def main() -> int:
@@ -78,7 +99,27 @@ def main() -> int:
     print("=" * 70)
     print(f"首页正文指纹长度: {len(home_norm)} 字符")
 
-    failed = False
+    # 负向检查：不存在路径必须返回 404（SPA fallback 假绿复发检测）
+    print("-" * 70)
+    print("负向检查（不存在路径必须 404）")
+    print("-" * 70)
+    neg_failed = False
+    for path in NEGATIVE_PATHS:
+        url = base + path
+        try:
+            status, _ = fetch(url)
+        except Exception as e:  # noqa: BLE001
+            print(f"🟡 {path:44s} 网络错误 {e}")
+            neg_failed = True
+            continue
+        if status == 404:
+            print(f"✅ {path:44s} HTTP 404（SPA 假绿未复发）")
+        else:
+            print(f"🔴 {path:44s} HTTP {status}  ← 应 404 却非 404，SPA fallback 假绿可能复发")
+            neg_failed = True
+
+    failed = neg_failed
+    print()
     for path, anchor in PAGES.items():
         url = base + path
         try:
@@ -107,9 +148,9 @@ def main() -> int:
 
     print()
     if failed:
-        print("结论：存在疑似回退/不存在的页面，需处理（见 ROADMAP 假绿项）。")
+        print("结论：存在疑似回退/不存在的页面，或负向 404 检查失败，需处理（见 ROADMAP 假绿项）。")
         return 1
-    print("结论：全部投放页线上存在（内容指纹校验通过，非 200 假绿）。")
+    print("结论：全部投放页线上存在 + 负向路径全部 404（SPA 假绿已根治，状态码重新可信）。")
     return 0
 
 
