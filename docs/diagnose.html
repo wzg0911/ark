@@ -214,8 +214,8 @@
               <div class="flex-1">
                 <p class="text-white font-semibold text-sm mb-1">扫码支付 ¥49</p>
                 <p class="text-slate-400 text-xs mb-3">选择微信或支付宝，扫码后请在支付界面确认金额为 <span class="text-yellow-400 font-bold">¥49</span></p>
-                <div id="payCodesArea" class="hidden">
-                <p class="text-yellow-400 text-xs font-bold mb-2 text-center">👇 先填下方邮箱，点击"我已支付"提交后，收款码会在此显示</p>
+                <div id="payCodesArea">
+                <p class="text-yellow-400 text-xs font-bold mb-2 text-center">👇 直接扫码付款，收款码就在下方——付款后填写邮箱领 Pro Key</p>
                 <div class="grid grid-cols-2 gap-3">
                   <div class="text-center">
                     <img src="payments/wechat-merchant.png" alt="微信支付¥49" class="mx-auto w-32 h-32 rounded-lg border border-green-500/40 bg-white p-1 object-contain">
@@ -229,10 +229,10 @@
                   </div>
                 </div>
                 </div>
-                <div id="payCodesLocked" class="text-center py-6 bg-[#0a1628] border border-yellow-500/30 rounded-xl">
+                <div id="payCodesLocked" class="hidden">
                   <div class="text-4xl mb-2">🔒</div>
                   <p class="text-slate-300 text-sm font-semibold">收款码已锁定</p>
-                  <p class="text-slate-500 text-xs mt-1">填写邮箱并点击"我已支付 ¥49"，即可解锁收款码 + 确保 Key 发到你邮箱</p>
+                  <p class="text-slate-500 text-xs mt-1">扫码付款后，填写邮箱即可领取 Pro Key（自动发送）</p>
                 </div>
               </div>
             </div>
@@ -249,10 +249,10 @@
             <div class="flex items-start gap-3">
               <span class="shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">3</span>
               <div class="flex-1">
-                <p class="text-white font-semibold text-sm mb-1">点击"我已支付"→ 提交申请，截图发客服</p>
+                <p class="text-white font-semibold text-sm mb-1">付款后填写邮箱领 Pro Key</p>
                 <p class="text-slate-400 text-xs mb-3">系统会自动核销并发送 Pro Key 到你的邮箱（含下载链接 + 使用指南）</p>
                 <button id="claimSubmitBtn" onclick="submitClaim()" class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 rounded-xl transition shadow-lg text-base">
-                  ✅ 我已支付 ¥49 · 提交申请领 Pro Key
+                  📩 付款完成 · 提交邮箱领 Pro Key
                 </button>
                 <p id="claimError" class="hidden text-xs text-red-400 mt-2 text-center"></p>
               </div>
@@ -567,9 +567,9 @@ function openClaimModal() {
   document.getElementById('claimModal').classList.remove('hidden');
   document.getElementById('claimSuccess').classList.add('hidden');
   document.getElementById('claimError').classList.add('hidden');
-  // 强制先填邮箱提交 claim 才显收款码，杜绝绕过表单直接扫码导致收付失联
-  document.getElementById('payCodesArea').classList.add('hidden');
-  document.getElementById('payCodesLocked').classList.remove('hidden');
+  // 收款码默认可见：用户直接扫码付款后填写邮箱提交 claim，领取 Pro Key
+  document.getElementById('payCodesArea').classList.remove('hidden');
+  document.getElementById('payCodesLocked').classList.add('hidden');
   const storedEmail = localStorage.getItem('ark_user_email') || '';
   document.getElementById('claimEmail').value = storedEmail;
 }

@@ -52,10 +52,11 @@ export async function onRequestGet(context) {
         const type = f['事件类型'] || f['type'] || '';
         const anon = String(f['匿名标识'] || f['anon_id'] || '');
         const channel = String(f['来源渠道'] || f['channel'] || 'direct');
+        const status = String(f['状态'] || '');
         const isReal = anon.startsWith('a_') && !anon.startsWith('anon_test');
-        // 过滤内部测试/巡检流量：demo_/cron-check/a_test/preflight/a_check/diagnose_test/test
-        const SKIP_PREFIX = ['demo_','cron-check','a_test','preflight','a_check','diagnose_test','test'];
-        if (SKIP_PREFIX.some(p => anon.startsWith(p)) || ['test','preflight','diagnose_test'].includes(channel)) continue;
+        // 过滤内部测试/巡检流量：demo_/cron-check/a_test/preflight/a_check/diagnose_test/test + a_e2e_/cruise- + 已标记清理的记录
+        const SKIP_PREFIX = ['demo_','cron-check','a_test','preflight','a_check','diagnose_test','test','a_e2e_','cruise-','anon_'];
+        if (SKIP_PREFIX.some(p => anon.startsWith(p)) || ['test','preflight','diagnose_test','cruise'].includes(channel) || status === 'cleaned') continue;
         if (type === 'page_view' || type === 'view') {
           agg.page_views += 1;
           // 页面归因维度（track.js 写入「页面」字段，上限 80 字符）
