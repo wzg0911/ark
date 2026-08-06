@@ -119,10 +119,4 @@
 
 - [x] **埋点覆盖打通：增长失明修复（08-02 12:58）** —— 巡航对上轮「31 页全可达 ✅」提出下一个问题「这 31 页有几个在上报数据」，答案是 **1 个**：`docs/track.js` 专为采集而写却**零页面引用（死代码）**，首页/自检清单/品牌页/报告库 + 26 份报告页全部零埋点，`/api/stats` 的 `page_views: 86` 几乎全部来自诊断页一处——**上轮刚修好入链的 23 份报告，有没有人看在数据上完全不可知**。与 F3 族「失败伪装成成功」同形：非零数字掩盖了 1/31 的覆盖率，不触发任何告警。已修复：（a）激活 track.js（自动 page_view + 去重守卫 + localStorage 降级）；（b）**新增 `page` 归因维度**（前端 + Function + 飞书字段）——无此维度则只知「有人来」不知「来看什么」；（c）31 页全部接入（30 页引用 + diagnose 内联去重）；（d）新建门禁 `scripts/check_instrumentation.py`（零埋点/死代码/缺归因三查，负向测试已验证能捕获回归）；（e）线上端到端验证：CF 重新部署后 5 页抓取确认引用生效，真实打点写入飞书记录 `recvr79uazXhyb` 页面字段正确 ✅
 
-- [ ] 🔴 **新发现：两套 `/api/track` 并存且契约互不兼容** —— `functions/api/track.js`（根目录，写飞书 Bitable，**线上生效**）与 `ark-pro/functions/api/track.js`（写 CF KV，**未部署**）同名同路径、请求契约不同（`{type,channel,anon_id,page}` vs `{event,meta}`）。判定依据：线上响应形状为 `{ok,code}`，且 ark-pro 独有端点 `/api/selfcheck` 返回 405。风险：改动 ark-pro 版会「看起来在修埋点，实际改的是死代码」——本轮 `docs/track.js` 问题的后端翻版；08-01 `a7e0917` 落地的 claim/selfcheck/waitlist 目前均未生效。待决策：删除 / 合并并部署 / 加显著废弃标记
-
-### Week 3+: Scaling (规划中)
-- [ ] 免费诊断邀请（V2EX/Reddit/DEV.to）
-- [ ] Show HN 发布
-- [ ] 诊断管道自动化（自助上传→自动分析→自动回复）
-- [ ] 付费诊断服务 MVP
+- [x] ✅ **两套 `/api/track` 并存且契约互不兼容 — 已根治（08-06 13:35）** —— 线上实测判定：`ark-6ek.pages.dev/api/track` 返回 `{ok:true,code:0}`（根目录版响应形状），`/api/stats` 含 `pages` 归因（仅根目录飞书版支持），确认**线上生效的是根目录版**、`ark-pro/functions/api/track.js`（写 CF KV、`{event,meta}` 契约）为从未部署的死代码，且若误部署会覆盖线上埋点管道。处理：保留 `.disabled` 备份，`ark-pro/functions/api/track.js` 替换为显式 410 Gone 响应（任何请求立即失败，杜绝被误当可用端点），并在文件头写明废弃原因与风险。前端实际契约 `{type,channel,anon_id,page}` 与线上版完全匹配，无需改动。root functions/ 与 ark-pro/ 已通过 deploy-marker 确认独立部署路径，互不干扰 ✅
