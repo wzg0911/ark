@@ -1,9 +1,8 @@
 {
-  "timestamp": "2026-08-06T05:35:00+00:00",
+  "timestamp": "2026-08-07T02:11:01.242746+00:00",
   "new_leads": 0,
   "new_payments": 0,
   "lead_emails": [],
   "payment_subjects": [],
-  "errors": [],
-  "cruise_notes": "08-06 13:35 巡航：根治双 track.js 并存死代码（ark-pro 版→410 Deprecated）；300/303 全绿；31 页可达+埋点全绿；线上端点实测健康"
+  "errors": []
 }
