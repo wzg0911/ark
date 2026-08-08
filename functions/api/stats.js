@@ -63,14 +63,14 @@ export async function onRequestGet(context) {
           const page = String(f['页面'] || 'unknown').slice(0, 80);
           agg.pages[page] = (agg.pages[page] || 0) + 1;
           if (isReal && !seen.has(anon)) { seen.add(anon); agg.real_visitors += 1; }
-        } else if (type === 'diagnosis_start' || type === 'selfcheck_complete') {
+        } else if (type === 'diagnosis_start' || type === 'diagnose_start' || type === 'selfcheck_complete' || type === 'selfcheck_cta') {
           agg.diagnosis_starts += 1;
           if (type === 'selfcheck_complete') agg.selfchecks += 1;
-        } else if (type === 'claim_attempt' || type === 'claim_pending') {
+        } else if (type === 'claim_attempt' || type === 'claim_pending' || type === 'oss_cta') {
           agg.claim_attempts += 1;
         } else if (type === 'claim_success') {
           agg.claim_success += 1;
-        } else if (type === 'pay_intent' || type === 'pay_modal_open') {
+        } else if (type === 'pay_intent' || type === 'pay_modal_open' || type === 'subscribe_intent') {
           agg.pay_intents += 1;
         }
         if (f['邮箱(文本)'] || f['邮箱']) agg.customers += 1;
