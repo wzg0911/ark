@@ -85,6 +85,16 @@
 <div class="cta">
   <button id="submitBtn" style="display:none;background:linear-gradient(90deg,#f59e0b,#ea580c);color:#fff;font-weight:700;padding:14px 32px;border-radius:12px;font-size:1.05rem;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(234,88,12,.3)">✅ 我已勾选完成 · 查看我的崩溃风险</button>
 </div>
+
+<!-- 2026-08-08 转化闭环修复：红灯专属付费入口（自检→发现问题→立即修复），补平「完成自检却无处付费」断点 -->
+<div class="cta" id="payCta" style="display:none;margin-top:8px">
+  <a href="https://ark-6ek.pages.dev/diagnose#claimModal"
+     onclick="try{window.ARK_TRACK&&ARK_TRACK.send('pay_modal_open',{product:'buy_once',from:'selfcheck_red'})}catch(e){}"
+     style="background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#0f172a;font-weight:800;padding:16px 36px;border-radius:12px;font-size:1.1rem;text-decoration:none;box-shadow:0 10px 30px rgba(251,191,36,.35)">
+     ⚡ ¥49 一键修复 · 30 秒激活（红灯用户专享）
+  </a>
+  <p style="margin-top:8px;font-size:.78rem;color:var(--muted)">针对你勾选的高危项，ARK 自动生成修复配置 · 30 天 Pro 权限 · 7 天无理由退款</p>
+</div>
 <div class="cta">
   <a href="https://github.com/wzg0911/ark/discussions/7">📩 把你的清单结果发我，免费陪你看真实诊断</a>
 </div>
@@ -144,7 +154,10 @@ submitBtn.addEventListener('click',()=>{
   }catch(e){/* 埋点静默失败 */}
   // 滚动到结果区强化"劈开伤口"记忆
   document.getElementById('resultBox').scrollIntoView({behavior:'smooth'});
-  // 完成引导：延迟弹出深度诊断 CTA（7 访客断点修复：做完全检的人直接接真人诊断）
+  // 完成引导：红灯(≥1)用户直接展示 ¥49 付费入口（自检→修复闭环），绿灯则展示预约真人
+  const payCta=document.getElementById('payCta');
+  if(red>=1 && payCta){ payCta.style.display='block'; payCta.scrollIntoView({behavior:'smooth',block:'center'}); }
+  // 延迟弹出深度诊断 CTA（7 访客断点修复：做完全检的人直接接真人诊断）
   setTimeout(()=>{
     const d=document.getElementById('diagnoseCta');
     if(d){d.style.display='block';d.scrollIntoView({behavior:'smooth',block:'center'});}
